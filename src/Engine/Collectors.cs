@@ -39,6 +39,7 @@ public sealed class CollectedData
     public GamePaths Paths { get; init; } = null!;
     public List<Red4extSession> Red4ext { get; } = new();
     public List<DateTime> CrashReporterTimes { get; } = new();
+    public List<CrashReport> CrashReports { get; set; } = new();
     public List<LogEvent> Events { get; } = new();          // everything with a timestamp
     public Dictionary<string, string> Settings { get; } = new();
     public DateTime? SettingsWritten { get; set; }
@@ -62,6 +63,7 @@ public static class Collectors
         var d = new CollectedData { Paths = g };
         Safe(d, "RED4ext logs", () => ReadRed4ext(d, since));
         Safe(d, "crash reporter log", () => ReadCrashReporter(d, since));
+        Safe(d, "crash reports", () => ReadCrashReports(d, since));
         Safe(d, "CrashInfo.json", () => ReadCrashInfo(d));
         Safe(d, "Cyber Engine Tweaks logs", () => ReadCet(d, since));
         Safe(d, "ArchiveXL logs", () => ReadArchiveXL(d, since));
@@ -119,6 +121,17 @@ public static class Collectors
             if (!m.Success) continue;
             if (DateTime.TryParseExact(m.Groups[1].Value + m.Groups[2].Value, "yyyyMMddHHmmss", Inv, DateTimeStyles.None, out var at) && at >= since) d.CrashReporterTimes.Add(at);
         }
+    }
+
+    // The ReportQueue folders are the authoritative list of crashes: one folder per crash, each carrying the engine's
+    // own telemetry. CrashReporter.log can miss entries (it only logs when the reporter app actually ran), so any time
+    // found here that the log did not mention is added to the list of crash times.
+    static void ReadCrashReports(CollectedData d, DateTime since)
+    {
+        d.CrashReports = CrashReports.Read(since);
+        foreach (var cr in d.CrashReports)
+            if (!d.CrashReporterTimes.Any(t => Math.Abs((t - cr.At).TotalSeconds) < 90)) d.CrashReporterTimes.Add(cr.At);
+        d.CrashReporterTimes.Sort();
     }
 
     static void ReadCrashInfo(CollectedData d)

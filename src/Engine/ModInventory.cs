@@ -11,6 +11,14 @@ public sealed class ModInventory
     // relPath (lowercase) -> mod display name
     public Dictionary<string, string> FileOwner { get; } = new(StringComparer.OrdinalIgnoreCase);
     public int XlFiles, RedsFolders, CetMods, TweakFiles, Red4extPlugins, Archives;
+    public long ArchiveBytes;                                    // total size of archive\pc\mod
+    readonly List<(string file, long bytes)> _archiveSizes = new();
+
+    // The biggest installed .archive files, named by the mod that owns them. Texture weight is what fills a card.
+    public List<string> HeaviestArchives(int take) => _archiveSizes
+        .OrderByDescending(a => a.bytes).Take(take)
+        .Select(a => (OwnerOf(Path.Combine("archive", "pc", "mod", a.file)) ?? Path.GetFileNameWithoutExtension(a.file)) + $" ({a.bytes / 1048576L} MB)")
+        .ToList();
 
     public string? OwnerOf(string relPath) => FileOwner.TryGetValue(relPath, out var m) ? m : null;
     public string? OwnerOfCetMod(string folder) => OwnerOf($@"bin\x64\plugins\cyber_engine_tweaks\mods\{folder}\init.lua") ?? FileOwner.FirstOrDefault(kv => kv.Key.StartsWith($@"bin\x64\plugins\cyber_engine_tweaks\mods\{folder}\", StringComparison.OrdinalIgnoreCase)).Value;
@@ -30,7 +38,15 @@ public sealed class ModInventory
 
     static void CountArtifacts(GamePaths g, ModInventory inv)
     {
-        if (Directory.Exists(g.ArchiveMods)) { inv.XlFiles = Directory.EnumerateFiles(g.ArchiveMods, "*.xl").Count(); inv.Archives = Directory.EnumerateFiles(g.ArchiveMods, "*.archive").Count(); }
+        if (Directory.Exists(g.ArchiveMods))
+        {
+            inv.XlFiles = Directory.EnumerateFiles(g.ArchiveMods, "*.xl").Count();
+            foreach (var f in Directory.EnumerateFiles(g.ArchiveMods, "*.archive"))
+            {
+                long len; try { len = new FileInfo(f).Length; } catch { continue; }
+                inv.Archives++; inv.ArchiveBytes += len; inv._archiveSizes.Add((Path.GetFileName(f), len));
+            }
+        }
         if (Directory.Exists(g.Scripts)) inv.RedsFolders = Directory.EnumerateDirectories(g.Scripts).Count();
         if (Directory.Exists(g.CetMods)) inv.CetMods = Directory.EnumerateDirectories(g.CetMods).Count(d => File.Exists(Path.Combine(d, "init.lua")));
         if (Directory.Exists(g.Tweaks)) inv.TweakFiles = Directory.EnumerateFiles(g.Tweaks, "*.*", SearchOption.AllDirectories).Count(f => f.EndsWith(".yaml") || f.EndsWith(".yml") || f.EndsWith(".tweak"));

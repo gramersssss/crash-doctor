@@ -83,6 +83,16 @@ tr:hover td{background:#F7F9FB}
 .conf .dots{display:inline-flex;gap:4px}
 .conf .dots i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
 .conf .dots i.on{background:var(--ink)}
+/* video memory at the crash — read out of the crash report, never in any log */
+.vram{margin:2px 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:6px;background:#FAFBFC}
+.vram .lbl{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:12px;color:var(--steel);margin-bottom:7px}
+.vram .lbl b{font-family:var(--display);font-size:14px;color:var(--ink);letter-spacing:.02em}
+.vram .bar{position:relative;height:10px;border-radius:5px;background:var(--grey-bg);overflow:hidden}
+.vram .bar i{display:block;height:100%;background:var(--mint);border-radius:5px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.vram.warn .bar i{background:var(--amber)}
+.vram.full .bar i{background:var(--signal)}
+.vram .ceil{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--steel);opacity:.55}
+.vram .note{font-size:12.5px;color:var(--steel);margin-top:7px}
 .evidence{margin-top:18px}
 .ev{display:grid;grid-template-columns:76px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .ev:first-of-type{border-top:0}
@@ -128,7 +138,7 @@ tr:hover td{background:#F7F9FB}
 .sess .end{display:flex;align-items:center;gap:8px}
 .sess .end i{width:10px;height:10px;border-radius:2px;flex:none}
 .sesslist{border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.i-clean{background:var(--mint)}.i-gpu{background:var(--signal)}.i-script{background:var(--amber)}.i-engine{background:#A34D9E}.i-unknown{background:#9AA3AF}.i-running{background:var(--trace)}
+.i-clean{background:var(--mint)}.i-gpu{background:var(--signal)}.i-vram{background:#C2410C}.i-script{background:var(--amber)}.i-engine{background:#A34D9E}.i-unknown{background:#9AA3AF}.i-running{background:var(--trace)}
 
 /* ---------- health ---------- */
 .hl{display:grid;grid-template-columns:90px 1fr 220px;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fff}
@@ -187,6 +197,7 @@ tr:hover td{background:#F7F9FB}
           <div class="card verdict" id="dx-card">
             <div class="when" id="dx-when"></div>
             <p class="sentence" id="dx-sentence"></p>
+            <div id="dx-vram"></div>
             <div class="conf"><span>Confidence</span><span class="dots" id="dx-conf"></span><span id="dx-conf-txt"></span></div>
             <div class="evidence">
               <p class="eyebrow" style="margin-top:6px">Evidence · seconds before the crash</p>
@@ -196,7 +207,7 @@ tr:hover td{background:#F7F9FB}
           <div class="trace-wrap">
             <div class="trace-head">
               <p class="eyebrow" style="margin:0">Session trace · how each play session ended</p>
-              <div class="legend"><span><i class="i-clean"></i>closed normally</span><span><i class="i-gpu"></i>GPU fault</span><span><i class="i-script"></i>mod / script</span><span><i class="i-engine"></i>engine error</span><span><i class="i-unknown"></i>unknown</span></div>
+              <div class="legend"><span><i class="i-clean"></i>closed normally</span><span><i class="i-gpu"></i>GPU fault</span><span><i class="i-vram"></i>out of video memory</span><span><i class="i-script"></i>mod / script</span><span><i class="i-engine"></i>engine error</span><span><i class="i-unknown"></i>unknown</span></div>
             </div>
             <div class="trace" id="trace"><div class="tip" id="tip"></div></div>
             <div class="trace-foot"><span id="trace-from"></span><span id="trace-to"></span></div>
@@ -276,7 +287,7 @@ function toast(text,isErr){ var t=document.getElementById('toast'); t.textConten
 function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent='Scan now'; }
 
 /* ---------- rendering ---------- */
-var KIND={clean:['mint','closed normally'],gpu:['sig','GPU fault'],script:['amb','mod / script crash'],engine:['engine','engine error'],unknown:['grey','crashed, cause unknown'],running:['trace','still running']};
+var KIND={clean:['mint','closed normally'],gpu:['sig','GPU fault'],vram:['sig','out of video memory'],script:['amb','mod / script crash'],engine:['engine','engine error'],unknown:['grey','crashed, cause unknown'],running:['trace','still running']};
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 function fmtDate(iso){ var d=new Date(iso); return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
 function fmtDur(m,known){ if(known===false) return 'length unknown'; if(m<1) return '<1 min'; if(m<60) return Math.round(m)+' min'; var h=Math.floor(m/60); return h+' h '+Math.round(m-h*60)+' min'; }
@@ -305,6 +316,7 @@ function renderDx(r){
   var card=document.getElementById('dx-card'); card.className='card verdict '+(k[0]==='engine'?'sig':k[0]);
   document.getElementById('dx-when').innerHTML='<span>'+esc(fmtDate(s.start))+'</span><span>'+(s.durationKnown===false?'length unknown':'ran '+esc(fmtDur(s.minutes)))+'</span>'+(s.partial?'<span class="mark grey">crash report only</span>':'')+(s.district?'<span>'+esc(s.district)+'</span>':'')+(s.quest?'<span>'+esc(s.quest)+'</span>':'')+'<span class="mark '+(k[0]==='engine'?'sig':k[0])+'">'+esc(k[1])+'</span>';
   document.getElementById('dx-sentence').textContent=s.verdict;
+  renderVram(s);
   var dots=''; for(var i=0;i<3;i++) dots+='<i class="'+(i<s.confidence?'on':'')+'"></i>';
   document.getElementById('dx-conf').innerHTML=dots;
   document.getElementById('dx-conf-txt').textContent=['low','fair','good','high'][s.confidence]||'';
@@ -314,6 +326,25 @@ function renderDx(r){
   var su=document.getElementById('dx-suspects'); su.innerHTML='';
   if(!s.suspects.length){ su.innerHTML='<div class="muted">No single mod stands out. See Health for standing problems.</div>'; }
   s.suspects.forEach(function(x){ var d=document.createElement('div'); d.className='suspect'; d.innerHTML='<div class="name"><span>'+esc(x.mod)+'</span><span class="mark '+(x.level==='high'?'sig':x.level==='low'?'grey':'amb')+'">'+esc(x.level)+'</span></div><div class="why">'+esc(x.why)+'</div><div class="acts">'+x.actions.map(function(a){return '<button class="btn" onclick="act('+JSON.stringify(a.id)+')">'+esc(a.label)+'</button>';}).join('')+'</div>'; su.appendChild(d); });
+}
+
+// Video memory in use at the moment of the crash. The engine writes this only into the crash report folder, so it is
+// invisible in every log the game keeps — and a card at its limit crashes with nothing logged at all.
+function renderVram(s){
+  var host=document.getElementById('dx-vram');
+  if(!s.vramUsedMB||!s.vramTotalMB){ host.innerHTML=''; return; }
+  var used=s.vramUsedMB, total=s.vramTotalMB, ratio=used/total, pct=Math.round(ratio*100);
+  var cls = ratio>=0.95 ? 'full' : ratio>=0.90 ? 'warn' : '';
+  // the bar is drawn against the larger of the card and what was in use, so an over-commit stays visible
+  var scale=Math.max(total,used), fill=Math.min(100,used/scale*100), ceil=total/scale*100;
+  var note = ratio>=1 ? 'Past what the card holds — the driver had spilled into system memory.'
+           : ratio>=0.95 ? 'At the ceiling. This is where texture and mesh allocations start failing.'
+           : ratio>=0.90 ? 'Close enough to the ceiling to fail: the engine needs spare room for what it loads next.'
+           : ratio>=0.80 ? 'High, but with room left.'
+           : 'Comfortable. Video memory was not the constraint here.';
+  host.innerHTML='<div class="vram '+cls+'"><div class="lbl"><span>Video memory in use at the crash</span><b>'+used+' / '+total+' MB · '+pct+'%</b></div>'+
+    '<div class="bar"><i style="width:'+fill.toFixed(1)+'%"></i>'+(used>total?'<span class="ceil" style="left:'+ceil.toFixed(1)+'%"></span>':'')+'</div>'+
+    '<div class="note">'+note+(s.position?'  Player was at '+esc(s.position)+'.':'')+'</div></div>';
 }
 
 function renderTrace(r){
@@ -354,7 +385,7 @@ function renderSessions(r){
   var el=document.getElementById('sess-list'); el.innerHTML='';
   r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).forEach(function(s){
     var k=KIND[s.endKind]||KIND.unknown; var d=document.createElement('div'); d.className='sess'; d.tabIndex=0; d.setAttribute('role','button');
-    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+'</div>';
+    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+'</div>';
     d.onclick=function(){ showSession(s.id); }; d.onkeydown=function(e){ if(e.key==='Enter') showSession(s.id); };
     el.appendChild(d);
   });
@@ -403,6 +434,7 @@ function renderReport(r){
   lines.push(r.mods.enabled+' mods enabled via '+r.mods.manager+' · frameworks: '+(r.mods.frameworks||[]).join(', '));
   lines.push('');
   if(s){ lines.push('LATEST CRASH  '+fmtDate(s.start)+' · '+fmtDur(s.minutes,s.durationKnown)+(s.district?' · '+s.district:'')); lines.push('  '+s.verdict+' (confidence '+['low','fair','good','high'][s.confidence]+')');
+    if(s.vramUsedMB&&s.vramTotalMB) lines.push('  VIDEO MEMORY  '+s.vramUsedMB+' / '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)'+(s.exception?'   '+s.exception:''));
     s.evidence.forEach(function(e){ lines.push('  T-'+e.tMinus+'s  ['+e.source+'] '+e.text); });
     s.suspects.forEach(function(x){ lines.push('  suspect: '+x.mod+' — '+x.why); }); lines.push(''); }
   lines.push('SESSIONS (newest first)');

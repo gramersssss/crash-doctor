@@ -24,6 +24,7 @@ public sealed class GamePaths
     public static string UserSettings => Path.Combine(CdprLocal, "UserSettings.json");
     public static string CrashInfo => Path.Combine(CdprLocal, "CrashInfo.json");
     public static string CrashReporterLog => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "REDEngine", "CrashReporter.log");
+    public static string ReportQueue => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "REDEngine", "ReportQueue");
     public static string AppData => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CrashDoctor");
     public static string ConfigFile => Path.Combine(AppData, "config.json");
 }

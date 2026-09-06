@@ -75,6 +75,21 @@ public static class Analyzer
         if (s.EndKind == EndKind.Running) { s.Verdict = "Still running."; s.Confidence = 3; return; }
 
         var crashAt = s.CrashTime ?? s.End ?? s.Start;
+        var report = s.CrashTime == null ? null : d.CrashReports.FirstOrDefault(c => Math.Abs((c.At - s.CrashTime.Value).TotalSeconds) <= 90);
+        if (report != null)
+        {
+            if (report.VramKnown) { s.VramUsedMB = report.VramUsedMB; s.VramTotalMB = report.VramTotalMB; }
+            s.Exception = report.Exception; s.Position = report.Position; s.Screenshot = report.Screenshot;
+        }
+        // The card was full. The engine needs headroom for transient allocations, so failures start well before 100 %:
+        // crashes have been observed from about 90 % up. The driver also reports more than the card holds once it has
+        // spilled into system memory, which is worse, not better.
+        var vramTight = report != null && report.VramKnown && report.VramRatio >= 0.90;
+        var vramOver = report != null && report.VramKnown && report.VramUsedMB >= report.VramTotalMB;
+        var badRead = report?.Exception != null && report.Exception.Contains("ACCESS_VIOLATION", StringComparison.OrdinalIgnoreCase);
+        // Changing graphics settings makes the engine tear down and rebuild its render targets, which is the single
+        // largest memory spike a session ever sees. On a card that is already close to full it is a common way to fall over.
+        var settingsChanged = d.SettingsWritten is { } sw && s.CrashTime != null && sw <= s.CrashTime.Value.AddSeconds(5) && sw >= s.CrashTime.Value.AddMinutes(-5) && sw >= s.Start;
         var window = d.Events.Where(e => e.At <= crashAt.AddSeconds(5) && e.At >= crashAt.AddSeconds(-EvidenceWindowSeconds) && (s.Partial || e.At >= s.Start)).OrderBy(e => e.At).ToList();
         var driver = window.Where(e => e.Kind == "driver" && e.At >= crashAt.AddSeconds(-DriverWindowSeconds)).ToList();
         var appcrash = window.FirstOrDefault(e => e.Kind == "appcrash");
@@ -89,11 +104,15 @@ public static class Analyzer
 
         foreach (var e in driver) s.Evidence.Add(Ev(e, crashAt, true));
         if (appcrash != null) s.Evidence.Add(Ev(appcrash, crashAt, true));
-        foreach (var e in scriptErrs.TakeLast(4)) s.Evidence.Add(Ev(e, crashAt, (crashAt - e.At).TotalSeconds <= 30));
+        var noisyMods = BrokenPluginMods(d);
+        foreach (var e in scriptErrs.TakeLast(4)) s.Evidence.Add(Ev(e, crashAt, (crashAt - e.At).TotalSeconds <= 30 && !noisyMods.Contains(e.Mod ?? e.Source.Replace("CET · ", ""))));
         foreach (var e in xlErrs.TakeLast(2)) s.Evidence.Add(Ev(e, crashAt, false));
         foreach (var e in noiseErrs.Take(2)) { var ev = Ev(e, crashAt, false); var n = sessionErrors.Count(x => x.Source == e.Source); ev.Text += $"  (repeats all session, {n} times)"; s.Evidence.Add(ev); }
         if (activity != null) s.Evidence.Add(Ev(activity, crashAt, false));
         if (power != null) s.Evidence.Add(Ev(power, crashAt, true));
+        if (report != null && report.VramKnown) s.Evidence.Add(new Evidence { TMinus = 0, Source = "Crash report · video memory", Text = $"{report.VramUsedMB} MB of the card's {report.VramTotalMB} MB were in use ({Pct(report.VramRatio)})" + (vramOver ? " — over what the card holds; the driver had spilled into system memory" : ""), Hit = vramTight });
+        if (settingsChanged) s.Evidence.Add(new Evidence { TMinus = Math.Max(0, (int)Math.Round((crashAt - d.SettingsWritten!.Value).TotalSeconds)), Source = "Graphics settings", Text = "the settings were changed during this session (the game rebuilt its render targets)", Hit = false, At = d.SettingsWritten!.Value });
+        if (report?.Exception != null) s.Evidence.Add(new Evidence { TMinus = 0, Source = "Crash report · exception", Text = report.Exception + (report.ExceptionDetail != null ? " — " + report.ExceptionDetail : ""), Hit = false });
         s.Evidence = s.Evidence.OrderByDescending(e => e.TMinus).ToList();
         if (settingsKnown) s.SettingsAtCrash = new Dictionary<string, string>(d.Settings);
         if (d.CrashInfo is { } ci && all.Where(x => x.CrashTime != null).OrderByDescending(x => x.CrashTime).FirstOrDefault() == s)
@@ -112,6 +131,7 @@ public static class Analyzer
             else if (fg) s.Verdict = "The GPU faulted while frame generation was on. The engine reported a GPU crash, not a mod error.";
             else if (rt) s.Verdict = $"The GPU faulted with ray tracing on ({rtl}). The engine reported a GPU crash, not a mod error.";
             else s.Verdict = "The GPU faulted with frame generation and ray tracing both off. The engine reported a GPU crash, not a mod error; suspect the driver, temperatures or an overclock.";
+            if (vramTight) s.Verdict += $" Video memory was {(vramOver ? "over" : "at")} the card's limit at the time ({report!.VramUsedMB} of {report.VramTotalMB} MB), which is the usual reason a GPU faults in this game.";
             s.Verdict += partialNote;
             if (settingsKnown && fg) s.Suspects.Add(new Suspect { Mod = rt ? $"Frame generation + ray traced lighting {rtl}" : "Frame generation", Level = "high", Why = d.System.VramGB > 0 && d.System.VramGB <= 8 ? $"On an {d.System.VramGB} GB card this runs at the VRAM ceiling; the map and dense districts push it over." : "Frame generation adds its own GPU work and memory on top of everything else.", Actions = { new UiAction("settings", "See the settings") } });
             else if (settingsKnown && !rt) s.Suspects.Add(new Suspect { Mod = "GPU driver / hardware", Level = "medium", Why = "No frame gen or ray tracing was on. Try the previous driver, check temperatures, rule out an overclock.", Actions = { new UiAction("open:driver", "Open Device Manager") } });
@@ -138,6 +158,32 @@ public static class Analyzer
             if (Regex.IsMatch(raw, @"^(nvwgf2um|nvlddmkm|nvgpucomp|amdxc64|amdxx64|atidxx|igd)", RegexOptions.IgnoreCase)) { s.EndKind = EndKind.Gpu; s.Confidence = 3; s.Verdict = $"Windows recorded the fault inside the graphics driver ({raw}).{partialNote}"; s.Suspects.Add(new Suspect { Mod = "GPU driver", Level = "high", Why = "The faulting module is the display driver. A clean install of the previous driver version is the usual fix.", Actions = { new UiAction("open:driver", "Open Device Manager") } }); return; }
             if (mod != raw && d.Mods.Find(mod) != null) { s.EndKind = EndKind.Script; s.Confidence = 3; s.Verdict = $"Windows recorded the fault inside {raw}, which belongs to the mod {mod}.{partialNote}"; s.Suspects.Add(SuspectFor(d, mod, "high", "Its native code is where the crash happened.")); return; }
             s.Verdict = $"Windows recorded the fault in {raw}." + (raw.StartsWith("Cyberpunk2077", StringComparison.OrdinalIgnoreCase) ? " That is the game itself, which usually means bad data handed to it by a mod (a broken mesh, appearance or sector patch)." : "") + partialNote;
+            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
+            return;
+        }
+        // A full card, with the engine dying on a read of memory that was never handed to it, is the commonest
+        // "crash with nothing in the logs". Nothing writes an error for it, so it has to be read out of the crash report.
+        if (vramTight && report != null)
+        {
+            s.EndKind = EndKind.Vram;
+            s.Confidence = vramOver ? 3 : report.VramRatio >= 0.95 ? 2 : 1;
+            s.Verdict = $"Ran out of video memory. {report.VramUsedMB} MB of the card's {report.VramTotalMB} MB were in use when it died ({Pct(report.VramRatio)})"
+                + (vramOver ? ", i.e. past what the card physically holds, so the driver had already spilled into system memory. " : ". ")
+                + (badRead ? "The engine then failed to get memory for something and crashed reading a resource that was never created (" + report.Exception + "). " : "")
+                + "No driver fault and no mod error was recorded, which is exactly how this looks: the game simply asks for more than the card can hold and falls over."
+                + (settingsChanged ? " The graphics settings were also changed during this session, minutes before the crash — rebuilding the render targets is the biggest memory spike a session ever sees, and on an already-full card that alone can end it. Judge the new settings by the next few sessions, not by this one." : "")
+                + partialNote;
+            var levers = HeavySettings(d);
+            s.Suspects.Add(new Suspect
+            {
+                Mod = "Video memory ceiling",
+                Level = "high",
+                Why = (levers.Count > 0 ? "The expensive settings right now are " + Join(levers) + ". Turning any one of them down frees more than any single mod would. " : "")
+                    + "Textures and crowd density are the two biggest levers; ray traced lighting and reflections are next.",
+                Actions = { new UiAction("settings", "See the settings") }
+            });
+            var heavy = HeaviestTextureMods(d);
+            if (heavy.Count > 0) s.Suspects.Add(new Suspect { Mod = "Installed texture weight", Level = "low", Why = $"{Mb(d.Mods.ArchiveBytes)} of mod archives are installed. The heaviest are {Join(heavy)}. Nothing here is broken — it is simply more texture than a {Math.Round(report.VramTotalMB / 1024.0)} GB card can keep resident in a dense district.", Actions = { new UiAction("mods", "See the mod list") } });
             AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
             return;
         }
@@ -202,14 +248,54 @@ public static class Analyzer
         }
     }
 
+    // Mods whose native plugin RED4ext refused to load on this game patch. Their Lua half then errors on every tick.
+    static HashSet<string> BrokenPluginMods(CollectedData d)
+    {
+        var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var latest = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
+        if (latest == null) return set;
+        foreach (var inc in latest.Incompatible)
+        {
+            var name = Regex.Match(inc, @"^(.+?) \(version").Groups[1].Value;
+            if (name.Length == 0) continue;
+            set.Add(name);
+            var owner = d.Mods.OwnerOfPlugin(name.Replace(" ", "")) ?? d.Mods.OwnerOfPlugin(name);
+            if (owner != null) set.Add(owner);
+        }
+        return set;
+    }
+
+    static string Pct(double r) => Math.Round(r * 100) + "%";
+    static string Mb(long bytes) => bytes >= 1073741824L ? $"{bytes / 1073741824.0:0.#} GB" : $"{bytes / 1048576L} MB";
+    static string Join(List<string> x) => x.Count == 1 ? x[0] : string.Join(", ", x.Take(x.Count - 1)) + " and " + x[^1];
+
+    // The graphics settings that cost the most video memory, named only when they are actually turned up.
+    static List<string> HeavySettings(CollectedData d)
+    {
+        var l = new List<string>();
+        if (d.Settings.TryGetValue("TextureQuality", out var t) && t is "High" or "Ultra") l.Add($"textures {t}");
+        if (d.Settings.TryGetValue("CrowdDensity", out var c) && c is "High" or "Ultra") l.Add($"crowd density {c}");
+        if (d.Settings.TryGetValue("RayTracedLighting", out var rl) && rl is "High" or "Ultra" or "Psycho") l.Add($"ray traced lighting {rl}");
+        if (SettingOn(d, "RayTracedReflections")) l.Add("ray traced reflections on");
+        if (d.Settings.TryGetValue("ScreenSpaceReflectionsQuality", out var ssr) && ssr is "Ultra" or "Psycho") l.Add($"screen space reflections {ssr}");
+        if (SettingOn(d, "RayTracedPathTracing")) l.Add("path tracing on");
+        return l;
+    }
+
+    static List<string> HeaviestTextureMods(CollectedData d) => d.Mods.HeaviestArchives(3);
+
     static string Key(LogEvent e) => e.Source + "|" + Regex.Replace(e.Text, @"\d+", "#");
 
     static void AddScriptSuspects(CollectedData d, Session s, List<LogEvent> scriptErrs, List<LogEvent> xlErrs, DateTime crashAt)
     {
+        var noisy = BrokenPluginMods(d);
         foreach (var grp in scriptErrs.GroupBy(e => e.Mod ?? e.Source.Replace("CET · ", "")).OrderBy(g => (crashAt - g.Max(e => e.At)).TotalSeconds))
         {
             var name = grp.Key; var secs = (int)Math.Round((crashAt - grp.Max(e => e.At)).TotalSeconds);
             if (s.Suspects.Any(x => x.Mod == name)) continue;
+            // A mod whose native half refuses to load on this game patch errors continuously, in sessions that end
+            // cleanly as well as ones that crash. Landing near a crash is coincidence, so it must not outrank a real lead.
+            if (noisy.Contains(name)) { s.Suspects.Add(SuspectFor(d, name, "low", $"Its script errored {secs} s before the crash, but it errors constantly: its native plugin will not load on this game patch, so this is background noise rather than something that happened at the crash.")); continue; }
             s.Suspects.Add(SuspectFor(d, name, secs <= 15 ? "high" : "medium", $"Its script errored {secs} s before the crash: {Short(grp.Last().Text)}"));
         }
         foreach (var grp in xlErrs.Where(e => e.Mod != null).GroupBy(e => e.Mod!))
@@ -265,11 +351,26 @@ public static class Analyzer
             var crashesFull = full.Where(s => s.EndKind != EndKind.Clean).ToList();
             var med = crashesFull.Count > 0 ? crashesFull.Select(s => s.Minutes).OrderBy(x => x).ElementAt(crashesFull.Count / 2) : 0;
             var sev = full.Count > 0 && wc >= 3 && wc >= full.Count / 2.0 ? "high" : (wc + partial) > 0 ? "medium" : "info";
-            var detail = full.Count > 0 ? $"{wc} of {full.Count} logged sessions crashed" + (wc > 0 ? $"; typical time to crash {Dur(med)}" : "") + $". {crashesFull.Count(s => s.EndKind == EndKind.Gpu)} GPU faults, {crashesFull.Count(s => s.EndKind == EndKind.Script)} mod/script, {crashesFull.Count(s => s.EndKind is EndKind.Unknown or EndKind.Engine)} other." : "";
+            var detail = full.Count > 0 ? $"{wc} of {full.Count} logged sessions crashed" + (wc > 0 ? $"; typical time to crash {Dur(med)}" : "") + $". {crashesFull.Count(s => s.EndKind == EndKind.Gpu)} GPU faults, {crashesFull.Count(s => s.EndKind == EndKind.Vram)} out of video memory, {crashesFull.Count(s => s.EndKind == EndKind.Script)} mod/script, {crashesFull.Count(s => s.EndKind is EndKind.Unknown or EndKind.Engine)} other." : "";
             if (partial > 0) detail += $" Plus {partial} crash report{(partial == 1 ? "" : "s")} from sessions whose logs have been rotated away.";
             h.Add(new HealthItem { Severity = sev, Title = $"{wc + partial} crash{(wc + partial == 1 ? "" : "es")} in the last 7 days", Detail = detail.Trim() });
         }
         var crashes = sessions.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).ToList();
+
+        // Video memory in use at each crash. The engine records this only in the crash report, never in a log, so this
+        // is the one place it can be seen. Reading the run of numbers is more use than any single verdict.
+        var withVram = sessions.Where(s => s.VramUsedMB > 0 && s.VramTotalMB > 0).OrderByDescending(s => s.Start).Take(12).ToList();
+        if (withVram.Count > 0)
+        {
+            var total = withVram[0].VramTotalMB!.Value;
+            var atCeiling = withVram.Where(s => (double)s.VramUsedMB!.Value / s.VramTotalMB!.Value >= 0.95).ToList();
+            var lines = withVram.Select(s => $"{s.Start:d MMM HH:mm} {s.VramUsedMB} MB ({Pct((double)s.VramUsedMB!.Value / s.VramTotalMB!.Value)})");
+            var sev = atCeiling.Count >= 3 ? "high" : atCeiling.Count > 0 ? "medium" : "info";
+            var lead = atCeiling.Count == 0
+                ? $"None of the last {withVram.Count} crashes was short of video memory, so the card is not the constraint."
+                : $"{atCeiling.Count} of the last {withVram.Count} crashes happened with the {total} MB card at 95 % or more. That is where allocations start failing, and a failed allocation crashes the engine with nothing written to any log.";
+            h.Add(new HealthItem { Severity = sev, Title = $"Video memory at the last {withVram.Count} crash{(withVram.Count == 1 ? "" : "es")}", Detail = lead + "  Newest first: " + string.Join(" · ", lines) + $".  Card total {total} MB." + (atCeiling.Count > 0 ? "  Textures and crowd density free the most; ray traced lighting and reflections are next." : ""), Action = new UiAction("settings", "See settings") });
+        }
         var fg = d.Settings.TryGetValue("FrameGeneration", out var fgv) && fgv != "Off"; var rt = SettingOn(d, "RayTracing"); d.Settings.TryGetValue("RayTracedLighting", out var rtl);
         if (fg && rt && d.System.VramGB > 0 && d.System.VramGB <= 8) h.Add(new HealthItem { Severity = crashes.Any(c => c.EndKind == EndKind.Gpu) ? "high" : "medium", Title = $"Frame generation with ray tracing on an {d.System.VramGB} GB GPU", Detail = $"Ray traced lighting is {rtl}. This combination sits at the VRAM ceiling on {d.System.VramGB} GB; GPU faults on the map or in dense areas are the usual result. Turn one of them down.", Action = new UiAction("settings", "See settings") });
         if (d.Settings.TryGetValue("RayTracedPathTracing", out var pt) && pt == "true" && d.System.VramGB <= 12) h.Add(new HealthItem { Severity = "medium", Title = "Path tracing on a card with 12 GB or less", Detail = "Path tracing needs more VRAM than any other setting. Expect faults in dense areas.", Action = new UiAction("settings", "See settings") });

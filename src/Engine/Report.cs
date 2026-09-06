@@ -50,7 +50,7 @@ public sealed class ModsSummary
     public List<string> Frameworks { get; set; } = new();
 }
 
-public enum EndKind { Clean, Gpu, Script, Engine, Unknown, Running }
+public enum EndKind { Clean, Gpu, Vram, Script, Engine, Unknown, Running }
 
 public sealed class Session
 {
@@ -58,7 +58,7 @@ public sealed class Session
     public DateTime Start { get; set; }
     public DateTime? End { get; set; }
     public double Minutes { get; set; }
-    public EndKind EndKind { get; set; }   // serialized camelCase by Scanner.Json: clean | gpu | script | engine | unknown | running
+    public EndKind EndKind { get; set; }   // serialized camelCase by Scanner.Json: clean | gpu | vram | script | engine | unknown | running
     public string Verdict { get; set; } = "";
     public int Confidence { get; set; }          // 0..3
     public bool Partial { get; set; }            // only a crash report exists; the session log has been rotated away
@@ -68,6 +68,12 @@ public sealed class Session
     public List<Evidence> Evidence { get; set; } = new();
     public List<Suspect> Suspects { get; set; } = new();
     public Dictionary<string, string> SettingsAtCrash { get; set; } = new();
+    // From the crash report folder the engine writes next to every crash (see CrashReports.cs).
+    public int? VramUsedMB { get; set; }
+    public int? VramTotalMB { get; set; }
+    public string? Exception { get; set; }        // e.g. "EXCEPTION_ACCESS_VIOLATION (0xC0000005)"
+    public string? Position { get; set; }         // where the player was standing
+    public string? Screenshot { get; set; }       // the frame the game was showing when it died
     [JsonIgnore] public string? Red4extLog { get; set; }
     [JsonIgnore] public DateTime? CrashTime { get; set; }
     [JsonIgnore] public string? EngineMessage { get; set; }
