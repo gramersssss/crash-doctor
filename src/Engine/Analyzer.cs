@@ -170,6 +170,36 @@ public static class Analyzer
         if (s.District != null && cluster >= 2) s.Verdict += $" This is the {Ordinal(cluster + 1)} crash in {s.District}; something specific to that area is likely.";
         AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
         if (activity != null && activity.Text.Contains("world streaming")) foreach (var m in WorldPatchMods(d).Take(3)) if (!s.Suspects.Any(x => x.Mod == m)) s.Suspects.Add(SuspectFor(d, m, "medium", "Edits world sectors; failed or overlapping sector patches crash during streaming."));
+        AddLocationSuspects(d, s);
+    }
+
+    // Mods whose ArchiveXL patches name the place or quest where the crash happened. A crash with no error logged, in a
+    // place several mods rewrite, is usually one of them.
+    static void AddLocationSuspects(CollectedData d, Session s)
+    {
+        var tokens = new List<string>();
+        if (s.Quest != null) { var q = Regex.Match(s.Quest, @"^([a-z]+\d+)"); if (q.Success) tokens.Add(q.Groups[1].Value); }
+        if (s.District != null) { var slug = Regex.Replace(s.District.Split('·')[0].Trim(), "(?<=[a-z])(?=[A-Z])", "_").Replace(" ", "_").ToLower(); tokens.Add(slug); tokens.Add(slug.Replace("_", "")); }
+        tokens = tokens.Where(t => t.Length >= 4).Distinct().ToList();
+        if (tokens.Count == 0) return;
+        var hits = new List<(string mod, int n)>();
+        foreach (var m in d.Mods.Mods.Where(m => m.Status != "removed"))
+        {
+            int n = 0;
+            foreach (var rel in m.Files.Where(f => f.EndsWith(".xl", StringComparison.OrdinalIgnoreCase)))
+            {
+                string txt; try { txt = Files.ReadAllTextShared(Path.Combine(d.Paths.GameDir, rel)); } catch { continue; }
+                foreach (var t in tokens) n += Regex.Matches(txt, Regex.Escape(t), RegexOptions.IgnoreCase).Count;
+            }
+            if (n > 0) hits.Add((m.Name, n));
+        }
+        var where = s.Quest != null && s.District != null ? $"{s.District} during {s.Quest}" : s.District ?? s.Quest ?? "this location";
+        foreach (var (mod, n) in hits.OrderByDescending(h => h.n).Take(4))
+        {
+            if (s.Suspects.Any(x => x.Mod == mod)) continue;
+            var row = d.Mods.Find(mod); var wip = row != null && (Regex.IsMatch(row.Version, @"^0\.[01](\.|$)") || Regex.IsMatch(mod, @"\b(WIP|alpha|beta|test)\b", RegexOptions.IgnoreCase));
+            s.Suspects.Add(SuspectFor(d, mod, wip ? "high" : n >= 20 ? "medium" : "low", $"Its patches rewrite {where} ({n} references){(wip ? "; it is an unfinished early version" : "")}. With several mods editing one place, one of them is the usual cause of a crash while NPCs or the area load."));
+        }
     }
 
     static string Key(LogEvent e) => e.Source + "|" + Regex.Replace(e.Text, @"\d+", "#");
