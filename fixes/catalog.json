@@ -1,0 +1,13 @@
+[
+    {
+        "mod":  "Sexual encounters Clouds nude patch",
+        "why":  "Version 1.3 keeps references to NPCs near Clouds and calls into them from timers; when the NPC has already been unloaded that call can crash the game. The fix looks each NPC up again by ID before touching it and wraps engine calls so a failure is logged instead of fatal. Behaviour is unchanged when the NPC is still there.",
+        "id":  "001-clouds-nude-patch-dead-npc",
+        "nexusId":  "26441",
+        "originalSha256":  "20A9647E6A37A8A623041F478FC55C24DBEF0EAD853B5B7C484F35E02E4A5E2D",
+        "patchedSha256":  "DD0C64019252815F58EDC5D81EB17557C9099372C8E1FACB94F7D8199C4F3CA0",
+        "target":  "bin\\x64\\plugins\\cyber_engine_tweaks\\mods\\f80h_s_enc_nud_patch\\init.lua",
+        "patchedFile":  "001-clouds-nude-patch-dead-npc\\patched.lua",
+        "title":  "Safe NPC handles"
+    }
+]

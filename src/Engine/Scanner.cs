@@ -1,0 +1,57 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace CrashDoctor.Engine;
+
+public static class Scanner
+{
+    public static readonly JsonSerializerOptions Json = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, WriteIndented = false, Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) } };
+
+    public static Report Scan(GamePaths g, int days = 30)
+    {
+        var since = DateTime.Now.AddDays(-days);
+        var d = Collectors.CollectAll(g, since);
+        var r = new Report();
+        var (fv, pv) = GameLocator.ExeVersion(g);
+        var latestRed = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
+        r.Game = new GameInfo { Path = g.GameDir, Store = g.Store, FileVersion = fv, Version = !string.IsNullOrEmpty(latestRed?.ProductVersion) ? latestRed!.ProductVersion : GuessPatch(fv), Running = GameLocator.GameRunning() };
+        r.System = d.System;
+        r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Frameworks = Frameworks(d) };
+        Analyzer.Analyze(d, r);
+        r.ModsList = d.Mods.Mods.OrderBy(m => m.Name).Select(m => Flagged(d, m, r)).ToList();
+        r.Requirements = RequirementsCheck.Check(d);
+        r.Settings = PrettySettings(d.Settings);
+        r.Warnings = d.Warnings;
+        return r;
+    }
+
+    static string GuessPatch(string fileVersion) => fileVersion switch { var v when v.StartsWith("3.0.80.51928") => "2.31", var v when v.StartsWith("3.0.80.") => "2.3x", _ => fileVersion };
+
+    static List<string> Frameworks(CollectedData d)
+    {
+        var l = new List<string>(); var red = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
+        if (red != null && !string.IsNullOrEmpty(red.Red4extVersion)) l.Add("RED4ext " + red.Red4extVersion);
+        if (!string.IsNullOrEmpty(d.CetVersion)) l.Add("CET " + d.CetVersion);
+        if (red != null) foreach (var p in red.PluginsLoaded.Where(p => p.name is "ArchiveXL" or "TweakXL" or "Codeware")) l.Add($"{p.name} {p.version}");
+        return l;
+    }
+
+    static ModRow Flagged(CollectedData d, ModRow m, Report r)
+    {
+        foreach (var h in r.Health.Where(h => h.Mod != null && (h.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) || h.Mod.Contains(m.Name, StringComparison.OrdinalIgnoreCase)) && h.Severity != "info"))
+            m.Flags.Add(new ModFlag { Label = h.Title.Length > 40 ? h.Title[..40] + "…" : h.Title, Level = h.Severity, Detail = h.Detail });
+        foreach (var s in r.Sessions) foreach (var su in s.Suspects) if (su.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) && !m.Flags.Any(f => f.Label == "suspect in a crash")) m.Flags.Add(new ModFlag { Label = "suspect in a crash", Level = su.Level, Detail = su.Why });
+        var fix = Fixes.FindFor(m.Name); if (fix != null) { var st = fix.State(d.Paths); if (st == "applied") m.Flags.Add(new ModFlag { Label = "fix applied", Level = "low", Detail = fix.Title }); else if (st == "applicable") m.Flags.Add(new ModFlag { Label = "known fix available", Level = "medium", Detail = fix.Title }); }
+        return m;
+    }
+
+    static readonly Dictionary<string, string> Labels = new() { ["FrameGeneration"] = "Frame generation", ["ResolutionScaling"] = "Upscaler", ["DLSS"] = "DLSS mode", ["DLSS_BackendPreset"] = "DLSS model", ["FSR3"] = "FSR mode", ["XESS"] = "XeSS mode", ["RayTracing"] = "Ray tracing", ["RayTracedLighting"] = "Ray traced lighting", ["RayTracedReflections"] = "Ray traced reflections", ["RayTracedSunShadows"] = "Ray traced sun shadows", ["RayTracedLocalShadows"] = "Ray traced local shadows", ["RayTracedPathTracing"] = "Path tracing", ["TextureQuality"] = "Textures", ["Resolution"] = "Resolution", ["WindowMode"] = "Window mode", ["VSync"] = "VSync", ["ReflexMode"] = "NVIDIA Reflex", ["CrowdDensity"] = "Crowd density", ["ScreenSpaceReflectionsQuality"] = "Screen space reflections", ["VolumetricFogResolution"] = "Volumetric fog", ["CascadedShadowsResolution"] = "Cascaded shadows", ["DistantShadowsResolution"] = "Distant shadows", ["MirrorQuality"] = "Mirror quality", ["ColorPrecision"] = "Color precision", ["AmbientOcclusion"] = "Ambient occlusion", ["MaxDynamicDecals"] = "Max dynamic decals", ["HDRModes"] = "HDR" };
+    static Dictionary<string, string> PrettySettings(Dictionary<string, string> s)
+    {
+        var o = new Dictionary<string, string>();
+        foreach (var kv in Labels) if (s.TryGetValue(kv.Key, out var v)) o[kv.Value] = v.Replace("UI-Settings-Video-QualitySetting-", "").Replace("true", "On").Replace("false", "Off");
+        return o;
+    }
+
+    public static string ToJson(Report r) => JsonSerializer.Serialize(r, Json);
+}

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crash Doctor</title>
+<style>
+:root{
+  --paper:#EDF0F3; --card:#FFFFFF; --ink:#10141A; --steel:#5B6472; --line:#D6DBE2;
+  --signal:#D93A3A; --amber:#E09A1B; --mint:#1F9D6A; --trace:#2F6FED;
+  --signal-bg:#FBE9E9; --amber-bg:#FBF1DC; --mint-bg:#E3F5EC; --trace-bg:#E6EEFF; --grey-bg:#E9ECF0;
+  --display:"Bahnschrift","Bahnschrift SemiCondensed","Segoe UI",Arial,sans-serif;
+  --body:"Segoe UI",system-ui,Arial,sans-serif;
+  --mono:"Cascadia Mono","Consolas","Courier New",monospace;
+  --rail:196px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.45 var(--body);overflow:hidden}
+button{font:inherit;cursor:pointer}
+a{color:var(--trace)}
+:focus-visible{outline:2px solid var(--trace);outline-offset:2px}
+
+/* ---------- bezel ---------- */
+.bezel{height:56px;background:var(--ink);color:#C9CFD8;display:flex;align-items:center;gap:0;padding:0 18px;border-bottom:1px solid #000}
+.bezel .brand{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:18px;letter-spacing:.02em;color:#fff;margin-right:26px;display:flex;align-items:center;gap:10px}
+.bezel .brand .pulse{width:10px;height:10px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(31,157,106,.25)}
+.bezel .chip{display:flex;flex-direction:column;padding:0 16px;border-left:1px solid #2A313B;min-width:0}
+.bezel .chip .k{font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7F8895;line-height:1}
+.bezel .chip .v{font-family:var(--mono);font-size:13px;color:#EDEFF2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
+.bezel .spacer{flex:1}
+.bezel .scan{background:#fff;color:var(--ink);border:0;border-radius:4px;padding:8px 14px;font-family:var(--display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+.bezel .scan:hover{background:#E6EAF0}
+.bezel .scan[disabled]{opacity:.6;cursor:progress}
+
+/* ---------- frame ---------- */
+.frame{display:grid;grid-template-columns:var(--rail) 1fr;height:calc(100% - 56px)}
+.rail{background:#E4E8ED;border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.rail button{text-align:left;background:transparent;border:0;border-radius:6px;padding:9px 12px;color:var(--steel);font-family:var(--display);font-stretch:semi-condensed;font-size:14px;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center}
+.rail button:hover{background:#D9DEE5;color:var(--ink)}
+.rail button.on{background:var(--ink);color:#fff}
+.rail .n{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:9px;background:#fff;color:var(--steel)}
+.rail button.on .n{background:#2A313B;color:#C9CFD8}
+.rail .n.sig{background:var(--signal);color:#fff}
+.rail .n.amb{background:var(--amber);color:#fff}
+.rail .foot{margin-top:auto;font-size:11px;color:var(--steel);padding:8px 12px;line-height:1.5}
+.main{overflow:auto;padding:24px 28px 40px}
+.view{display:none;max-width:1120px}
+.view.on{display:block}
+
+/* ---------- common ---------- */
+.eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);margin:0 0 8px}
+h1{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:34px;line-height:1.1;margin:0 0 14px;letter-spacing:-.005em}
+h2{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:18px;margin:28px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px 22px}
+.muted{color:var(--steel)}
+.mono{font-family:var(--mono);font-size:12.5px}
+.mark{display:inline-block;padding:2px 8px;border-radius:4px;font-family:var(--display);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.mark.sig{background:var(--signal-bg);color:var(--signal)}
+.mark.amb{background:var(--amber-bg);color:#8A5A00}
+.mark.mint{background:var(--mint-bg);color:#116B47}
+.mark.grey{background:var(--grey-bg);color:var(--steel)}
+.mark.trace{background:var(--trace-bg);color:#1C4FB8}
+.btn{border:1px solid var(--line);background:#fff;border-radius:5px;padding:7px 12px;font-size:13px;color:var(--ink)}
+.btn:hover{border-color:#B9C1CC;background:#F7F9FB}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover{background:#242B35}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-family:var(--display);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);font-weight:600;position:sticky;top:0;background:#fff}
+tr:hover td{background:#F7F9FB}
+
+/* ---------- diagnosis ---------- */
+.dx{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+.dx .verdict{border-left:5px solid var(--amber)}
+.dx .verdict.sig{border-left-color:var(--signal)}
+.dx .verdict.mint{border-left-color:var(--mint)}
+.dx .verdict.grey{border-left-color:var(--steel)}
+.dx .when{font-family:var(--mono);font-size:12.5px;color:var(--steel);display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.dx .sentence{font-size:19px;line-height:1.4;margin:0 0 14px}
+.conf{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--steel)}
+.conf .dots{display:inline-flex;gap:4px}
+.conf .dots i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
+.conf .dots i.on{background:var(--ink)}
+.evidence{margin-top:18px}
+.ev{display:grid;grid-template-columns:76px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.ev:first-of-type{border-top:0}
+.ev .t{font-family:var(--mono);font-size:12.5px;color:var(--ink);font-weight:600;white-space:nowrap}
+.ev .t.hit{color:var(--signal)}
+.ev .src{font-family:var(--display);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel);margin-bottom:2px}
+.ev .txt{font-family:var(--mono);font-size:12.5px;color:#2B333D;word-break:break-word}
+.suspect{padding:14px 0;border-top:1px solid var(--line)}
+.suspect:first-child{border-top:0;padding-top:0}
+.suspect .name{font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.suspect .why{color:var(--steel);font-size:13px;margin:4px 0 8px}
+.suspect .acts{display:flex;flex-direction:column;gap:6px}
+.suspect .acts button{text-align:left}
+
+/* ---------- session trace (signature) ---------- */
+.trace-wrap{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px 22px 14px;margin-top:18px;
+  background-image:linear-gradient(to right, rgba(16,20,26,.045) 1px, transparent 1px);background-size:40px 100%}
+.trace-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--steel)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.trace{position:relative;height:150px}
+.trace svg{width:100%;height:100%;display:block;overflow:visible}
+.trace .bar{cursor:pointer;transition:opacity .12s}
+.trace .bar:hover{opacity:.75}
+.trace .cap{pointer-events:none}
+.trace .base{stroke:var(--line);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;max-width:320px;transform:translate(-50%,-110%);opacity:0;transition:opacity .1s;z-index:5}
+.tip.on{opacity:1}
+.tip .t{font-family:var(--mono);color:#AEB6C2;font-size:11.5px}
+.trace-foot{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--steel);margin-top:6px}
+@keyframes drawin{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.trace g.day{transform-origin:left;animation:drawin .6s cubic-bezier(.2,.7,.2,1) both}
+@media (prefers-reduced-motion:reduce){.trace g.day{animation:none}.fade{animation:none}}
+@keyframes fadeup{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.fade{animation:fadeup .35s .12s ease-out both}
+
+/* ---------- sessions list ---------- */
+.sess{display:grid;grid-template-columns:150px 70px 1fr 120px;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:center;background:#fff;cursor:pointer}
+.sess:hover{background:#F7F9FB}
+.sess:first-of-type{border-radius:8px 8px 0 0}
+.sess:last-of-type{border-radius:0 0 8px 8px;border-bottom:0}
+.sess .dur{font-family:var(--mono);font-size:12.5px;color:var(--steel)}
+.sess .end{display:flex;align-items:center;gap:8px}
+.sess .end i{width:10px;height:10px;border-radius:2px;flex:none}
+.sesslist{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.i-clean{background:var(--mint)}.i-gpu{background:var(--signal)}.i-script{background:var(--amber)}.i-engine{background:#A34D9E}.i-unknown{background:#9AA3AF}.i-running{background:var(--trace)}
+
+/* ---------- health ---------- */
+.hl{display:grid;grid-template-columns:90px 1fr 220px;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fff}
+.hl:last-child{border-bottom:0}
+.hl .title{font-weight:600}
+.hl .detail{color:var(--steel);font-size:13px;margin-top:3px}
+.hl .act{text-align:right}
+.hlist{border:1px solid var(--line);border-radius:8px;overflow:hidden}
+
+/* ---------- settings ---------- */
+.kv{display:grid;grid-template-columns:240px 1fr;gap:8px 16px;font-size:13.5px}
+.kv .k{color:var(--steel)}
+.kv .v{font-family:var(--mono);font-size:12.5px}
+
+.empty{padding:48px 24px;text-align:center;color:var(--steel);border:1px dashed var(--line);border-radius:8px}
+.progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden;margin-top:12px;display:none}
+.progress.on{display:block}
+.progress i{display:block;height:100%;width:30%;background:var(--trace);animation:slide 1.1s infinite linear}
+@keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
+@media (max-width:980px){.dx{grid-template-columns:1fr}.frame{grid-template-columns:150px 1fr}.sess{grid-template-columns:130px 60px 1fr}.sess .dist{display:none}}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;opacity:0;transition:all .18s;z-index:9;max-width:70vw}.toast.on{opacity:1;transform:translate(-50%,0)}.toast.err{background:var(--signal)}
+</style>
+</head>
+<body>
+
+<header class="bezel">
+  <div class="brand"><span class="pulse" id="pulse"></span>Crash Doctor</div>
+  <div class="chip"><span class="k">Game</span><span class="v" id="c-game">—</span></div>
+  <div class="chip"><span class="k">GPU</span><span class="v" id="c-gpu">—</span></div>
+  <div class="chip"><span class="k">Driver</span><span class="v" id="c-driver">—</span></div>
+  <div class="chip"><span class="k">Mods</span><span class="v" id="c-mods">—</span></div>
+  <div class="chip"><span class="k">Last scan</span><span class="v" id="c-scan">never</span></div>
+  <div class="spacer"></div>
+  <button class="scan" id="btn-scan" onclick="scan()">Scan now</button>
+</header>
+
+<div class="frame">
+  <nav class="rail" aria-label="Sections">
+    <button class="on" data-view="dx" onclick="go('dx')">Diagnosis</button>
+    <button data-view="sessions" onclick="go('sessions')">Sessions <span class="n" id="n-sessions">0</span></button>
+    <button data-view="health" onclick="go('health')">Health <span class="n" id="n-health">0</span></button>
+    <button data-view="mods" onclick="go('mods')">Mods <span class="n" id="n-mods">0</span></button>
+    <button data-view="req" onclick="go('req')">Requirements <span class="n" id="n-req"></span></button>
+    <button data-view="settings" onclick="go('settings')">Settings</button>
+    <button data-view="report" onclick="go('report')">Report</button>
+    <div class="foot" id="foot">Reads logs only. Never changes the game or your mods.</div>
+  </nav>
+
+  <main class="main">
+    <!-- DIAGNOSIS -->
+    <section class="view on" id="v-dx">
+      <p class="eyebrow">Diagnosis · latest crash</p>
+      <div id="dx-empty" class="empty" style="display:none">No crash found in the logs yet. Play, and if the game crashes, come back and press <b>Scan now</b>.</div>
+      <div class="dx fade" id="dx-body">
+        <div>
+          <div class="card verdict" id="dx-card">
+            <div class="when" id="dx-when"></div>
+            <p class="sentence" id="dx-sentence"></p>
+            <div class="conf"><span>Confidence</span><span class="dots" id="dx-conf"></span><span id="dx-conf-txt"></span></div>
+            <div class="evidence">
+              <p class="eyebrow" style="margin-top:6px">Evidence · seconds before the crash</p>
+              <div id="dx-evidence"></div>
+            </div>
+          </div>
+          <div class="trace-wrap">
+            <div class="trace-head">
+              <p class="eyebrow" style="margin:0">Session trace · how each play session ended</p>
+              <div class="legend"><span><i class="i-clean"></i>closed normally</span><span><i class="i-gpu"></i>GPU fault</span><span><i class="i-script"></i>mod / script</span><span><i class="i-engine"></i>engine error</span><span><i class="i-unknown"></i>unknown</span></div>
+            </div>
+            <div class="trace" id="trace"><div class="tip" id="tip"></div></div>
+            <div class="trace-foot"><span id="trace-from"></span><span id="trace-to"></span></div>
+          </div>
+        </div>
+        <aside class="card">
+          <p class="eyebrow">What to do</p>
+          <div id="dx-suspects"></div>
+        </aside>
+      </div>
+    </section>
+
+    <!-- SESSIONS -->
+    <section class="view" id="v-sessions">
+      <p class="eyebrow">Sessions</p>
+      <h1>Every launch, and how it ended</h1>
+      <div class="sesslist" id="sess-list"></div>
+    </section>
+
+    <!-- HEALTH -->
+    <section class="view" id="v-health">
+      <p class="eyebrow">Health · standing problems found before you crash</p>
+      <h1 id="health-h1">Checks</h1>
+      <div class="hlist" id="health-list"></div>
+    </section>
+
+    <!-- MODS -->
+    <section class="view" id="v-mods">
+      <p class="eyebrow">Mods</p>
+      <h1 id="mods-h1">Installed mods</h1>
+      <div class="row" style="margin-bottom:12px"><input id="mods-q" placeholder="Filter mods…" oninput="renderMods()" style="padding:8px 10px;border:1px solid var(--line);border-radius:5px;font:inherit;min-width:260px"><span class="muted" id="mods-count"></span></div>
+      <div class="card" style="padding:0;overflow:auto;max-height:70vh"><table id="mods-table"><thead><tr><th>Mod</th><th>Version</th><th>Type</th><th>Status</th><th>Flags</th></tr></thead><tbody></tbody></table></div>
+    </section>
+
+    <!-- REQUIREMENTS -->
+    <section class="view" id="v-req">
+      <p class="eyebrow">Requirements · what mods need in order to run</p>
+      <h1 id="req-h1">Setup check</h1>
+      <p class="muted" style="margin-top:-6px">Crash Doctor detects each piece, shows what your installed mods actually depend on, and takes you to the right download. Mod frameworks come from Nexus (its rules only allow automatic downloads for Premium accounts, so those buttons open the page); Microsoft runtimes install directly.</p>
+      <div class="row" style="margin:10px 0 14px"><button class="btn primary" id="req-all" onclick="act('req:install-missing')">Install everything that can be installed directly</button><button class="btn" onclick="act('req:open-missing')">Open every missing Nexus page</button><span class="muted" id="req-msg"></span></div>
+      <div class="hlist" id="req-list"></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="v-settings">
+      <p class="eyebrow">Settings · what the game was running with</p>
+      <h1>Graphics settings</h1>
+      <div class="card"><div class="kv" id="settings-kv"></div></div>
+      <div id="settings-notes" style="margin-top:14px"></div>
+    </section>
+
+    <!-- REPORT -->
+    <section class="view" id="v-report">
+      <p class="eyebrow">Report</p>
+      <h1>Share what Crash Doctor found</h1>
+      <div class="card">
+        <p>Paste this into a help thread or send it to the mod author. It contains no personal data beyond your game path and hardware.</p>
+        <div class="row"><button class="btn primary" onclick="copyReport()">Copy summary</button><button class="btn" onclick="exportReport()">Save full report as HTML</button><span class="muted" id="report-msg"></span></div>
+        <pre class="mono" id="report-pre" style="white-space:pre-wrap;background:#F7F9FB;border:1px solid var(--line);border-radius:6px;padding:14px;margin-top:14px;max-height:50vh;overflow:auto"></pre>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+/* ---------- bridge: the C# host injects window.crashdoctor; in the browser we use sample data ---------- */
+var REPORT = null;
+function hasHost(){ return !!(window.chrome && window.chrome.webview); }
+function scan(){
+  var b=document.getElementById('btn-scan'); b.disabled=true; b.textContent='Scanning…';
+  if(hasHost()){ window.chrome.webview.postMessage({cmd:'scan'}); }
+  else { setTimeout(function(){ load(SAMPLE); }, 700); }
+}
+if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='noscan'){ done(); } }); }
+function toast(text,isErr){ var t=document.getElementById('toast'); t.textContent=text; t.className='toast on'+(isErr?' err':''); clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; }, isErr?9000:3500); }
+function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent='Scan now'; }
+
+/* ---------- rendering ---------- */
+var KIND={clean:['mint','closed normally'],gpu:['sig','GPU fault'],script:['amb','mod / script crash'],engine:['engine','engine error'],unknown:['grey','crashed, cause unknown'],running:['trace','still running']};
+function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function fmtDate(iso){ var d=new Date(iso); return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fmtDur(m,known){ if(known===false) return 'length unknown'; if(m<1) return '<1 min'; if(m<60) return Math.round(m)+' min'; var h=Math.floor(m/60); return h+' h '+Math.round(m-h*60)+' min'; }
+
+function load(r){
+  REPORT=r; done();
+  document.getElementById('c-game').textContent=r.game.name+' '+r.game.version+' · '+r.game.store;
+  document.getElementById('c-gpu').textContent=r.system.gpu+' · '+r.system.vramGB+' GB';
+  document.getElementById('c-driver').textContent=r.system.driver;
+  document.getElementById('c-mods').textContent=r.mods.enabled+' enabled · '+r.mods.manager;
+  document.getElementById('c-scan').textContent=fmtDate(r.generatedAt);
+  var crashes=r.sessions.filter(function(s){return s.endKind!=='clean'&&s.endKind!=='running';});
+  document.getElementById('n-sessions').textContent=r.sessions.length;
+  var hi=r.health.filter(function(h){return h.severity==='high';}).length, med=r.health.filter(function(h){return h.severity==='medium';}).length;
+  var nh=document.getElementById('n-health'); nh.textContent=r.health.length; nh.className='n '+(hi?'sig':med?'amb':'');
+  document.getElementById('n-mods').textContent=r.modsList.length;
+  document.getElementById('pulse').style.background = hi ? 'var(--signal)' : med ? 'var(--amber)' : 'var(--mint)';
+  renderDx(r); renderTrace(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
+}
+
+function renderDx(r){
+  var s=r.latest; var empty=document.getElementById('dx-empty'), body=document.getElementById('dx-body');
+  if(!s){ empty.style.display=''; body.style.display='none'; return; }
+  empty.style.display='none'; body.style.display='';
+  var k=KIND[s.endKind]||KIND.unknown;
+  var card=document.getElementById('dx-card'); card.className='card verdict '+(k[0]==='engine'?'sig':k[0]);
+  document.getElementById('dx-when').innerHTML='<span>'+esc(fmtDate(s.start))+'</span><span>'+(s.durationKnown===false?'length unknown':'ran '+esc(fmtDur(s.minutes)))+'</span>'+(s.partial?'<span class="mark grey">crash report only</span>':'')+(s.district?'<span>'+esc(s.district)+'</span>':'')+(s.quest?'<span>'+esc(s.quest)+'</span>':'')+'<span class="mark '+(k[0]==='engine'?'sig':k[0])+'">'+esc(k[1])+'</span>';
+  document.getElementById('dx-sentence').textContent=s.verdict;
+  var dots=''; for(var i=0;i<3;i++) dots+='<i class="'+(i<s.confidence?'on':'')+'"></i>';
+  document.getElementById('dx-conf').innerHTML=dots;
+  document.getElementById('dx-conf-txt').textContent=['low','fair','good','high'][s.confidence]||'';
+  var ev=document.getElementById('dx-evidence'); ev.innerHTML='';
+  if(!s.evidence.length){ ev.innerHTML='<div class="muted" style="padding:8px 0">Nothing was logged in the two minutes before the crash. That usually means a hard fault the engine could not describe.</div>'; }
+  s.evidence.forEach(function(e){ var d=document.createElement('div'); d.className='ev'; d.innerHTML='<div class="t '+(e.hit?'hit':'')+'">'+(e.tMinus===0?'T-0':'T-'+e.tMinus+'s')+'</div><div><div class="src">'+esc(e.source)+'</div><div class="txt">'+esc(e.text)+'</div></div>'; ev.appendChild(d); });
+  var su=document.getElementById('dx-suspects'); su.innerHTML='';
+  if(!s.suspects.length){ su.innerHTML='<div class="muted">No single mod stands out. See Health for standing problems.</div>'; }
+  s.suspects.forEach(function(x){ var d=document.createElement('div'); d.className='suspect'; d.innerHTML='<div class="name"><span>'+esc(x.mod)+'</span><span class="mark '+(x.level==='high'?'sig':x.level==='low'?'grey':'amb')+'">'+esc(x.level)+'</span></div><div class="why">'+esc(x.why)+'</div><div class="acts">'+x.actions.map(function(a){return '<button class="btn" onclick="act('+JSON.stringify(a.id)+')">'+esc(a.label)+'</button>';}).join('')+'</div>'; su.appendChild(d); });
+}
+
+function renderTrace(r){
+  var host=document.getElementById('trace'); var tip=document.getElementById('tip');
+  host.querySelectorAll('svg').forEach(function(x){x.remove();});
+  var sessions=r.sessions.slice().sort(function(a,b){return new Date(a.start)-new Date(b.start);});
+  if(!sessions.length) return;
+  // group by day; each day is one row-less strip along x = time within the whole span, but crashes cluster, so use per-session equal slots with width by duration (log scale)
+  var W=1000,H=150,pad=8,baseY=H-26;
+  var svgNS='http://www.w3.org/2000/svg'; var svg=document.createElementNS(svgNS,'svg'); svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.setAttribute('preserveAspectRatio','none');
+  var base=document.createElementNS(svgNS,'line'); base.setAttribute('x1',0);base.setAttribute('x2',W);base.setAttribute('y1',baseY);base.setAttribute('y2',baseY);base.setAttribute('class','base'); svg.appendChild(base);
+  // width: log scale of minutes so 3-minute and 4-hour sessions both read
+  var widths=sessions.map(function(s){return s.durationKnown===false?12:14+Math.log10(1+Math.max(s.minutes,0.5))*38;});
+  var total=widths.reduce(function(a,b){return a+b;},0)+ (sessions.length-1)*6;
+  var scale=Math.min(1,(W-pad*2)/total); var x=pad+ (W-pad*2-total*scale)/2;
+  var colors={clean:'#1F9D6A',gpu:'#D93A3A',script:'#E09A1B',engine:'#A34D9E',unknown:'#9AA3AF',running:'#2F6FED'};
+  var g=document.createElementNS(svgNS,'g'); g.setAttribute('class','day'); svg.appendChild(g);
+  var lastDay=''; var lastLabelX;
+  sessions.forEach(function(s,i){
+    var w=widths[i]*scale; var h=s.durationKnown===false?14:18+Math.min(s.minutes,240)/240*70; var y=baseY-h;
+    var rect=document.createElementNS(svgNS,'rect'); rect.setAttribute('x',x);rect.setAttribute('y',y);rect.setAttribute('width',w);rect.setAttribute('height',h);rect.setAttribute('rx',2);rect.setAttribute('fill','#10141A');rect.setAttribute('fill-opacity',s.endKind==='clean'?'.22':'.55');rect.setAttribute('class','bar');
+    var cap=document.createElementNS(svgNS,'rect'); cap.setAttribute('x',x+w-4);cap.setAttribute('y',y-3);cap.setAttribute('width',4);cap.setAttribute('height',h+3);cap.setAttribute('fill',colors[s.endKind]||colors.unknown);cap.setAttribute('class','cap');
+    var day=new Date(s.start).toLocaleDateString(undefined,{month:'short',day:'numeric'});
+    if(day!==lastDay && (lastLabelX===undefined || x-lastLabelX>44)){ lastLabelX=x; var t=document.createElementNS(svgNS,'text'); t.setAttribute('x',x);t.setAttribute('y',H-8);t.setAttribute('font-family','Cascadia Mono, Consolas, monospace');t.setAttribute('font-size','11');t.setAttribute('fill','#5B6472');t.textContent=day; g.appendChild(t); lastDay=day; }
+    (function(s,x,w,y){
+      rect.addEventListener('mousemove',function(ev){ var b=host.getBoundingClientRect(); tip.style.left=(ev.clientX-b.left)+'px'; tip.style.top=(ev.clientY-b.top-8)+'px'; tip.innerHTML='<div class="t">'+esc(fmtDate(s.start))+' · '+esc(fmtDur(s.minutes,s.durationKnown))+'</div>'+esc(s.verdict); tip.className='tip on'; });
+      rect.addEventListener('mouseleave',function(){ tip.className='tip'; });
+      rect.addEventListener('click',function(){ showSession(s.id); });
+    })(s,x,w,y);
+    g.appendChild(rect); g.appendChild(cap); x+=w+6*scale;
+  });
+  host.appendChild(svg);
+  document.getElementById('trace-from').textContent=fmtDate(sessions[0].start);
+  document.getElementById('trace-to').textContent=fmtDate(sessions[sessions.length-1].start);
+}
+
+function renderSessions(r){
+  var el=document.getElementById('sess-list'); el.innerHTML='';
+  r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).forEach(function(s){
+    var k=KIND[s.endKind]||KIND.unknown; var d=document.createElement('div'); d.className='sess'; d.tabIndex=0; d.setAttribute('role','button');
+    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+'</div>';
+    d.onclick=function(){ showSession(s.id); }; d.onkeydown=function(e){ if(e.key==='Enter') showSession(s.id); };
+    el.appendChild(d);
+  });
+}
+function showSession(id){ var s=REPORT.sessions.filter(function(x){return x.id===id;})[0]; if(!s) return; var save=REPORT.latest; REPORT.latest=s; renderDx(REPORT); REPORT.latest=save; go('dx'); document.querySelector('.main').scrollTop=0; }
+
+function renderHealth(r){
+  var el=document.getElementById('health-list'); el.innerHTML='';
+  var order={high:0,medium:1,low:2,info:3};
+  var list=r.health.slice().sort(function(a,b){return order[a.severity]-order[b.severity];});
+  document.getElementById('health-h1').textContent=list.length? (list.filter(function(h){return h.severity!=='info';}).length+' things worth knowing') : 'Nothing standing out';
+  if(!list.length){ el.innerHTML='<div class="empty" style="border:0">No standing problems found in the logs.</div>'; return; }
+  list.forEach(function(h){ var d=document.createElement('div'); d.className='hl'; var m={high:'sig',medium:'amb',low:'grey',info:'trace'}[h.severity];
+    d.innerHTML='<div><span class="mark '+m+'">'+esc(h.severity)+'</span></div><div><div class="title">'+esc(h.title)+'</div><div class="detail">'+esc(h.detail)+'</div>'+(h.mod?'<div class="mono muted" style="margin-top:4px">'+esc(h.mod)+'</div>':'')+'</div><div class="act">'+(h.action?'<button class="btn" onclick="act('+JSON.stringify(h.action.id)+')">'+esc(h.action.label)+'</button>':'')+'</div>'; el.appendChild(d); });
+}
+
+function renderMods(){
+  if(!REPORT) return; var q=(document.getElementById('mods-q').value||'').toLowerCase();
+  var tb=document.querySelector('#mods-table tbody'); tb.innerHTML=''; var n=0;
+  REPORT.modsList.forEach(function(m){ if(q && (m.name+' '+m.type+' '+(m.flags||[]).join(' ')).toLowerCase().indexOf(q)<0) return; n++;
+    var tr=document.createElement('tr'); tr.innerHTML='<td>'+esc(m.name)+'</td><td class="mono">'+esc(m.version||'')+'</td><td class="muted">'+esc(m.type||'')+'</td><td><span class="mark '+(m.status==='enabled'?'mint':m.status==='disabled'?'grey':'sig')+'">'+esc(m.status)+'</span></td><td>'+(m.flags||[]).map(function(f){return '<span class="mark '+(f.level==='high'?'sig':f.level==='medium'?'amb':'grey')+'" title="'+esc(f.detail||'')+'">'+esc(f.label)+'</span> ';}).join('')+'</td>'; tb.appendChild(tr); });
+  document.getElementById('mods-count').textContent=n+' of '+REPORT.modsList.length;
+  document.getElementById('mods-h1').textContent=REPORT.modsList.length+' mods';
+}
+
+function renderReq(r){
+  var el=document.getElementById('req-list'); el.innerHTML=''; var list=r.requirements||[]; var missing=list.filter(function(x){return x.status==='missing';}).length, outdated=list.filter(function(x){return x.status==='outdated';}).length;
+  var n=document.getElementById('n-req'); n.textContent=missing+outdated||''; n.className='n '+(missing?'sig':outdated?'amb':'');
+  document.getElementById('req-h1').textContent= missing? missing+' missing'+(outdated?', '+outdated+' outdated':'') : outdated? outdated+' outdated' : 'Everything your mods need is installed';
+  document.getElementById('req-all').style.display = list.some(function(x){return x.status!=='ok' && x.directInstall;}) ? '' : 'none';
+  list.forEach(function(x){ var d=document.createElement('div'); d.className='hl'; var m={ok:'mint',missing:'sig',outdated:'amb',optional:'grey',unknown:'grey'}[x.status]||'grey'; var label={ok:'installed',missing:'missing',outdated:'outdated',optional:'not needed',unknown:'unknown'}[x.status]||x.status;
+    var btn=''; if(x.status!=='ok'){ btn = x.directInstall ? '<button class="btn primary" onclick="act('+JSON.stringify('req:install:'+x.id)+')">Install</button>' : '<button class="btn" onclick="act('+JSON.stringify('req:open:'+x.id)+')">Open download page</button>'; }
+    d.innerHTML='<div><span class="mark '+m+'">'+esc(label)+'</span></div><div><div class="title">'+esc(x.name)+(x.version?' <span class="mono muted">'+esc(x.version)+'</span>':'')+'</div><div class="detail">'+esc(x.detail)+'</div>'+(x.neededBy&&x.neededBy.length?'<div class="muted" style="font-size:12px;margin-top:4px">Needed by '+esc(x.neededBy.length)+' installed mod'+(x.neededBy.length===1?'':'s')+(x.neededBy.length<=4?': '+esc(x.neededBy.join(', ')):'')+'</div>':'')+'</div><div class="act">'+btn+'</div>'; el.appendChild(d); });
+}
+function renderSettings(r){
+  var kv=document.getElementById('settings-kv'); kv.innerHTML='';
+  Object.keys(r.settings).forEach(function(k){ kv.innerHTML+='<div class="k">'+esc(k)+'</div><div class="v">'+esc(r.settings[k])+'</div>'; });
+  var notes=document.getElementById('settings-notes'); notes.innerHTML='';
+  (r.settingsNotes||[]).forEach(function(n){ notes.innerHTML+='<div class="card" style="margin-bottom:10px;border-left:4px solid var(--'+(n.level==='high'?'signal':n.level==='medium'?'amber':'mint')+')"><b>'+esc(n.title)+'</b><div class="muted" style="margin-top:4px">'+esc(n.detail)+'</div></div>'; });
+}
+
+function renderReport(r){
+  var s=r.latest; var lines=[];
+  lines.push('Crash Doctor report — '+fmtDate(r.generatedAt));
+  lines.push(r.game.name+' '+r.game.version+' ('+r.game.store+') · '+r.system.gpu+' '+r.system.vramGB+' GB · driver '+r.system.driver+' · '+r.system.os);
+  lines.push(r.mods.enabled+' mods enabled via '+r.mods.manager+' · frameworks: '+(r.mods.frameworks||[]).join(', '));
+  lines.push('');
+  if(s){ lines.push('LATEST CRASH  '+fmtDate(s.start)+' · '+fmtDur(s.minutes,s.durationKnown)+(s.district?' · '+s.district:'')); lines.push('  '+s.verdict+' (confidence '+['low','fair','good','high'][s.confidence]+')');
+    s.evidence.forEach(function(e){ lines.push('  T-'+e.tMinus+'s  ['+e.source+'] '+e.text); });
+    s.suspects.forEach(function(x){ lines.push('  suspect: '+x.mod+' — '+x.why); }); lines.push(''); }
+  lines.push('SESSIONS (newest first)');
+  r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).slice(0,12).forEach(function(x){ lines.push('  '+fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown).padEnd(14)+' '+x.endKind.padEnd(8)+' '+x.verdict); });
+  lines.push(''); lines.push('HEALTH');
+  r.health.forEach(function(h){ lines.push('  ['+h.severity+'] '+h.title+(h.mod?' ('+h.mod+')':'')); });
+  lines.push(''); lines.push('SETTINGS'); Object.keys(r.settings).forEach(function(k){ lines.push('  '+k+': '+r.settings[k]); });
+  document.getElementById('report-pre').textContent=lines.join('\n');
+}
+function copyReport(){ var t=document.getElementById('report-pre').textContent; var m=document.getElementById('report-msg'); if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ m.textContent='Copied.'; setTimeout(function(){m.textContent='';},2000); }); } else { m.textContent='Select the text and copy it.'; } }
+function exportReport(){ if(hasHost()) window.chrome.webview.postMessage({cmd:'export'}); else alert('Available in the app.'); }
+function act(id){ if(hasHost()) window.chrome.webview.postMessage({cmd:'action',id:id}); else alert('Action: '+id+' (available in the app)'); }
+
+function go(v){ document.querySelectorAll('.view').forEach(function(x){x.classList.toggle('on',x.id==='v-'+v);}); document.querySelectorAll('.rail button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')===v);}); }
+
+/* ---------- sample data (from a real machine, Sep 2026) for browser preview ---------- */
+var SAMPLE={
+ generatedAt:'2026-09-06T13:30:00',
+ game:{name:'Cyberpunk 2077',version:'2.31',store:'Steam',path:'C:\\Program Files (x86)\\Steam\\steamapps\\common\\Cyberpunk 2077'},
+ system:{gpu:'RTX 2070 (laptop)',vramGB:8,driver:'616.56',ramGB:64,os:'Windows 11'},
+ mods:{installed:160,enabled:160,manager:'Vortex',frameworks:['RED4ext 1.30.0','redscript 0.5.31','CET 1.37.1','ArchiveXL 1.27.1','TweakXL 1.11.4','Codeware 1.20.3']},
+ latest:null,
+ sessions:[
+  {id:'s1',start:'2026-09-01T21:21:31',minutes:3,endKind:'gpu',district:'Little China',verdict:'GPU fault while frame generation and Ultra ray tracing were both on.',confidence:3,evidence:[{tMinus:8,source:'Windows · NVIDIA driver',text:'nvlddmkm event 153: Error occurred on GPUID: 100',hit:true},{tMinus:0,source:'RED4ext',text:'Gpu Crash for unknown reasons! (gpuApiDX12Error.cpp:42)',hit:true}],suspects:[{mod:'Frame generation + ray traced lighting Ultra',level:'high',why:'Every GPU fault this week had both on; 8 GB of VRAM cannot hold both.',actions:[{id:'settings',label:'Show the settings'}]}]},
+  {id:'s2',start:'2026-09-02T21:26:02',minutes:232,endKind:'clean',verdict:'Closed normally after 3 h 52 min.',confidence:3,evidence:[],suspects:[]},
+  {id:'s3',start:'2026-09-03T01:18:18',minutes:7,endKind:'gpu',district:'Northside',verdict:'GPU fault while frame generation was on.',confidence:3,evidence:[{tMinus:5,source:'Windows · NVIDIA driver',text:'nvlddmkm event 153',hit:true},{tMinus:0,source:'RED4ext',text:'Gpu Crash for unknown reasons!',hit:true}],suspects:[]},
+  {id:'s4',start:'2026-09-03T03:16:22',minutes:4,endKind:'script',district:'Japantown',quest:'mq029_tourist',verdict:'Crashed in Japantown while an NPC was loading; no engine or GPU error was recorded.',confidence:1,evidence:[{tMinus:0,source:'ArchiveXL',text:'ResourcePatch: hair appearance replaced on hh_028_wa__corpo_bun (NPC loading)'}],suspects:[{mod:'WIP - Cloud - First Floor Booths',level:'medium',why:'Unfinished 0.1 mod that rewrites the Clouds building; three crashes in this area.',actions:[{id:'nexus:23304',label:'Open on Nexus'}]}]},
+  {id:'s5',start:'2026-09-04T21:21:00',minutes:59,endKind:'script',district:'Watson',verdict:'Crashed while a world sector patch was being applied.',confidence:1,evidence:[{tMinus:2,source:'ArchiveXL',text:'WorldStreaming: All patches have been applied to exterior_-13_13_0_0.streamingsector'}],suspects:[{mod:'Immersive Night City Fixes',level:'medium',why:'Patches world sectors in every district; conflicts with Jig Jig Unleashed.',actions:[{id:'nexus:20588',label:'Open on Nexus'}]}]},
+  {id:'s6',start:'2026-09-05T03:33:06',minutes:8,endKind:'clean',verdict:'Closed normally after 8 min.',confidence:3,evidence:[],suspects:[]},
+  {id:'s7',start:'2026-09-06T01:09:59',minutes:19,endKind:'script',district:'Japantown',quest:'sq025_delamain',verdict:'Script error in Sexual encounters Clouds nude patch 5 s before the crash: it called into an NPC that had already been unloaded. Not a GPU fault.',confidence:2,evidence:[{tMinus:5,source:'CET · f80h_s_enc_nud_patch',text:"init.lua:55: Function 'GetEntityID' context must be 'entEntity'.",hit:true},{tMinus:3,source:'CET · DualSense Support',text:"attempt to call global 'CloseClientProcess' (a nil value)  (repeats every 12 s all session)"},{tMinus:0,source:'ArchiveXL',text:'ResourcePatch: hair appearance replaced (NPC loading)'}],suspects:[{mod:'Sexual encounters Clouds nude patch',level:'high',why:'Its timers use NPC handles after the NPC is gone. Active while Automatic Love is unfinished.',actions:[{id:'patch:001',label:'Apply the safe-handle fix'},{id:'nexus:26441',label:'Open on Nexus'}]},{mod:'Enhanced DualSense Support',level:'low',why:'Native plugin does not load on 2.31; errors every 12 s. Noisy, not the crash.',actions:[{id:'nexus:4156',label:'Check for an update'}]}]}
+ ],
+ health:[
+  {severity:'high',title:'Frame generation with Ultra ray tracing on an 8 GB GPU',detail:'Every GPU fault this week had both enabled. Turn one of them down.',action:{id:'settings',label:'See settings'}},
+  {severity:'high',title:'Unfinished mod rewrites a building where crashes cluster',detail:'Version 0.1.0 patches the Clouds prefab; three non-GPU crashes happened in or next to Clouds.',mod:'WIP - Cloud - First Floor Booths',action:{id:'nexus:23304',label:'Open on Nexus'}},
+  {severity:'medium',title:'Native plugin refuses to load on this patch',detail:'Built for runtime 3.0.80.33925; game is 3.0.80.51928. Its script half errors every 12 s.',mod:'Enhanced DualSense Support',action:{id:'nexus:4156',label:'Check for update'}},
+  {severity:'medium',title:'World sector patches fail every launch',detail:'JigJigCleaner.xl expects 3027 nodes, sector has 3029. Another mod changed that sector first.',mod:'Jig Jig Unleashed'},
+  {severity:'medium',title:'Patch points at a resource that does not exist',detail:'pinkydude\\pleasures_of_nightcity\\world\\q105_dollhouse.community',mod:'Pleasures of Night City VOL.1'},
+  {severity:'low',title:'Same script shipped by three mods',detail:'VehicleManufacturerFix.reds compiles twice; the compiler warns every launch. Harmless.',mod:'VMF, 2017 Mercedes AMG GT R, Main Files'},
+  {severity:'info',title:'Frameworks match the game patch',detail:'RED4ext, redscript, CET, ArchiveXL, TweakXL and Codeware all loaded without warnings.'}
+ ],
+ modsList:[
+  {name:'ArchiveXL',version:'1.27.1',type:'framework',status:'enabled',flags:[]},
+  {name:'Enhanced DualSense Support',version:'4.62',type:'CET + native',status:'enabled',flags:[{label:'plugin not loading',level:'medium',detail:'built for patch 2.3'}]},
+  {name:'Sexual encounters Clouds nude patch',version:'1.3',type:'CET + archive',status:'enabled',flags:[{label:'script errors',level:'high'}]},
+  {name:'WIP - Cloud - First Floor Booths',version:'0.1.0',type:'ArchiveXL world patch',status:'enabled',flags:[{label:'unfinished',level:'high'},{label:'world patch',level:'medium'}]},
+  {name:'Jig Jig Unleashed',version:'1.2',type:'ArchiveXL world patch',status:'enabled',flags:[{label:'patch failing',level:'medium'}]},
+  {name:'Immersive Night City Fixes',version:'0.26 HF',type:'ArchiveXL world patch',status:'enabled',flags:[{label:'world patch',level:'medium'}]},
+  {name:'Appearance Menu Mod',version:'2.12.5',type:'CET',status:'enabled',flags:[]},
+  {name:'Enemies of Night City',version:'PL Beta 1.8.8',type:'redscript',status:'enabled',flags:[{label:'older than patch 2.2',level:'medium'}]}
+ ],
+ requirements:[
+  {id:'red4ext',name:'RED4ext',version:'1.30.0',status:'ok',detail:'Loader for native plugins. Loaded cleanly this session.',neededBy:['ArchiveXL','TweakXL','Codeware','Audioware','mod_settings','input_loader','NewGamePlus','PhotoMode-EX'],directInstall:false},
+  {id:'redscript',name:'redscript',version:'0.5.31',status:'ok',detail:'Compiles .reds script mods. 58 script folders installed.',neededBy:['auto_drive_enhanced','Fresh Start','Virtual Atelier'],directInstall:false},
+  {id:'cet',name:'Cyber Engine Tweaks',version:'1.37.1',status:'ok',detail:'Runs Lua mods. 49 CET mods installed.',neededBy:['Appearance Menu Mod','Hotscenes','Simple Menu'],directInstall:false},
+  {id:'archivexl',name:'ArchiveXL',version:'1.27.1',status:'ok',detail:'Loads .xl resource and world patches. 61 .xl files installed.',neededBy:['Immersive Night City Fixes','Jig Jig Unleashed'],directInstall:false},
+  {id:'tweakxl',name:'TweakXL',version:'1.11.4',status:'ok',detail:'Applies .yaml tweak records. 34 tweak files installed.',neededBy:['Virtual Car Dealer','ColorPack'],directInstall:false},
+  {id:'codeware',name:'Codeware',version:'1.20.3',status:'ok',detail:'Script library many mods import.',neededBy:['PhotoMode-EX','Nova Optics'],directInstall:false},
+  {id:'equipmentex',name:'Equipment-EX',version:'1.2.9',status:'ok',detail:'Outfit system used by clothing mods.',neededBy:['Wardrobe Items Adder'],directInstall:false},
+  {id:'webview2',name:'Microsoft WebView2 runtime',version:'152.0',status:'ok',detail:'Used by Crash Doctor itself to draw this window.',neededBy:[],directInstall:true},
+  {id:'vcredist',name:'Visual C++ 2015-2022 runtime',status:'ok',detail:'Needed by RED4ext and Cyber Engine Tweaks.',neededBy:['RED4ext','Cyber Engine Tweaks'],directInstall:true},
+  {id:'dsx',name:'DSX (DualSense on PC)',status:'optional',detail:'Only needed if you use Enhanced DualSense Support. Steam app 1812620.',neededBy:['Enhanced DualSense Support'],directInstall:false}
+ ],
+ settings:{'Frame generation':'Off','Ray traced lighting':'Medium','Ray traced reflections':'On','DLSS':'Performance','Textures':'High','Resolution':'1920x1080','Window mode':'Borderless','Reflex':'Enabled'},
+ settingsNotes:[{level:'low',title:'This combination fits in 8 GB',detail:'Frame gen off with ray tracing at Medium ran for 3 h 52 min without a GPU fault.'}]
+};
+SAMPLE.latest=SAMPLE.sessions[6];
+document.addEventListener('DOMContentLoaded', function(){
+  if(window.EXPORTED){ load(window.EXPORTED); document.getElementById('btn-scan').style.display='none'; document.getElementById('foot').textContent='Saved report. Open Crash Doctor to scan again.'; }
+  else if(!hasHost()){ load(SAMPLE); }
+  else { window.chrome.webview.postMessage({cmd:'ready'}); }
+});
+</script>
+</body>
+</html>
