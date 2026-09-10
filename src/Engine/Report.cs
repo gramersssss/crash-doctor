@@ -13,11 +13,28 @@ public sealed class Report
     public Session? Latest { get; set; }
     public List<Session> Sessions { get; set; } = new();
     public List<HealthItem> Health { get; set; } = new();
+    public List<CrashGroup> CrashGroups { get; set; } = new();   // the distinct bugs behind all the crashes
     public List<ModRow> ModsList { get; set; } = new();
     public List<Requirement> Requirements { get; set; } = new();
     public Dictionary<string, string> Settings { get; set; } = new();
     public List<SettingsNote> SettingsNotes { get; set; } = new();
     public List<string> Warnings { get; set; } = new();   // things the scan could not read
+}
+
+// All the crashes that faulted at one identical instruction. This is what turns a pile of crashes into a small
+// number of separate problems, each of which can be chased, fixed or ruled out on its own.
+public sealed class CrashGroup
+{
+    public string Signature { get; set; } = "";
+    public string Exception { get; set; } = "";
+    public string Plain { get; set; } = "";
+    public int Count { get; set; }
+    public DateTime FirstSeen { get; set; }
+    public DateTime LastSeen { get; set; }
+    public bool Current { get; set; }             // seen since the most recent clean session; still happening
+    public string? Injector { get; set; }
+    public int InjectorSessions { get; set; }     // how many of Count had it, so the correlation is visible
+    public List<string> SessionIds { get; set; } = new();
 }
 
 public sealed class GameInfo
@@ -72,6 +89,10 @@ public sealed class Session
     public int? VramUsedMB { get; set; }
     public int? VramTotalMB { get; set; }
     public string? Exception { get; set; }        // e.g. "EXCEPTION_ACCESS_VIOLATION (0xC0000005)"
+    // From the minidump. Same signature means the same bug, however different the logs around it look.
+    public string? Signature { get; set; }        // e.g. "Cyberpunk2077.exe+0x2A41E06"
+    public string? FaultingModule { get; set; }
+    public string? Injector { get; set; }         // a trainer / cheat tool found inside the game process
     public string? Position { get; set; }         // where the player was standing
     public string? Screenshot { get; set; }       // the frame the game was showing when it died
     public List<AreaMod> AreaMods { get; set; } = new();  // mods rewriting the ground the player was on
@@ -153,6 +174,8 @@ public sealed class ModFlag
     public string Label { get; set; } = "";
     public string Level { get; set; } = "low";
     public string? Detail { get; set; }
+    public string? SessionId { get; set; }   // the crash this came from, so the flag can be opened
+    public string? When { get; set; }        // human date of that crash
 }
 
 public sealed class Requirement

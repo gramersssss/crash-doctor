@@ -19,6 +19,7 @@ public sealed class CrashReport
     public string? ExceptionDetail { get; set; }  // e.g. "The thread attempted to read inaccessible data at 0x..."
     public string? Position { get; set; }         // last streaming observer position, "[-652, 484, 22]"
     public string? Screenshot { get; set; }       // the frame the game was showing when it died
+    public DumpInfo? Dump { get; set; }           // the minidump: which instruction actually faulted
 
     public double VramRatio => VramTotalMB > 0 ? (double)VramUsedMB / VramTotalMB : 0;
     public bool VramKnown => VramTotalMB > 0 && VramUsedMB > 0;
@@ -44,6 +45,7 @@ public static class CrashReports
             try { ReadStack(r); } catch { }
             try { ReadTelemetry(r); } catch { }
             try { var shot = Path.Combine(dir, "attch", "screenshot.png"); if (File.Exists(shot)) r.Screenshot = shot; } catch { }
+            try { var dmp = Path.Combine(dir, "Cyberpunk2077.dmp"); if (File.Exists(dmp)) r.Dump = MiniDump.Read(dmp); } catch { }
             list.Add(r);
         }
         return list.OrderBy(x => x.At).ToList();

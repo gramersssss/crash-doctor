@@ -40,7 +40,18 @@ public static class Scanner
     {
         foreach (var h in r.Health.Where(h => h.Mod != null && (h.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) || h.Mod.Contains(m.Name, StringComparison.OrdinalIgnoreCase)) && h.Severity != "info"))
             m.Flags.Add(new ModFlag { Label = h.Title.Length > 40 ? h.Title[..40] + "…" : h.Title, Level = h.Severity, Detail = h.Detail });
-        foreach (var s in r.Sessions) foreach (var su in s.Suspects) if (su.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) && !m.Flags.Any(f => f.Label == "suspect in a crash")) m.Flags.Add(new ModFlag { Label = "suspect in a crash", Level = su.Level, Detail = su.Why });
+        // Elimination outranks suspicion. If the clean sessions cleared this mod, that is the whole story: showing
+        // "suspect" and "ruled out" side by side would just reproduce the confusion the elimination layer exists to end.
+        var newestFirst = r.Sessions.OrderByDescending(x => x.Start).ToList();
+        var cleared = newestFirst.SelectMany(x => x.RuledOut.Select(ro => (session: x, ro)))
+                                 .FirstOrDefault(t => t.ro.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase));
+        if (cleared.ro != null)
+            m.Flags.Add(new ModFlag { Label = "ruled out", Level = "cleared", Detail = cleared.ro.Why, SessionId = cleared.session.Id, When = cleared.session.Start.ToString("d MMM HH:mm") });
+        else
+            foreach (var s in newestFirst)
+                foreach (var su in s.Suspects)
+                    if (su.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) && !m.Flags.Any(f => f.Label == "suspect in a crash"))
+                        m.Flags.Add(new ModFlag { Label = "suspect in a crash", Level = su.Level, Detail = su.Why, SessionId = s.Id, When = s.Start.ToString("d MMM HH:mm") });
         var fix = Fixes.FindFor(m.Name); if (fix != null) { var st = fix.State(d.Paths); if (st == "applied") m.Flags.Add(new ModFlag { Label = "fix applied", Level = "low", Detail = fix.Title }); else if (st == "applicable") m.Flags.Add(new ModFlag { Label = "known fix available", Level = "medium", Detail = fix.Title }); }
         return m;
     }

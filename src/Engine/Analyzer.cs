@@ -16,12 +16,50 @@ public static class Analyzer
         var elimination = Elimination.Build(d, sessions);
         foreach (var s in sessions) Judge(d, s, sessions, elimination);
         foreach (var s in sessions) SayWhenNothingSurvived(s, elimination);
+        r.CrashGroups = GroupBySignature(d, sessions);
+        foreach (var g in r.CrashGroups) NoteGroupOnSessions(g, sessions);
         var merged = History.Merge(sessions, History.Load());
         History.Save(merged);
         r.Sessions = merged;
         r.Latest = merged.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).OrderByDescending(s => s.Start).FirstOrDefault();
         r.Health = Health(d, merged, elimination);
         r.SettingsNotes = SettingsNotes(d, merged);
+    }
+
+    // Cluster crashes by the instruction that faulted. Deterministic, needs no interpretation, and it is the only
+    // thing here that can say with certainty that two crashes are - or are not - the same problem.
+    static List<CrashGroup> GroupBySignature(CollectedData d, List<Session> sessions)
+    {
+        var lastClean = sessions.Where(x => x.EndKind == EndKind.Clean).Select(x => x.Start).DefaultIfEmpty(DateTime.MinValue).Max();
+        var groups = new List<CrashGroup>();
+        foreach (var grp in sessions.Where(x => x.Signature != null).GroupBy(x => x.Signature!))
+        {
+            var list = grp.OrderBy(x => x.Start).ToList();
+            var withReport = list.Select(x => d.CrashReports.FirstOrDefault(c => x.CrashTime != null && Math.Abs((c.At - x.CrashTime.Value).TotalSeconds) <= 90)).FirstOrDefault(c => c?.Dump != null);
+            groups.Add(new CrashGroup
+            {
+                Signature = grp.Key,
+                Exception = withReport?.Dump?.ExceptionName ?? "",
+                Plain = withReport?.Dump?.Plain ?? "",
+                Count = list.Count,
+                FirstSeen = list[0].Start,
+                LastSeen = list[^1].Start,
+                Current = list[^1].Start > lastClean,
+                Injector = list.Select(x => x.Injector).FirstOrDefault(x => x != null),
+                InjectorSessions = list.Count(x => x.Injector != null),
+                SessionIds = list.Select(x => x.Id).ToList(),
+            });
+        }
+        return groups.OrderByDescending(g => g.Count).ThenByDescending(g => g.LastSeen).ToList();
+    }
+
+    // Tell each crash how many others share its exact fault. A repeat is a pattern; a one-off is probably not worth
+    // chasing, and saying which is which up front is most of the value.
+    static void NoteGroupOnSessions(CrashGroup g, List<Session> sessions)
+    {
+        if (g.Count < 2) return;
+        foreach (var s in sessions.Where(x => g.SessionIds.Contains(x.Id)))
+            s.Verdict += $" This exact fault ({g.Signature}) has happened {g.Count} times between {g.FirstSeen:d MMM} and {g.LastSeen:d MMM} - it is one repeating problem, not {g.Count} unrelated crashes.";
     }
 
     // A crash with no surviving suspect is a legitimate outcome, not a hole to paper over. When elimination has
@@ -96,6 +134,13 @@ public static class Analyzer
         {
             if (report.VramKnown) { s.VramUsedMB = report.VramUsedMB; s.VramTotalMB = report.VramTotalMB; }
             s.Exception = report.Exception; s.Position = report.Position; s.Screenshot = report.Screenshot;
+            if (report.Dump is { } dump)
+            {
+                s.Signature = dump.Signature;
+                s.FaultingModule = dump.FaultingModule;
+                s.Injector = MiniDump.InjectorIn(dump.Modules);
+                if (dump.Signature != null) s.Exception = dump.ExceptionName + " at " + dump.Signature;
+            }
         }
         // The card was full. The engine needs headroom for transient allocations, so failures start well before 100 %:
         // crashes have been observed from about 90 % up. The driver also reports more than the card holds once it has
@@ -467,6 +512,28 @@ public static class Analyzer
             h.Add(new HealthItem { Severity = sev, Title = $"{wc + partial} crash{(wc + partial == 1 ? "" : "es")} in the last 7 days", Detail = detail.Trim() });
         }
         var crashes = sessions.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).ToList();
+
+        // The distinct-problems count, read straight off the minidumps. This reframes everything below it.
+        var groups = GroupBySignature(d, sessions);
+        if (groups.Count > 0)
+        {
+            var repeat = groups.Where(g => g.Count >= 2).ToList();
+            var live = groups.Where(g => g.Current).ToList();
+            var total = groups.Sum(g => g.Count);
+            var detail = $"{total} crashes with a readable dump fall into {groups.Count} distinct fault{(groups.Count == 1 ? "" : "s")} - crashes at the same machine instruction are the same bug. "
+                + (repeat.Count > 0 ? $"{repeat.Count} of them repeat: " + Join(repeat.Take(3).Select(g => $"{g.Signature} ({g.Count}x, {g.FirstSeen:d MMM}-{g.LastSeen:d MMM})").ToList()) + ". " : "")
+                + (live.Count == 0 ? "None of them has happened since your last clean session, so nothing is currently recurring." : $"{live.Count} {(live.Count == 1 ? "is" : "are")} still happening since the last clean session.");
+            h.Add(new HealthItem { Severity = live.Count > 0 ? "medium" : "info", Title = groups.Count == 1 ? "All your crashes are one repeating fault" : $"Your crashes are {groups.Count} separate problems, not {total} random ones", Detail = detail });
+
+            // An injected trainer or cheat tool is worth stating, with the count, and without a conclusion attached.
+            var inj = groups.Where(g => g.InjectorSessions > 0).ToList();
+            if (inj.Count > 0)
+            {
+                var withInj = inj.Sum(g => g.InjectorSessions);
+                h.Add(new HealthItem { Severity = "low", Title = $"{inj[0].Injector} was running inside the game in {withInj} of these crashes",
+                    Detail = $"Tools like this patch game code at fixed addresses, so one built for a different game version writes into the wrong place. That makes it worth knowing about - but {withInj} of {total} is a correlation, not a cause, and it can only be settled by playing without it. Close it before launching if you want to test that." });
+            }
+        }
 
         // Video memory in use at each crash. The engine records this only in the crash report, never in a log, so this
         // is the one place it can be seen. Reading the run of numbers is more use than any single verdict.

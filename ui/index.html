@@ -97,6 +97,24 @@ tr:hover td{background:#F7F9FB}
 .cleared{border-top:1px solid var(--line);padding:11px 0}
 .cleared .name{font-family:var(--display);font-size:13.5px;color:var(--steel);text-decoration:line-through;text-decoration-color:var(--line)}
 .cleared .why{font-size:12.5px;color:var(--steel);margin-top:3px;line-height:1.45}
+/* mods: filters + sortable table */
+.filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.filters input{padding:8px 10px;border:1px solid var(--line);border-radius:5px;font:inherit;min-width:220px;flex:1 1 220px;max-width:420px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--steel);white-space:nowrap}
+.chip:hover{border-color:#B9C1CC}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
+th.sortable:hover{color:var(--ink)}
+th.sortable i{display:inline-block;width:9px;margin-left:5px;font-style:normal;color:var(--trace)}
+th.sortable.asc i::after{content:"\2191"}
+th.sortable.desc i::after{content:"\2193"}
+.mark.cleared{background:var(--grey-bg);color:var(--steel);text-decoration:line-through;text-decoration-color:var(--line)}
+button.mark{border:0;cursor:pointer;font-family:var(--display)}
+button.mark:hover{filter:brightness(.94)}
+/* why a mod is flagged, shown when you arrive from the mods table */
+.flagnote{border-left:3px solid var(--trace);background:var(--trace-bg);border-radius:0 5px 5px 0;padding:9px 12px;margin:0 0 12px;font-size:13px;line-height:1.5}
+.flagnote div{color:var(--steel);margin-top:3px}
 .evidence{margin-top:18px}
 .ev{display:grid;grid-template-columns:76px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .ev:first-of-type{border-top:0}
@@ -114,8 +132,8 @@ tr:hover td{background:#F7F9FB}
 /* ---------- session trace (signature) ---------- */
 .trace-wrap{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px 22px 14px;margin-top:18px;
   background-image:linear-gradient(to right, rgba(16,20,26,.045) 1px, transparent 1px);background-size:40px 100%}
-.trace-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
-.legend{display:flex;gap:14px;font-size:12px;color:var(--steel)}
+.trace-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.legend{display:flex;gap:14px;font-size:12px;color:var(--steel);flex-wrap:wrap}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
 .trace{position:relative;height:150px}
 .trace svg{width:100%;height:100%;display:block;overflow:visible}
@@ -126,7 +144,7 @@ tr:hover td{background:#F7F9FB}
 .tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;max-width:320px;transform:translate(-50%,-110%);opacity:0;transition:opacity .1s;z-index:5}
 .tip.on{opacity:1}
 .tip .t{font-family:var(--mono);color:#AEB6C2;font-size:11.5px}
-.trace-foot{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;color:var(--steel);margin-top:6px}
+.trace-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--steel);margin-top:6px}
 @keyframes drawin{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .trace g.day{transform-origin:left;animation:drawin .6s cubic-bezier(.2,.7,.2,1) both}
 @media (prefers-reduced-motion:reduce){.trace g.day{animation:none}.fade{animation:none}}
@@ -162,6 +180,7 @@ tr:hover td{background:#F7F9FB}
 .progress.on{display:block}
 .progress i{display:block;height:100%;width:30%;background:var(--trace);animation:slide 1.1s infinite linear}
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
+@media (max-width:760px){.trace-wrap{padding:14px 12px 10px;background-size:28px 100%}.trace{height:120px}}
 @media (max-width:980px){.dx{grid-template-columns:1fr}.frame{grid-template-columns:150px 1fr}.sess{grid-template-columns:130px 60px 1fr}.sess .dist{display:none}}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;opacity:0;transition:all .18s;z-index:9;max-width:70vw}.toast.on{opacity:1;transform:translate(-50%,0)}.toast.err{background:var(--signal)}
 </style>
@@ -200,6 +219,7 @@ tr:hover td{background:#F7F9FB}
         <div>
           <div class="card verdict" id="dx-card">
             <div class="when" id="dx-when"></div>
+            <div id="dx-flagnote"></div>
             <p class="sentence" id="dx-sentence"></p>
             <div id="dx-vram"></div>
             <div class="conf"><span>Confidence</span><span class="dots" id="dx-conf"></span><span id="dx-conf-txt"></span></div>
@@ -243,8 +263,26 @@ tr:hover td{background:#F7F9FB}
     <section class="view" id="v-mods">
       <p class="eyebrow">Mods</p>
       <h1 id="mods-h1">Installed mods</h1>
-      <div class="row" style="margin-bottom:12px"><input id="mods-q" placeholder="Filter mods…" oninput="renderMods()" style="padding:8px 10px;border:1px solid var(--line);border-radius:5px;font:inherit;min-width:260px"><span class="muted" id="mods-count"></span></div>
-      <div class="card" style="padding:0;overflow:auto;max-height:70vh"><table id="mods-table"><thead><tr><th>Mod</th><th>Version</th><th>Type</th><th>Status</th><th>Flags</th></tr></thead><tbody></tbody></table></div>
+      <div class="filters">
+        <input id="mods-q" placeholder="Filter by name, type or flag..." oninput="renderMods()">
+        <div class="chips" id="mods-status"></div>
+        <div class="chips" id="mods-kind"></div>
+        <button class="btn" onclick="resetMods()">Reset</button>
+        <span class="muted" id="mods-count"></span>
+      </div>
+      <div class="card" style="padding:0;overflow:auto;max-height:70vh">
+        <table id="mods-table">
+          <thead><tr>
+            <th class="sortable" onclick="sortMods(&quot;name&quot;)">Mod<i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;version&quot;)">Version<i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;type&quot;)">Type<i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;status&quot;)">Status<i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;flags&quot;)">Flags<i></i></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="empty" id="mods-empty" style="display:none;margin-top:12px">Nothing matches those filters. <button class="btn" onclick="resetMods()">Clear them</button></div>
     </section>
 
     <!-- REQUIREMENTS -->
@@ -310,7 +348,7 @@ function load(r){
   var nh=document.getElementById('n-health'); nh.textContent=r.health.length; nh.className='n '+(hi?'sig':med?'amb':'');
   document.getElementById('n-mods').textContent=r.modsList.length;
   document.getElementById('pulse').style.background = hi ? 'var(--signal)' : med ? 'var(--amber)' : 'var(--mint)';
-  renderDx(r); renderTrace(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
+  renderDx(r); renderTrace(r); watchTrace(); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
 }
 
 function renderDx(r){
@@ -320,6 +358,7 @@ function renderDx(r){
   var k=KIND[s.endKind]||KIND.unknown;
   var card=document.getElementById('dx-card'); card.className='card verdict '+(k[0]==='engine'?'sig':k[0]);
   document.getElementById('dx-when').innerHTML='<span>'+esc(fmtDate(s.start))+'</span><span>'+(s.durationKnown===false?'length unknown':'ran '+esc(fmtDur(s.minutes)))+'</span>'+(s.partial?'<span class="mark grey">crash report only</span>':'')+(s.district?'<span>'+esc(s.district)+'</span>':'')+(s.quest?'<span>'+esc(s.quest)+'</span>':'')+'<span class="mark '+(k[0]==='engine'?'sig':k[0])+'">'+esc(k[1])+'</span>';
+  document.getElementById('dx-flagnote').innerHTML='';
   document.getElementById('dx-sentence').textContent=s.verdict;
   renderVram(s);
   var dots=''; for(var i=0;i<3;i++) dots+='<i class="'+(i<s.confidence?'on':'')+'"></i>';
@@ -364,19 +403,41 @@ function renderRuledOut(s){
   }).join('');
 }
 
+// The trace is measured, not stretched, so it has to be redrawn when the window resizes.
+var TRACE_RESIZE=null;
+function watchTrace(){
+  if(TRACE_RESIZE||!window.ResizeObserver) return;
+  var host=document.getElementById('trace'); if(!host) return;
+  var t=null;
+  TRACE_RESIZE=new ResizeObserver(function(){ clearTimeout(t); t=setTimeout(function(){ if(REPORT) renderTrace(REPORT); },120); });
+  TRACE_RESIZE.observe(host);
+}
+
 function renderTrace(r){
   var host=document.getElementById('trace'); var tip=document.getElementById('tip');
   host.querySelectorAll('svg').forEach(function(x){x.remove();});
   var sessions=r.sessions.slice().sort(function(a,b){return new Date(a.start)-new Date(b.start);});
   if(!sessions.length) return;
   // group by day; each day is one row-less strip along x = time within the whole span, but crashes cluster, so use per-session equal slots with width by duration (log scale)
-  var W=1000,H=150,pad=8,baseY=H-26;
-  var svgNS='http://www.w3.org/2000/svg'; var svg=document.createElementNS(svgNS,'svg'); svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.setAttribute('preserveAspectRatio','none');
+  // Draw at the container's real width. Previously this was a fixed 1000-unit box stretched with
+  // preserveAspectRatio="none", so narrowing the window squashed the bars into slivers and distorted the labels.
+  var W=Math.max(280,Math.round(host.clientWidth||host.getBoundingClientRect().width||1000));
+  var H=host.clientHeight?Math.max(110,host.clientHeight):150, pad=8, baseY=H-26;
+  var svgNS='http://www.w3.org/2000/svg'; var svg=document.createElementNS(svgNS,'svg'); svg.setAttribute('viewBox','0 0 '+W+' '+H);
   var base=document.createElementNS(svgNS,'line'); base.setAttribute('x1',0);base.setAttribute('x2',W);base.setAttribute('y1',baseY);base.setAttribute('y2',baseY);base.setAttribute('class','base'); svg.appendChild(base);
   // width: log scale of minutes so 3-minute and 4-hour sessions both read
-  var widths=sessions.map(function(s){return s.durationKnown===false?12:14+Math.log10(1+Math.max(s.minutes,0.5))*38;});
+  function widthOf(s){ return s.durationKnown===false?12:14+Math.log10(1+Math.max(s.minutes,0.5))*38; }
+  // Bars below ~5px stop being readable, so on a narrow window show the most recent sessions that genuinely fit
+  // and say so, rather than rendering forty slivers.
+  var avail=W-pad*2, hidden=0;
+  while(sessions.length>1){
+    var t=sessions.reduce(function(a,s){return a+widthOf(s);},0)+(sessions.length-1)*6;
+    if(avail/t>=5/14) break;              // scale would shrink a minimum bar below 5px
+    sessions.shift(); hidden++;
+  }
+  var widths=sessions.map(widthOf);
   var total=widths.reduce(function(a,b){return a+b;},0)+ (sessions.length-1)*6;
-  var scale=Math.min(1,(W-pad*2)/total); var x=pad+ (W-pad*2-total*scale)/2;
+  var scale=Math.min(1,avail/total); var x=pad+ (avail-total*scale)/2;
   var colors={clean:'#1F9D6A',gpu:'#D93A3A',script:'#E09A1B',engine:'#A34D9E',unknown:'#9AA3AF',running:'#2F6FED'};
   var g=document.createElementNS(svgNS,'g'); g.setAttribute('class','day'); svg.appendChild(g);
   var lastDay=''; var lastLabelX;
@@ -394,7 +455,7 @@ function renderTrace(r){
     g.appendChild(rect); g.appendChild(cap); x+=w+6*scale;
   });
   host.appendChild(svg);
-  document.getElementById('trace-from').textContent=fmtDate(sessions[0].start);
+  document.getElementById('trace-from').textContent=(hidden?'+'+hidden+' earlier · ':'')+fmtDate(sessions[0].start);
   document.getElementById('trace-to').textContent=fmtDate(sessions[sessions.length-1].start);
 }
 
@@ -419,13 +480,81 @@ function renderHealth(r){
     d.innerHTML='<div><span class="mark '+m+'">'+esc(h.severity)+'</span></div><div><div class="title">'+esc(h.title)+'</div><div class="detail">'+esc(h.detail)+'</div>'+(h.mod?'<div class="mono muted" style="margin-top:4px">'+esc(h.mod)+'</div>':'')+'</div><div class="act">'+(h.action?'<button class="btn" onclick="act('+JSON.stringify(h.action.id)+')">'+esc(h.action.label)+'</button>':'')+'</div>'; el.appendChild(d); });
 }
 
+var MODS_SORT={key:"name",dir:1}, MODS_STATUS="all", MODS_KIND="all";
+
+function sortMods(key){
+  if(MODS_SORT.key===key) MODS_SORT.dir=-MODS_SORT.dir; else { MODS_SORT.key=key; MODS_SORT.dir=1; }
+  renderMods();
+}
+function setModFilter(what,val){ if(what==="status") MODS_STATUS=val; else MODS_KIND=val; renderMods(); }
+function resetMods(){ MODS_STATUS="all"; MODS_KIND="all"; MODS_SORT={key:"name",dir:1}; document.getElementById("mods-q").value=""; renderMods(); }
+
+// The worst flag a mod carries. Used for the "flagged only" filter and to sort by severity instead of alphabetically.
+var FLAG_RANK={high:3,medium:2,low:1,cleared:0};
+function worstFlag(m){ return (m.flags||[]).reduce(function(a,f){ var r=FLAG_RANK[f.level]; return Math.max(a, r===undefined?0:r); },-1); }
+
 function renderMods(){
-  if(!REPORT) return; var q=(document.getElementById('mods-q').value||'').toLowerCase();
-  var tb=document.querySelector('#mods-table tbody'); tb.innerHTML=''; var n=0;
-  REPORT.modsList.forEach(function(m){ if(q && (m.name+' '+m.type+' '+(m.flags||[]).join(' ')).toLowerCase().indexOf(q)<0) return; n++;
-    var tr=document.createElement('tr'); tr.innerHTML='<td>'+esc(m.name)+'</td><td class="mono">'+esc(m.version||'')+'</td><td class="muted">'+esc(m.type||'')+'</td><td><span class="mark '+(m.status==='enabled'?'mint':m.status==='disabled'?'grey':'sig')+'">'+esc(m.status)+'</span></td><td>'+(m.flags||[]).map(function(f){return '<span class="mark '+(f.level==='high'?'sig':f.level==='medium'?'amb':'grey')+'" title="'+esc(f.detail||'')+'">'+esc(f.label)+'</span> ';}).join('')+'</td>'; tb.appendChild(tr); });
-  document.getElementById('mods-count').textContent=n+' of '+REPORT.modsList.length;
-  document.getElementById('mods-h1').textContent=REPORT.modsList.length+' mods';
+  if(!REPORT) return;
+  var all=REPORT.modsList, q=(document.getElementById("mods-q").value||"").toLowerCase();
+
+  // chips are built from what is actually installed, so they never offer a choice that matches nothing
+  var statuses=["all"].concat(all.map(function(m){return m.status;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).sort());
+  document.getElementById("mods-status").innerHTML=statuses.map(function(v){
+    return '<button class="chip'+(MODS_STATUS===v?" on":"")+'" onclick="setModFilter(&quot;status&quot;,&quot;'+v+'&quot;)">'+esc(v==="all"?"All statuses":v)+"</button>";}).join("");
+  var kinds=[["all","Everything"],["problems","Flagged only"],["cleared","Ruled out"]];
+  document.getElementById("mods-kind").innerHTML=kinds.map(function(kv){
+    return '<button class="chip'+(MODS_KIND===kv[0]?" on":"")+'" onclick="setModFilter(&quot;kind&quot;,&quot;'+kv[0]+'&quot;)">'+esc(kv[1])+"</button>";}).join("");
+
+  var rows=all.filter(function(m){
+    if(MODS_STATUS!=="all" && m.status!==MODS_STATUS) return false;
+    if(MODS_KIND==="problems" && worstFlag(m)<1) return false;
+    if(MODS_KIND==="cleared" && !(m.flags||[]).some(function(f){return f.level==="cleared";})) return false;
+    if(q){
+      var hay=(m.name+" "+(m.version||"")+" "+(m.type||"")+" "+m.status+" "+(m.flags||[]).map(function(f){return f.label+" "+(f.detail||"");}).join(" ")).toLowerCase();
+      if(hay.indexOf(q)<0) return false;
+    }
+    return true;
+  });
+
+  var k=MODS_SORT.key, dir=MODS_SORT.dir;
+  function field(m){ return (k==="name"?m.name:k==="version"?(m.version||""):k==="type"?(m.type||""):m.status)||""; }
+  rows.sort(function(a,b){
+    if(k==="flags"){ var fa=worstFlag(a), fb=worstFlag(b); if(fa!==fb) return (fa-fb)*dir; return a.name.localeCompare(b.name); }
+    var c=field(a).localeCompare(field(b),undefined,{numeric:true,sensitivity:"base"});
+    return (c!==0?c:a.name.localeCompare(b.name))*dir;
+  });
+
+  var keys=["name","version","type","status","flags"];
+  document.querySelectorAll("#mods-table th.sortable").forEach(function(th,i){
+    th.className="sortable"+(keys[i]===k?(dir>0?" asc":" desc"):"");
+  });
+
+  var tb=document.querySelector("#mods-table tbody"); tb.innerHTML="";
+  rows.forEach(function(m){
+    var tr=document.createElement("tr");
+    var flags=(m.flags||[]).map(function(f,i){
+      var cls=f.level==="high"?"sig":f.level==="medium"?"amb":f.level==="cleared"?"cleared":"grey";
+      var title=esc((f.detail||"")+(f.when?"  ("+f.when+")":""));
+      // a flag that came from a particular crash opens that crash and explains itself; others stay plain labels
+      if(f.sessionId) return '<button class="mark '+cls+'" title="'+title+'" onclick="showModFlag('+esc(JSON.stringify(m.name))+","+i+')">'+esc(f.label)+" \u2192</button> ";
+      return '<span class="mark '+cls+'" title="'+title+'">'+esc(f.label)+"</span> ";
+    }).join("");
+    tr.innerHTML="<td>"+esc(m.name)+'</td><td class="mono">'+esc(m.version||"")+'</td><td class="muted">'+esc(m.type||"")+"</td>"+
+      '<td><span class="mark '+(m.status==="enabled"?"mint":m.status==="disabled"?"grey":"sig")+'">'+esc(m.status)+"</span></td><td>"+flags+"</td>";
+    tb.appendChild(tr);
+  });
+  document.getElementById("mods-empty").style.display=rows.length?"none":"";
+  document.getElementById("mods-count").textContent=rows.length===all.length?all.length+" mods":rows.length+" of "+all.length;
+  document.getElementById("mods-h1").textContent=all.length+" mods";
+}
+
+// Clicking a flag answers "why?": open the crash it came from, with the reason pinned above the verdict.
+function showModFlag(modName,i){
+  var m=REPORT.modsList.filter(function(x){return x.name===modName;})[0]; if(!m) return;
+  var f=(m.flags||[])[i]; if(!f) return;
+  if(f.sessionId) showSession(f.sessionId); else go("dx");
+  var host=document.getElementById("dx-flagnote");
+  if(host) host.innerHTML='<div class="flagnote"><b>'+esc(m.name)+"</b> \u2014 "+esc(f.label)+(f.when?" \u00b7 "+esc(f.when):"")+"<div>"+esc(f.detail||"")+"</div></div>";
 }
 
 function renderReq(r){
