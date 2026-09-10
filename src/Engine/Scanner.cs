@@ -22,6 +22,21 @@ public static class Scanner
         r.Requirements = RequirementsCheck.Check(d);
         r.Settings = PrettySettings(d.Settings);
         r.Warnings = d.Warnings;
+
+        // A bisect in progress reads its own result out of the logs, so playing and rescanning is the whole loop.
+        var plan = Bisect.Load();
+        if (plan != null)
+        {
+            var step = plan.Current;
+            // The moment the deployed mods match what the step asked for, the clock starts. No button to forget.
+            if (step != null && step.StartedAt == null && Bisect.Verify(plan, r) is (var off, var on) && off.Count == 0 && on.Count == 0)
+            {
+                step.StartedAt = DateTime.Now;
+                Bisect.Save(plan);
+            }
+            Bisect.Advance(plan, r);
+            r.Bisect = Bisect.View(plan, r);
+        }
         return r;
     }
 

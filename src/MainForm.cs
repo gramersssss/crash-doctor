@@ -118,6 +118,36 @@ public sealed class MainForm : Form
             await ScanAsync();
             return;
         }
+        if (id.StartsWith("bisect:") && _report != null)
+        {
+            if (id.StartsWith("bisect:start:"))
+            {
+                var sig = id["bisect:start:".Length..];
+                var n = _report.ModsList.Count(m => m.Status == "enabled" && !Bisect.IsFramework(m.Name));
+                var steps = n > 1 ? (int)Math.Ceiling(Math.Log2(n)) : 1;
+                if (MessageBox.Show(this,
+                        $"Hunt {sig} by bisection?" + Environment.NewLine + Environment.NewLine + "Crash Doctor will ask you to switch groups of mods off in Vortex, play, and scan again. It never changes anything itself - it only checks what is actually deployed and reads the result from your logs." + Environment.NewLine + Environment.NewLine + "{n} mods are in the running, so expect about {steps} rounds of play.",
+                        "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                var d = Collectors.CollectAll(_game!, DateTime.Now.AddDays(-30));
+                Bisect.Start(d, _report, sig);
+                await ScanAsync();
+                Post(new { cmd = "go", view = "bisect" });
+                return;
+            }
+            if (id == "bisect:stop")
+            {
+                if (MessageBox.Show(this, "Stop the bisect and forget its progress?" + Environment.NewLine + Environment.NewLine + "Your mods are left exactly as they are now - turn the ones you switched off back on in Vortex when you are ready.", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                Bisect.Save(null);
+                await ScanAsync();
+                return;
+            }
+            if (id == "bisect:copy")
+            {
+                var v = _report.Bisect;
+                if (v != null && v.Off.Count > 0) { try { Clipboard.SetText(string.Join(Environment.NewLine, v.Off)); Post(new { cmd = "toast", text = $"{v.Off.Count} mod names copied - paste into Vortex's search to find them." }); } catch { } }
+                return;
+            }
+        }
         if (id.StartsWith("req:") && _report != null)
         {
             var reqs = _report.Requirements;

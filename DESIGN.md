@@ -113,8 +113,19 @@ first-hand and grows.
 ### Guided bisect
 The reliable way to find a cause nobody has seen before, including one with no log signature at all. The app knows
 the mod list, the session history and the crash signatures, so it can drive the experiment instead of leaving the
-user to guess: disable this group, play, report whether the signature changed, restore, halve, repeat. Mechanical,
-honest, and the thing that would have solved the real case fastest.
+user to guess: disable this group, play, halve, repeat. Mechanical, honest, and the thing that would have solved
+the real case fastest. Two rules make it trustworthy:
+
+- **It never enables or disables anything itself.** It says what to switch off, and then verifies that what it
+  asked for is what is actually deployed before it will accept a result. Mistrusting the toggle is the point:
+  "I disabled that mod" and "that mod is disabled" are different statements, and a bisect built on the first one
+  silently produces the wrong answer. In the real case the user disabled the right mod and it was worth proving.
+- **"It didn't crash" is not proof.** A clean run only counts when it lasts meaningfully longer than that fault's
+  own typical time-to-crash, a threshold computed from the crash history and shown to the user so they can judge
+  it themselves. Anything shorter is reported as not yet conclusive rather than quietly counted as a pass.
+
+The result is read out of the logs on the next scan, so the loop is play, scan, repeat, with no button to press
+wrongly. Only faults that have happened more than once are offered: chasing a one-off costs days and proves little.
 
 ### Rules the copy must obey
 - Never name a mod the evidence does not support. "Its script errored 48 s before the crash" is not a cause.

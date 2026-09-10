@@ -115,6 +115,33 @@ button.mark:hover{filter:brightness(.94)}
 /* why a mod is flagged, shown when you arrive from the mods table */
 .flagnote{border-left:3px solid var(--trace);background:var(--trace-bg);border-radius:0 5px 5px 0;padding:9px 12px;margin:0 0 12px;font-size:13px;line-height:1.5}
 .flagnote div{color:var(--steel);margin-top:3px}
+/* guided bisect */
+.bx{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start}
+@media (max-width:980px){.bx{grid-template-columns:1fr}}
+.bx h2{font-family:var(--display);font-stretch:semi-condensed;font-size:24px;margin:0 0 8px;line-height:1.25}
+.bx .lead{font-size:14.5px;line-height:1.55;color:var(--steel);margin:0 0 16px}
+.steps{display:flex;gap:6px;margin:14px 0 18px}
+.steps i{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.steps i.done{background:var(--mint)}
+.steps i.now{background:var(--trace)}
+.checklist{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:12px}
+.checklist .h{background:#F7F9FB;border-bottom:1px solid var(--line);padding:9px 14px;font-family:var(--display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.checklist ul{list-style:none;margin:0;padding:0;max-height:260px;overflow:auto}
+.checklist li{padding:7px 14px;border-bottom:1px solid var(--line);font-size:13px;display:flex;gap:9px;align-items:center}
+.checklist li:last-child{border-bottom:0}
+.checklist li b{font-weight:400}
+.checklist li .tick{width:14px;flex:none;color:var(--mint);font-size:12px}
+.checklist li.todo .tick{color:var(--signal)}
+.checklist li.todo{background:#FDF6F6}
+.bstat{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px}
+.bstat dl{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin:0;font-size:13px}
+.bstat dt{color:var(--steel)}
+.bstat dd{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--ink);text-align:right}
+.bhist{margin-top:16px;font-size:12.5px;color:var(--steel);line-height:1.6}
+.bhist div{padding:7px 0;border-top:1px solid var(--line)}
+.pick{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.pick .sig{font-family:var(--mono);font-size:13px;color:var(--ink)}
+.pick .meta{font-size:12.5px;color:var(--steel);margin-top:3px}
 .evidence{margin-top:18px}
 .ev{display:grid;grid-template-columns:76px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .ev:first-of-type{border-top:0}
@@ -204,6 +231,7 @@ button.mark:hover{filter:brightness(.94)}
     <button data-view="sessions" onclick="go('sessions')">Sessions <span class="n" id="n-sessions">0</span></button>
     <button data-view="health" onclick="go('health')">Health <span class="n" id="n-health">0</span></button>
     <button data-view="mods" onclick="go('mods')">Mods <span class="n" id="n-mods">0</span></button>
+    <button data-view="bisect" onclick="go('bisect')">Find it <span class="n" id="n-bisect"></span></button>
     <button data-view="req" onclick="go('req')">Requirements <span class="n" id="n-req"></span></button>
     <button data-view="settings" onclick="go('settings')">Settings</button>
     <button data-view="report" onclick="go('report')">Report</button>
@@ -285,6 +313,12 @@ button.mark:hover{filter:brightness(.94)}
       <div class="empty" id="mods-empty" style="display:none;margin-top:12px">Nothing matches those filters. <button class="btn" onclick="resetMods()">Clear them</button></div>
     </section>
 
+    <!-- BISECT -->
+    <section class="view" id="v-bisect">
+      <p class="eyebrow">Find it &middot; guided bisect</p>
+      <div id="bisect-body"></div>
+    </section>
+
     <!-- REQUIREMENTS -->
     <section class="view" id="v-req">
       <p class="eyebrow">Requirements · what mods need in order to run</p>
@@ -348,7 +382,7 @@ function load(r){
   var nh=document.getElementById('n-health'); nh.textContent=r.health.length; nh.className='n '+(hi?'sig':med?'amb':'');
   document.getElementById('n-mods').textContent=r.modsList.length;
   document.getElementById('pulse').style.background = hi ? 'var(--signal)' : med ? 'var(--amber)' : 'var(--mint)';
-  renderDx(r); renderTrace(r); watchTrace(); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
+  renderDx(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
 }
 
 function renderDx(r){
@@ -469,6 +503,52 @@ function renderSessions(r){
   });
 }
 function showSession(id){ var s=REPORT.sessions.filter(function(x){return x.id===id;})[0]; if(!s) return; var save=REPORT.latest; REPORT.latest=s; renderDx(REPORT); REPORT.latest=save; go('dx'); document.querySelector('.main').scrollTop=0; }
+
+function renderBisect(r){
+  var host=document.getElementById("bisect-body"); if(!host) return;
+  var b=r.bisect, badge=document.getElementById("n-bisect");
+  if(badge){ badge.textContent=b&&b.status==="running"?"on":""; badge.className="n"+(b&&b.status==="running"?" amb":""); badge.style.display=b&&b.status==="running"?"":"none"; }
+
+  // Nothing running: offer the repeating faults, because a one-off is not worth days of testing.
+  if(!b||b.status==="stopped"){
+    var groups=(r.crashGroups||[]).filter(function(g){return g.count>=2;});
+    var intro='<h2>Find the cause by halving the mod list</h2>'+
+      '<p class="lead">When the logs name nothing, this always works. Crash Doctor asks you to switch off half the mods, you play, and it watches whether the same fault comes back \u2014 then halves again. It never changes a mod itself: it tells you what to switch off in Vortex and then checks what is actually deployed before it will trust the result.</p>';
+    if(!groups.length){ host.innerHTML=intro+'<div class="empty">No fault has happened more than once yet, so there is nothing worth bisecting. Come back if a crash starts repeating \u2014 chasing a one-off costs days and usually proves nothing.</div>'; return; }
+    host.innerHTML=intro+'<p class="eyebrow">Pick the fault to hunt</p>'+groups.map(function(g){
+      return '<div class="pick"><div><div class="sig">'+esc(g.signature)+'</div><div class="meta">'+g.count+' crashes \u00b7 '+esc(g.exception)+' \u00b7 '+fmtDate(g.firstSeen)+' to '+fmtDate(g.lastSeen)+(g.current?" \u00b7 still happening":" \u00b7 not seen since your last clean session")+'</div></div>'+
+        '<button class="btn primary" onclick="act('+esc(JSON.stringify("bisect:start:"+g.signature))+')">Hunt this one</button></div>';
+    }).join("");
+    return;
+  }
+
+  var done=b.stepNumber-(b.status==="running"?1:0);
+  var total=Math.max(1,done+(b.stepsLeft||0));
+  var bars=""; for(var i=0;i<total;i++) bars+='<i class="'+(i<done?"done":i===done&&b.status==="running"?"now":"")+'"></i>';
+
+  var right='<div class="bstat"><dl>'+
+    '<dt>Fault being hunted</dt><dd>'+esc(b.signature)+'</dd>'+
+    '<dt>Still possible</dt><dd>'+b.candidates+'</dd>'+
+    '<dt>Cleared so far</dt><dd>'+b.cleared+'</dd>'+
+    '<dt>Round</dt><dd>'+b.stepNumber+'</dd>'+
+    (b.status==="running"?'<dt>Rounds left, about</dt><dd>'+b.stepsLeft+'</dd><dt>A clean run must beat</dt><dd>'+b.minutesToBeat+' min</dd>':"")+
+    '</dl><div class="row" style="margin-top:12px"><button class="btn" onclick="act(\'bisect:stop\')">'+(b.status==="running"?"Stop":"Clear this run")+'</button></div></div>'+
+    (b.history&&b.history.length?'<div class="bhist"><p class="eyebrow">What has been settled</p>'+b.history.map(function(h){return "<div>"+esc(h)+"</div>";}).join("")+"</div>":"");
+
+  var main='<h2>'+esc(b.headline)+'</h2><p class="lead">'+esc(b.detail)+'</p>';
+  if(b.status==="running"){
+    main+='<div class="steps">'+bars+'</div>';
+    var offSet={}; (b.turnOff||[]).forEach(function(n){offSet[n]=1;});
+    main+='<div class="checklist"><div class="h"><span>Turn these off in Vortex</span>'+
+      '<button class="btn" onclick="act(\'bisect:copy\')">Copy '+b.off.length+' names</button></div><ul>'+
+      b.off.map(function(n){ var todo=offSet[n];
+        return '<li class="'+(todo?"todo":"")+'"><span class="tick">'+(todo?"\u2715":"\u2713")+'</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
+    if(b.turnOn&&b.turnOn.length)
+      main+='<div class="checklist"><div class="h"><span>Turn these back on \u2014 they are still in the test</span></div><ul>'+
+        b.turnOn.map(function(n){return '<li class="todo"><span class="tick">\u2715</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
+  }
+  host.innerHTML='<div class="bx"><div>'+main+"</div>"+right+"</div>";
+}
 
 function renderHealth(r){
   var el=document.getElementById('health-list'); el.innerHTML='';

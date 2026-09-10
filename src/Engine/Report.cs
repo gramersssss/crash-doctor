@@ -14,6 +14,7 @@ public sealed class Report
     public List<Session> Sessions { get; set; } = new();
     public List<HealthItem> Health { get; set; } = new();
     public List<CrashGroup> CrashGroups { get; set; } = new();   // the distinct bugs behind all the crashes
+    public BisectView? Bisect { get; set; }                      // the guided hunt, when one is running
     public List<ModRow> ModsList { get; set; } = new();
     public List<Requirement> Requirements { get; set; } = new();
     public Dictionary<string, string> Settings { get; set; } = new();
@@ -35,6 +36,29 @@ public sealed class CrashGroup
     public string? Injector { get; set; }
     public int InjectorSessions { get; set; }     // how many of Count had it, so the correlation is visible
     public List<string> SessionIds { get; set; } = new();
+}
+
+// Everything the interface needs to render a bisect run. All the wording is decided in the engine so the reasoning
+// and the words describing it cannot drift apart.
+public sealed class BisectView
+{
+    public string Id { get; set; } = "";
+    public string Signature { get; set; } = "";
+    public string Status { get; set; } = "running";
+    public string Headline { get; set; } = "";
+    public string Detail { get; set; } = "";
+    public int MinutesToBeat { get; set; }
+    public int Candidates { get; set; }
+    public int Cleared { get; set; }
+    public int StepNumber { get; set; }
+    public int StepsLeft { get; set; }
+    public bool Ready { get; set; }        // what is deployed matches what the step asked for
+    public bool Playing { get; set; }      // the step is set up and waiting on a play session
+    public string? Culprit { get; set; }
+    public List<string> Off { get; set; } = new();       // the mods this step wants disabled
+    public List<string> TurnOff { get; set; } = new();   // of those, still enabled
+    public List<string> TurnOn { get; set; } = new();    // wrongly disabled, would spoil the test
+    public List<string> History { get; set; } = new();
 }
 
 public sealed class GameInfo
