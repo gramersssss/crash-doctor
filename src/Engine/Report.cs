@@ -120,6 +120,7 @@ public sealed class Session
     public string? Position { get; set; }         // where the player was standing
     public string? Screenshot { get; set; }       // the frame the game was showing when it died
     public List<AreaMod> AreaMods { get; set; } = new();  // mods rewriting the ground the player was on
+    public int AreaSectors { get; set; }                  // distinct map sectors that streamed in around them
     public List<RuledOut> RuledOut { get; set; } = new();  // looked suspicious, eliminated by the clean sessions
     [JsonIgnore] public string? Red4extLog { get; set; }
     [JsonIgnore] public DateTime? CrashTime { get; set; }

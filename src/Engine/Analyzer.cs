@@ -151,6 +151,8 @@ public static class Analyzer
         // Changing graphics settings makes the engine tear down and rebuild its render targets, which is the single
         // largest memory spike a session ever sees. On a card that is already close to full it is a common way to fall over.
         s.AreaMods = AreaMods(d, s, crashAt);
+        s.AreaSectors = d.SectorPatches.Where(x => x.At <= crashAt.AddSeconds(2) && x.At >= crashAt.AddSeconds(-60))
+                                       .Select(x => x.Sector).Distinct(StringComparer.OrdinalIgnoreCase).Count();
         var failingHere = s.AreaMods.Where(a => a.Failing).ToList();
         var settingsChanged = d.SettingsWritten is { } sw && s.CrashTime != null && sw <= s.CrashTime.Value.AddSeconds(5) && sw >= s.CrashTime.Value.AddMinutes(-5) && sw >= s.Start;
         var window = d.Events.Where(e => e.At <= crashAt.AddSeconds(5) && e.At >= crashAt.AddSeconds(-EvidenceWindowSeconds) && (s.Partial || e.At >= s.Start)).OrderBy(e => e.At).ToList();

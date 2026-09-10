@@ -142,6 +142,21 @@ button.mark:hover{filter:brightness(.94)}
 .pick{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
 .pick .sig{font-family:var(--mono);font-size:13px;color:var(--ink)}
 .pick .meta{font-size:12.5px;color:var(--steel);margin-top:3px}
+/* what was rewriting the map underfoot at the moment of the crash */
+.area{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px 22px 16px;margin-top:18px}
+.area .sub{font-size:12.5px;color:var(--steel);margin:-4px 0 14px;line-height:1.5}
+.arow{display:grid;grid-template-columns:1fr 116px 92px;gap:12px;align-items:center;padding:9px 0;border-top:1px solid var(--line)}
+.arow:first-of-type{border-top:0}
+.arow .who{min-width:0}
+.arow .nm{font-size:13.5px;line-height:1.35;overflow-wrap:anywhere}
+.arow .fl{font-family:var(--mono);font-size:11.5px;color:var(--steel);margin-top:2px;overflow-wrap:anywhere}
+.arow .bar{height:8px;border-radius:4px;background:var(--grey-bg);overflow:hidden}
+.arow .bar i{display:block;height:100%;background:var(--steel);border-radius:4px}
+.arow.fail .bar i{background:var(--signal)}
+.arow .n{font-family:var(--mono);font-size:12px;color:var(--steel);text-align:right;white-space:nowrap}
+.arow .warn{font-size:12.5px;color:var(--signal);margin-top:4px;line-height:1.45}
+.area .foot{font-size:12.5px;color:var(--steel);margin-top:14px;padding-top:12px;border-top:1px solid var(--line);line-height:1.55}
+@media (max-width:620px){.arow{grid-template-columns:1fr 70px}.arow .bar{display:none}}
 .evidence{margin-top:18px}
 .ev{display:grid;grid-template-columns:76px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .ev:first-of-type{border-top:0}
@@ -256,6 +271,7 @@ button.mark:hover{filter:brightness(.94)}
               <div id="dx-evidence"></div>
             </div>
           </div>
+          <div id="dx-area"></div>
           <div class="trace-wrap">
             <div class="trace-head">
               <p class="eyebrow" style="margin:0">Session trace · how each play session ended</p>
@@ -395,6 +411,7 @@ function renderDx(r){
   document.getElementById('dx-flagnote').innerHTML='';
   document.getElementById('dx-sentence').textContent=s.verdict;
   renderVram(s);
+  renderArea(s);
   var dots=''; for(var i=0;i<3;i++) dots+='<i class="'+(i<s.confidence?'on':'')+'"></i>';
   document.getElementById('dx-conf').innerHTML=dots;
   document.getElementById('dx-conf-txt').textContent=['low','fair','good','high'][s.confidence]||'';
@@ -445,6 +462,42 @@ function watchTrace(){
   var t=null;
   TRACE_RESIZE=new ResizeObserver(function(){ clearTimeout(t); t=setTimeout(function(){ if(REPORT) renderTrace(REPORT); },120); });
   TRACE_RESIZE.observe(host);
+}
+
+// Which mods were rewriting the map sectors streaming in around the player when the game died. Read out of the
+// ArchiveXL log, which names both the sector and every .xl applied to it, so this is measured rather than guessed.
+// It matters because several mods editing the same ground is a real and common cause of crashes while moving,
+// and because it is otherwise invisible: nothing in the game tells you two mods are fighting over one street.
+function renderArea(s){
+  var host=document.getElementById("dx-area"); if(!host) return;
+  var rows=s.areaMods||[];
+  if(!rows.length){ host.innerHTML=""; return; }
+  var max=rows.reduce(function(a,x){return Math.max(a,x.sectors);},1);
+  var failing=rows.filter(function(x){return x.failing;});
+  var shared=rows.filter(function(x){return x.sharedWith>0;}).length;
+
+  var sub="At the moment of the crash "+(s.areaSectors?s.areaSectors+" map sectors were streaming in around you":"the map was streaming in around you")+
+    (s.position?" at "+esc(s.position):"")+(s.district?", in "+esc(s.district):"")+". "+
+    rows.length+(rows.length===1?" mod was":" mods were")+" rewriting them as they loaded.";
+
+  var body=rows.map(function(x){
+    var pct=Math.max(6,Math.round(x.sectors/max*100));
+    return '<div class="arow'+(x.failing?" fail":"")+'"><div class="who"><div class="nm">'+esc(x.mod)+"</div>"+
+      '<div class="fl">'+esc(x.file)+"</div>"+
+      (x.failing&&x.note?'<div class="warn">'+esc(x.note)+"</div>":"")+"</div>"+
+      '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
+      '<div class="n">'+x.sectors+(x.sectors===1?" sector":" sectors")+"<br>"+(x.sharedWith>0?"+"+x.sharedWith+" others here":"only mod here")+"</div></div>";
+  }).join("");
+
+  // The honest reading: overlap is a risk factor, a failed patch is a fact. Neither on its own names a culprit.
+  var foot = failing.length
+    ? "<b>"+esc(failing.map(function(x){return x.mod;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(", "))+
+      "</b> no longer matches the sector it edits, so ArchiveXL had to skip part of its patch. That proves the mod was built against a different version of this map \u2014 it does not prove it caused this crash."
+    : shared>1
+      ? "Several of these edit the same ground. Overlapping sector edits are a common cause of crashes while moving through an area, but overlap on its own is not evidence against any one of them."
+      : "Nothing here is failing and there is little overlap, so the map edits in this spot look healthy.";
+  host.innerHTML='<div class="area"><p class="eyebrow">Rewriting the ground you were on</p><p class="sub">'+sub+"</p>"+body+
+    '<div class="foot">'+foot+"</div></div>";
 }
 
 function renderTrace(r){
