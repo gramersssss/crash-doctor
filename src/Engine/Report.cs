@@ -74,10 +74,31 @@ public sealed class Session
     public string? Exception { get; set; }        // e.g. "EXCEPTION_ACCESS_VIOLATION (0xC0000005)"
     public string? Position { get; set; }         // where the player was standing
     public string? Screenshot { get; set; }       // the frame the game was showing when it died
+    public List<AreaMod> AreaMods { get; set; } = new();  // mods rewriting the ground the player was on
+    public List<RuledOut> RuledOut { get; set; } = new();  // looked suspicious, eliminated by the clean sessions
     [JsonIgnore] public string? Red4extLog { get; set; }
     [JsonIgnore] public DateTime? CrashTime { get; set; }
     [JsonIgnore] public string? EngineMessage { get; set; }
     [JsonIgnore] public string? CrashFile { get; set; }
+}
+
+// Something that looked like a lead and was eliminated because it also happens in sessions that end cleanly.
+// Showing this is half the value: knowing what is NOT the cause is what stops people disabling mods at random.
+public sealed class RuledOut
+{
+    public string Mod { get; set; } = "";
+    public string Why { get; set; } = "";
+}
+
+// One mod that was patching the map sectors streaming in around the player when the game died.
+public sealed class AreaMod
+{
+    public string Mod { get; set; } = "";
+    public string File { get; set; } = "";        // the .xl doing the patching
+    public int Sectors { get; set; }              // how many of the sectors here it rewrites
+    public int SharedWith { get; set; }           // how many other mods edit at least one of the same sectors
+    public bool Failing { get; set; }             // ArchiveXL reported its patch did not fit this session
+    public string? Note { get; set; }
 }
 
 public sealed class Evidence

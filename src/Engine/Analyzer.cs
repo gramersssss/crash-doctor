@@ -12,13 +12,29 @@ public static class Analyzer
     {
         ResolveNames(d);
         var sessions = BuildSessions(d);
-        foreach (var s in sessions) Judge(d, s, sessions);
+        // Nothing may be ranked until we know what this install does when it is NOT crashing.
+        var elimination = Elimination.Build(d, sessions);
+        foreach (var s in sessions) Judge(d, s, sessions, elimination);
+        foreach (var s in sessions) SayWhenNothingSurvived(s, elimination);
         var merged = History.Merge(sessions, History.Load());
         History.Save(merged);
         r.Sessions = merged;
         r.Latest = merged.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).OrderByDescending(s => s.Start).FirstOrDefault();
-        r.Health = Health(d, merged);
+        r.Health = Health(d, merged, elimination);
         r.SettingsNotes = SettingsNotes(d, merged);
+    }
+
+    // A crash with no surviving suspect is a legitimate outcome, not a hole to paper over. When elimination has
+    // cleared everything, the verdict must stop implying a culprit and hand over a concrete next step instead.
+    static void SayWhenNothingSurvived(Session s, Elimination el)
+    {
+        if (s.EndKind is EndKind.Clean or EndKind.Running || s.Suspects.Count > 0 || s.Verdict.Length == 0) return;
+        if (s.RuledOut.Count > 0)
+        {
+            s.Verdict += $" {Join(s.RuledOut.Select(r => r.Mod).Distinct().ToList())} looked like {(s.RuledOut.Count == 1 ? "a lead" : "leads")} and {(s.RuledOut.Count == 1 ? "was" : "were")} ruled out: the same thing happens in sessions that end normally. Nothing else stands out, so there is no named cause for this one yet.";
+            if (s.Confidence > 1) s.Confidence = 1;
+        }
+        else if (el.HasBaseline) s.Verdict += " No mod stands out: nothing was logged near the crash that does not also happen in sessions ending normally.";
     }
 
     // Map raw event owners (CET folder, .xl file, dll) to mod display names once, up front.
@@ -65,7 +81,7 @@ public static class Analyzer
     static bool IsGpuMessage(string? m) => m != null && (m.Contains("Gpu Crash", StringComparison.OrdinalIgnoreCase) || m.Contains("DXGI_ERROR", StringComparison.OrdinalIgnoreCase) || m.Contains("device removed", StringComparison.OrdinalIgnoreCase));
 
     // ---------- verdict per session ----------
-    static void Judge(CollectedData d, Session s, List<Session> all)
+    static void Judge(CollectedData d, Session s, List<Session> all, Elimination el)
     {
         var fg = d.Settings.TryGetValue("FrameGeneration", out var fgv) && fgv != "Off";
         var rt = SettingOn(d, "RayTracing"); d.Settings.TryGetValue("RayTracedLighting", out var rtl);
@@ -89,6 +105,8 @@ public static class Analyzer
         var badRead = report?.Exception != null && report.Exception.Contains("ACCESS_VIOLATION", StringComparison.OrdinalIgnoreCase);
         // Changing graphics settings makes the engine tear down and rebuild its render targets, which is the single
         // largest memory spike a session ever sees. On a card that is already close to full it is a common way to fall over.
+        s.AreaMods = AreaMods(d, s, crashAt);
+        var failingHere = s.AreaMods.Where(a => a.Failing).ToList();
         var settingsChanged = d.SettingsWritten is { } sw && s.CrashTime != null && sw <= s.CrashTime.Value.AddSeconds(5) && sw >= s.CrashTime.Value.AddMinutes(-5) && sw >= s.Start;
         var window = d.Events.Where(e => e.At <= crashAt.AddSeconds(5) && e.At >= crashAt.AddSeconds(-EvidenceWindowSeconds) && (s.Partial || e.At >= s.Start)).OrderBy(e => e.At).ToList();
         var driver = window.Where(e => e.Kind == "driver" && e.At >= crashAt.AddSeconds(-DriverWindowSeconds)).ToList();
@@ -96,16 +114,26 @@ public static class Analyzer
         var power = window.FirstOrDefault(e => e.Kind == "power");
         var sessionErrors = d.Events.Where(e => e.Kind == "error" && e.At >= (s.Partial ? crashAt.AddMinutes(-30) : s.Start) && e.At <= crashAt.AddSeconds(5)).ToList();
         var repeats = sessionErrors.GroupBy(Key).Where(g => g.Count() >= 5).Select(g => g.Key).ToHashSet();
-        bool IsNoise(LogEvent e) => repeats.Contains(Key(e));
+        // Two independent noise tests: it repeats endlessly inside this session, or it also happens in sessions that
+        // ended cleanly. Either way it cannot be the reason this one died, so it is kept out of the verdict entirely.
+        bool IsNoise(LogEvent e) => repeats.Contains(Key(e)) || el.IsNoise(e);
         var scriptErrs = window.Where(e => e.Kind == "error" && !IsNoise(e)).ToList();
         var noiseErrs = window.Where(e => e.Kind == "error" && IsNoise(e)).GroupBy(e => e.Source).Select(g => g.OrderByDescending(e => e.At).First()).ToList();
+        // Record what the clean sessions eliminated, so the interface can show what is NOT the cause.
+        foreach (var e in noiseErrs)
+        {
+            var owner = e.Mod ?? e.Source.Replace("CET · ", "");
+            var why = el.WhyRuledOut(owner);
+            if (why != null && !s.RuledOut.Any(x => x.Mod == owner)) s.RuledOut.Add(new RuledOut { Mod = owner, Why = why });
+        }
         var xlErrs = window.Where(e => e.Kind is "xl-error" or "xl-warning" && (crashAt - e.At).TotalSeconds <= 20 && !e.Text.StartsWith("[WorldStreaming] Some patches have not been applied")).ToList();
         var activity = window.Where(e => e.Kind == "activity").OrderByDescending(e => e.At).FirstOrDefault();
 
         foreach (var e in driver) s.Evidence.Add(Ev(e, crashAt, true));
         if (appcrash != null) s.Evidence.Add(Ev(appcrash, crashAt, true));
         var noisyMods = BrokenPluginMods(d);
-        foreach (var e in scriptErrs.TakeLast(4)) s.Evidence.Add(Ev(e, crashAt, (crashAt - e.At).TotalSeconds <= 30 && !noisyMods.Contains(e.Mod ?? e.Source.Replace("CET · ", ""))));
+        bool Noise(LogEvent e) => el.IsNoise(e) || noisyMods.Contains(e.Mod ?? e.Source.Replace("CET · ", ""));
+        foreach (var e in scriptErrs.TakeLast(4)) s.Evidence.Add(Ev(e, crashAt, (crashAt - e.At).TotalSeconds <= 30 && !Noise(e)));
         foreach (var e in xlErrs.TakeLast(2)) s.Evidence.Add(Ev(e, crashAt, false));
         foreach (var e in noiseErrs.Take(2)) { var ev = Ev(e, crashAt, false); var n = sessionErrors.Count(x => x.Source == e.Source); ev.Text += $"  (repeats all session, {n} times)"; s.Evidence.Add(ev); }
         if (activity != null) s.Evidence.Add(Ev(activity, crashAt, false));
@@ -148,7 +176,7 @@ public static class Analyzer
                 s.Suspects.Add(new Suspect { Mod = "redscript / script mods", Level = "high", Why = "The redscript log names the file it choked on.", Actions = { new UiAction("open:redscript", "Open redscript log") } });
             }
             else s.Verdict = $"The engine stopped itself with: \"{s.EngineMessage}\"" + (s.CrashFile != null ? $" (in {Path.GetFileName(s.CrashFile)})." : ".");
-            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
+            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
         if (appcrash != null)
@@ -158,7 +186,7 @@ public static class Analyzer
             if (Regex.IsMatch(raw, @"^(nvwgf2um|nvlddmkm|nvgpucomp|amdxc64|amdxx64|atidxx|igd)", RegexOptions.IgnoreCase)) { s.EndKind = EndKind.Gpu; s.Confidence = 3; s.Verdict = $"Windows recorded the fault inside the graphics driver ({raw}).{partialNote}"; s.Suspects.Add(new Suspect { Mod = "GPU driver", Level = "high", Why = "The faulting module is the display driver. A clean install of the previous driver version is the usual fix.", Actions = { new UiAction("open:driver", "Open Device Manager") } }); return; }
             if (mod != raw && d.Mods.Find(mod) != null) { s.EndKind = EndKind.Script; s.Confidence = 3; s.Verdict = $"Windows recorded the fault inside {raw}, which belongs to the mod {mod}.{partialNote}"; s.Suspects.Add(SuspectFor(d, mod, "high", "Its native code is where the crash happened.")); return; }
             s.Verdict = $"Windows recorded the fault in {raw}." + (raw.StartsWith("Cyberpunk2077", StringComparison.OrdinalIgnoreCase) ? " That is the game itself, which usually means bad data handed to it by a mod (a broken mesh, appearance or sector patch)." : "") + partialNote;
-            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
+            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
         // A full card, with the engine dying on a read of memory that was never handed to it, is the commonest
@@ -184,7 +212,7 @@ public static class Analyzer
             });
             var heavy = HeaviestTextureMods(d);
             if (heavy.Count > 0) s.Suspects.Add(new Suspect { Mod = "Installed texture weight", Level = "low", Why = $"{Mb(d.Mods.ArchiveBytes)} of mod archives are installed. The heaviest are {Join(heavy)}. Nothing here is broken — it is simply more texture than a {Math.Round(report.VramTotalMB / 1024.0)} GB card can keep resident in a dense district.", Actions = { new UiAction("mods", "See the mod list") } });
-            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
+            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
         if (scriptErrs.Count > 0)
@@ -193,15 +221,19 @@ public static class Analyzer
             s.EndKind = EndKind.Script; s.Confidence = secs <= 15 ? 2 : 1;
             var name = last.Mod ?? last.Source.Replace("CET · ", "");
             s.Verdict = $"Script error in {name} {secs} s before the crash: {Short(last.Text)} Not a GPU fault; the engine recorded no error of its own.{partialNote}";
-            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
+            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
         if (xlErrs.Count > 0 && activity != null && activity.Text.Contains("world streaming"))
         {
             var last = xlErrs.Last(); var secs = (int)Math.Round((crashAt - last.At).TotalSeconds);
-            s.EndKind = EndKind.Script; s.Confidence = 1;
-            s.Verdict = $"Crashed during world streaming, {secs} s after ArchiveXL reported a failed sector patch from {last.Mod ?? "a mod"}. A world-editing mod is the likely cause.{partialNote}";
-            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
+            s.EndKind = EndKind.Script; s.Confidence = failingHere.Count > 0 ? 2 : 1;
+            var shared = s.AreaMods.Count;
+            s.Verdict = $"Crashed during world streaming, {secs} s after ArchiveXL reported a failed sector patch from {last.Mod ?? "a mod"}."
+                + (shared > 1 ? $" {shared} mods were rewriting the map sectors loading around you at the time" + (failingHere.Count > 0 ? $", and {Join(failingHere.Select(a => a.Mod).Distinct().ToList())} " + (failingHere.Count == 1 ? "is the one that " : "are the ones that ") + "no longer fits the sector it edits." : ".") : " A world-editing mod is the likely cause.")
+                + partialNote;
+            AddAreaSuspects(d, s, el);
+            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
         // nothing specific
@@ -214,10 +246,41 @@ public static class Analyzer
         else s.Verdict = "Crashed with nothing logged in the two minutes before. The engine could not describe it, no mod reported an error, and the driver did not fault.";
         var cluster = all.Count(x => x != s && x.District != null && x.District == s.District && x.EndKind != EndKind.Clean);
         if (s.District != null && cluster >= 2) s.Verdict += $" This is the {Ordinal(cluster + 1)} crash in {s.District}; something specific to that area is likely.";
-        AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt);
-        if (activity != null && activity.Text.Contains("world streaming")) foreach (var m in WorldPatchMods(d).Take(3)) if (!s.Suspects.Any(x => x.Mod == m)) s.Suspects.Add(SuspectFor(d, m, "medium", "Edits world sectors; failed or overlapping sector patches crash during streaming."));
+        AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
+        AddAreaSuspects(d, s, el);
+        if (s.AreaMods.Count == 0 && activity != null && activity.Text.Contains("world streaming")) foreach (var m in WorldPatchMods(d).Take(3)) if (!s.Suspects.Any(x => x.Mod == m)) s.Suspects.Add(SuspectFor(d, m, "medium", "Edits world sectors; failed or overlapping sector patches crash during streaming."));
         AddLocationSuspects(d, s);
     }
+
+    // Which mods were rewriting the map sectors that streamed in around the player in the last minute of the session.
+    // ArchiveXL names both the sector and every .xl applied to it, so this is read off the log rather than guessed.
+    static List<AreaMod> AreaMods(CollectedData d, Session s, DateTime crashAt)
+    {
+        var here = d.SectorPatches.Where(p => p.At <= crashAt.AddSeconds(2) && p.At >= crashAt.AddSeconds(-60)).ToList();
+        if (here.Count == 0) return new();
+        // sector -> the set of .xl files that patched it
+        var bySector = new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in here)
+        {
+            if (!bySector.TryGetValue(p.Sector, out var set)) bySector[p.Sector] = set = new(StringComparer.OrdinalIgnoreCase);
+            foreach (var x in p.Xls) set.Add(x);
+        }
+        var failing = d.Events.Where(e => e.Kind is "xl-error" or "xl-warning" && e.At >= s.Start && e.At <= crashAt.AddSeconds(2) && e.Text.Contains("WorldStreaming"))
+                              .Select(e => XlNameIn(e.Text)).Where(x => x != null).Select(x => x!).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var rows = new List<AreaMod>();
+        foreach (var xl in bySector.Values.SelectMany(v => v).Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var mine = bySector.Where(kv => kv.Value.Contains(xl)).Select(kv => kv.Key).ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var others = bySector.Where(kv => mine.Contains(kv.Key)).SelectMany(kv => kv.Value).Where(o => !o.Equals(xl, StringComparison.OrdinalIgnoreCase)).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+            rows.Add(new AreaMod { Mod = d.Mods.OwnerOfXl(xl) ?? Path.GetFileNameWithoutExtension(xl), File = xl, Sectors = mine.Count, SharedWith = others, Failing = failing.Contains(xl) });
+        }
+        foreach (var r in rows)
+            r.Note = r.Failing ? "ArchiveXL reported this mod's patch did not fit the sector it was applied to during this session."
+                   : r.SharedWith >= 3 ? "Shares these sectors with several other mods."
+                   : null;
+        return rows.OrderByDescending(r => r.Failing).ThenByDescending(r => r.Sectors).Take(12).ToList();
+    }
+    static string? XlNameIn(string text) { var m = Regex.Match(text, @"([\w\-. ]+\.xl):"); return m.Success ? m.Groups[1].Value.Trim() : null; }
 
     // Mods whose ArchiveXL patches name the place or quest where the crash happened. A crash with no error logged, in a
     // place several mods rewrite, is usually one of them.
@@ -286,25 +349,66 @@ public static class Analyzer
 
     static string Key(LogEvent e) => e.Source + "|" + Regex.Replace(e.Text, @"\d+", "#");
 
-    static void AddScriptSuspects(CollectedData d, Session s, List<LogEvent> scriptErrs, List<LogEvent> xlErrs, DateTime crashAt)
+    // Suspects drawn from what was actually being rewritten underfoot. A mod whose patch ArchiveXL had to skip is the
+    // strongest of these: it proves the sector on disk is not the sector the mod was built against.
+    static void AddAreaSuspects(CollectedData d, Session s, Elimination el)
     {
-        var noisy = BrokenPluginMods(d);
+        foreach (var a in s.AreaMods.Where(x => x.Failing || x.SharedWith >= 3).Take(4))
+        {
+            if (s.Suspects.Any(x => x.Mod == a.Mod)) continue;
+            var cleared = el.WhyRuledOut(a.Mod);
+            if (cleared != null) { if (!s.RuledOut.Any(x => x.Mod == a.Mod)) s.RuledOut.Add(new RuledOut { Mod = a.Mod, Why = cleared }); continue; }
+            var why = a.Failing
+                ? $"It rewrites {a.Sectors} of the map sectors that were loading around you, and ArchiveXL had to skip part of its patch this session because the sector no longer matches what the mod expects. {a.SharedWith} other mod{(a.SharedWith == 1 ? "" : "s")} edit the same ground."
+                : $"It rewrites {a.Sectors} of the map sectors that were loading around you, shared with {a.SharedWith} other mods. Overlapping sector edits are a common cause of crashes while moving through an area.";
+            s.Suspects.Add(SuspectFor(d, a.Mod, a.Failing ? "high" : "low", why));
+        }
+    }
+
+    static void AddScriptSuspects(CollectedData d, Session s, List<LogEvent> scriptErrs, List<LogEvent> xlErrs, DateTime crashAt, Elimination el)
+    {
+        var brokenPlugin = BrokenPluginMods(d);
+
+        // Returns true and records the elimination if this mod cannot be the cause. Two independent reasons:
+        // it also misbehaves in sessions that end cleanly, or its native half never loads on this game patch at all
+        // (in which case its script errors are a permanent condition, not an event that happened at the crash).
+        bool Eliminated(string name)
+        {
+            if (s.RuledOut.Any(x => x.Mod == name)) return true;
+            var why = el.WhyRuledOut(name);
+            if (why == null && brokenPlugin.Contains(name))
+                why = "It errors constantly because its native plugin will not load on this game patch. That is a standing fault, not something that happened at the crash.";
+            if (why == null) return false;
+            s.RuledOut.Add(new RuledOut { Mod = name, Why = why });
+            return true;
+        }
+
         foreach (var grp in scriptErrs.GroupBy(e => e.Mod ?? e.Source.Replace("CET · ", "")).OrderBy(g => (crashAt - g.Max(e => e.At)).TotalSeconds))
         {
-            var name = grp.Key; var secs = (int)Math.Round((crashAt - grp.Max(e => e.At)).TotalSeconds);
-            if (s.Suspects.Any(x => x.Mod == name)) continue;
-            // A mod whose native half refuses to load on this game patch errors continuously, in sessions that end
-            // cleanly as well as ones that crash. Landing near a crash is coincidence, so it must not outrank a real lead.
-            if (noisy.Contains(name)) { s.Suspects.Add(SuspectFor(d, name, "low", $"Its script errored {secs} s before the crash, but it errors constantly: its native plugin will not load on this game patch, so this is background noise rather than something that happened at the crash.")); continue; }
-            s.Suspects.Add(SuspectFor(d, name, secs <= 15 ? "high" : "medium", $"Its script errored {secs} s before the crash: {Short(grp.Last().Text)}"));
+            var name = grp.Key;
+            if (s.Suspects.Any(x => x.Mod == name) || Eliminated(name)) continue;
+            var secs = (int)Math.Round((crashAt - grp.Max(e => e.At)).TotalSeconds);
+            // Without a clean baseline nothing has been checked against anything, so no suspect may be called high.
+            var level = !el.HasBaseline ? "medium" : secs <= 15 ? "high" : "medium";
+            var why = $"Its script errored {secs} s before the crash: {Short(grp.Last().Text)}"
+                    + (el.HasBaseline ? $" It does not do this in any of the {el.CleanSessions} sessions that ended cleanly." : NoBaselineNote(el));
+            s.Suspects.Add(SuspectFor(d, name, level, why));
         }
         foreach (var grp in xlErrs.Where(e => e.Mod != null).GroupBy(e => e.Mod!))
         {
+            var name = grp.Key;
+            if (s.Suspects.Any(x => x.Mod == name) || Eliminated(name)) continue;
             var secs = (int)Math.Round((crashAt - grp.Max(e => e.At)).TotalSeconds);
-            if (s.Suspects.Any(x => x.Mod == grp.Key)) continue;
-            s.Suspects.Add(SuspectFor(d, grp.Key, "medium", $"ArchiveXL reported a problem with its patch {secs} s before the crash: {Short(grp.Last().Text)}"));
+            s.Suspects.Add(SuspectFor(d, name, "medium", $"ArchiveXL reported a problem with its patch {secs} s before the crash: {Short(grp.Last().Text)}"
+                    + (el.HasBaseline ? "" : NoBaselineNote(el))));
         }
     }
+
+    // Said out loud rather than hidden: with nothing to compare against, a lead is a guess.
+    static string NoBaselineNote(Elimination el) =>
+        el.CleanSessions == 0
+            ? " No session on record has ended cleanly, so there is nothing to compare this against — treat it as a lead, not a finding."
+            : $" Only {el.CleanSessions} session on record ended cleanly, which is too few to rule anything out — treat this as a lead, not a finding.";
 
     static Suspect SuspectFor(CollectedData d, string modName, string level, string why)
     {
@@ -339,9 +443,16 @@ public static class Analyzer
     static string? Pretty(string? district) => district == null ? null : Regex.Replace(district.Replace("_", " · "), "(?<=[a-z])(?=[A-Z])", " ");
 
     // ---------- health ----------
-    static List<HealthItem> Health(CollectedData d, List<Session> sessions)
+    static List<HealthItem> Health(CollectedData d, List<Session> sessions, Elimination el)
     {
         var h = new List<HealthItem>();
+        // How much of a clean baseline exists decides how much anything else here can be trusted. Say it first.
+        if (!el.HasBaseline)
+            h.Add(new HealthItem { Severity = "medium", Title = el.CleanSessions == 0 ? "No session has ended cleanly yet" : "Only one session has ended cleanly",
+                Detail = $"Crash Doctor rules a mod out by checking whether it misbehaves in sessions that end normally too. With {(el.CleanSessions == 0 ? "no clean sessions" : "one clean session")} on record there is nothing to compare against, so every suspect below is a lead rather than a finding. Play until you quit the game normally a couple of times and scan again — the diagnosis gets sharper, not vaguer, the more you play." });
+        else
+            h.Add(new HealthItem { Severity = "info", Title = $"{el.CleanSessions} clean sessions are being used to rule things out",
+                Detail = $"Anything that also happens in a session you quit normally cannot be why another one crashed. Of the {el.CleanSessions + el.CrashedSessions} sessions whose logs the game still keeps, {el.CleanSessions} ended cleanly and {el.CrashedSessions} crashed — that comparison is what lets the diagnosis discard background noise instead of blaming it. Older sessions are remembered but their logs have been rotated away, so they cannot be compared." });
         var week = sessions.Where(s => s.Start > DateTime.Now.AddDays(-7)).ToList();
         var full = week.Where(s => !s.Partial && s.EndKind != EndKind.Running).ToList();
         var partial = week.Count(s => s.Partial);

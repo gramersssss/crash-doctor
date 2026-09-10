@@ -93,6 +93,10 @@ tr:hover td{background:#F7F9FB}
 .vram.full .bar i{background:var(--signal)}
 .vram .ceil{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--steel);opacity:.55}
 .vram .note{font-size:12.5px;color:var(--steel);margin-top:7px}
+/* eliminated leads: present, legible, visibly not a suspect */
+.cleared{border-top:1px solid var(--line);padding:11px 0}
+.cleared .name{font-family:var(--display);font-size:13.5px;color:var(--steel);text-decoration:line-through;text-decoration-color:var(--line)}
+.cleared .why{font-size:12.5px;color:var(--steel);margin-top:3px;line-height:1.45}
 .evidence{margin-top:18px}
 .ev{display:grid;grid-template-columns:76px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .ev:first-of-type{border-top:0}
@@ -216,6 +220,7 @@ tr:hover td{background:#F7F9FB}
         <aside class="card">
           <p class="eyebrow">What to do</p>
           <div id="dx-suspects"></div>
+          <div id="dx-ruledout"></div>
         </aside>
       </div>
     </section>
@@ -323,6 +328,7 @@ function renderDx(r){
   var ev=document.getElementById('dx-evidence'); ev.innerHTML='';
   if(!s.evidence.length){ ev.innerHTML='<div class="muted" style="padding:8px 0">Nothing was logged in the two minutes before the crash. That usually means a hard fault the engine could not describe.</div>'; }
   s.evidence.forEach(function(e){ var d=document.createElement('div'); d.className='ev'; d.innerHTML='<div class="t '+(e.hit?'hit':'')+'">'+(e.tMinus===0?'T-0':'T-'+e.tMinus+'s')+'</div><div><div class="src">'+esc(e.source)+'</div><div class="txt">'+esc(e.text)+'</div></div>'; ev.appendChild(d); });
+  renderRuledOut(s);
   var su=document.getElementById('dx-suspects'); su.innerHTML='';
   if(!s.suspects.length){ su.innerHTML='<div class="muted">No single mod stands out. See Health for standing problems.</div>'; }
   s.suspects.forEach(function(x){ var d=document.createElement('div'); d.className='suspect'; d.innerHTML='<div class="name"><span>'+esc(x.mod)+'</span><span class="mark '+(x.level==='high'?'sig':x.level==='low'?'grey':'amb')+'">'+esc(x.level)+'</span></div><div class="why">'+esc(x.why)+'</div><div class="acts">'+x.actions.map(function(a){return '<button class="btn" onclick="act('+JSON.stringify(a.id)+')">'+esc(a.label)+'</button>';}).join('')+'</div>'; su.appendChild(d); });
@@ -345,6 +351,17 @@ function renderVram(s){
   host.innerHTML='<div class="vram '+cls+'"><div class="lbl"><span>Video memory in use at the crash</span><b>'+used+' / '+total+' MB · '+pct+'%</b></div>'+
     '<div class="bar"><i style="width:'+fill.toFixed(1)+'%"></i>'+(used>total?'<span class="ceil" style="left:'+ceil.toFixed(1)+'%"></span>':'')+'</div>'+
     '<div class="note">'+note+(s.position?'  Player was at '+esc(s.position)+'.':'')+'</div></div>';
+}
+
+// What is NOT the cause. Half the value of a diagnosis is the things it takes off the table, so this is shown
+// next to the suspects rather than buried: each entry was demoted because it also happens in sessions that end well.
+function renderRuledOut(s){
+  var host=document.getElementById('dx-ruledout');
+  var list=s.ruledOut||[];
+  if(!list.length){ host.innerHTML=''; return; }
+  host.innerHTML='<p class="eyebrow" style="margin-top:22px">Ruled out</p>'+list.map(function(x){
+    return '<div class="cleared"><div class="name">'+esc(x.mod)+'</div><div class="why">'+esc(x.why)+'</div></div>';
+  }).join('');
 }
 
 function renderTrace(r){

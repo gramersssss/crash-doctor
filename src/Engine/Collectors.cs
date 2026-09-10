@@ -25,6 +25,17 @@ public sealed class Red4extSession
     public List<string> Incompatible { get; set; } = new();  // raw warning lines
 }
 
+// ArchiveXL logs every world sector it patches as it streams in, and names each .xl file applied to it. That makes it
+// possible to say exactly which mods were rewriting the ground the player was standing on when the game died — and
+// which of them were doing it to the same sector as each other.
+public sealed class SectorPatch
+{
+    public DateTime At { get; set; }
+    public string Sector { get; set; } = "";      // short name, e.g. exterior_-3_2_0_3
+    public List<string> Xls { get; set; } = new(); // the .xl files applied to it
+    public bool Incomplete { get; set; }           // ArchiveXL reported some patches were skipped
+}
+
 public sealed class LogEvent
 {
     public DateTime At { get; set; }
@@ -41,6 +52,7 @@ public sealed class CollectedData
     public List<DateTime> CrashReporterTimes { get; } = new();
     public List<CrashReport> CrashReports { get; set; } = new();
     public List<LogEvent> Events { get; } = new();          // everything with a timestamp
+    public List<SectorPatch> SectorPatches { get; } = new();
     public Dictionary<string, string> Settings { get; } = new();
     public DateTime? SettingsWritten { get; set; }
     public JsonElement? CrashInfo { get; set; }
@@ -186,10 +198,30 @@ public static class Collectors
             if (new FileInfo(f).LastWriteTime < since) continue;
             string[] lines; try { lines = Files.ReadAllLinesShared(f); } catch { continue; }
             var seenErr = new HashSet<string>();
+            // sector-patch blocks interleave between worker threads, so each is tracked per thread id
+            var open = new Dictionary<string, SectorPatch>();
+            var patches = new List<SectorPatch>();
             for (int i = 0; i < lines.Length; i++)
             {
                 var line = lines[i]; if (!TryTs(line, out var at)) continue;
+                var tid = Regex.Match(line, @"\]\s*\[(\d+)\]").Groups[1].Value;
                 var body = Regex.Replace(line, @"^\[[^\]]+\]\s*\[\d+\]\s*", "");
+                if (body.Contains("[WorldStreaming]"))
+                {
+                    var start = Regex.Match(body, @"Patching sector ""([^""]+)""");
+                    if (start.Success) { open[tid] = new SectorPatch { At = at, Sector = ShortSector(start.Groups[1].Value) }; }
+                    else if (open.TryGetValue(tid, out var cur))
+                    {
+                        var apply = Regex.Match(body, @"Applying changes from ""([^""]+)""");
+                        if (apply.Success) cur.Xls.Add(apply.Groups[1].Value);
+                        else if (body.Contains("patches have been applied to"))
+                        {
+                            if (body.Contains("Some patches have not been applied")) cur.Incomplete = true;
+                            if (cur.Xls.Count > 0) patches.Add(cur);
+                            open.Remove(tid);
+                        }
+                    }
+                }
                 if (body.StartsWith("[error]") || body.StartsWith("[warning]"))
                 {
                     var kind = body.StartsWith("[error]") ? "xl-error" : "xl-warning";
@@ -205,8 +237,17 @@ public static class Collectors
                     if (i == lines.Length - 1) d.Events.Add(new LogEvent { At = at, Source = "ArchiveXL", Text = summary, Kind = "activity" });
                 }
             }
+            if (patches.Count > 0)
+            {
+                var last = patches[^1].At;
+                d.SectorPatches.AddRange(patches.Where(x => x.At >= last.AddMinutes(-5)));
+            }
         }
     }
+
+    // "base\worlds\...\exterior_-3_2_0_3.streamingsector" -> "exterior_-3_2_0_3" (no separator literals needed)
+    static string ShortSector(string path) => Path.GetFileNameWithoutExtension(path);
+
     static string? XlOwner(string text) { var m = Regex.Match(text, @"([\w\-. ]+\.xl):"); return m.Success ? m.Groups[1].Value.Trim() : null; }
 
     // ---------------- redscript ----------------

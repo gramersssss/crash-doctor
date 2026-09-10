@@ -63,6 +63,66 @@ Motion: the trace draws in; verdict card fades up 120 ms after. Nothing else mov
 Copy: verdicts are one sentence, active voice, name the mod, say what to do. Errors say what went wrong and what
 to try. Empty states invite the scan.
 
+## How it reasons — the diagnostic philosophy
+
+This is the part that decides whether the tool is worth installing. It was written after a full day of using the
+engine against a real, badly-behaved 168-mod install, during which the author's own analysis reached the wrong
+conclusion three times in a row. Those three failures are the source of every rule below.
+
+### The honest claim
+Crash Doctor does **not** promise to fix every crash. It promises to do, reliably and in ten seconds, the evidence
+work that people currently do badly over days: read what is actually on the machine, sort many crashes into the
+few distinct problems they really are, and rule things out. Naming the culprit is a bonus, not the contract.
+
+Any tool promising to solve every crash is lying, and this audience can tell.
+
+### The three failures, and what they taught
+1. **"It's video memory."** Twelve crashes had the card at 91–102 %. Real problem, genuinely fixed — and the
+   crashes continued. *A strong correlation that explains many cases can still not be the cause of the one in front
+   of you.*
+2. **"It's mod world-streaming load."** The crash actually happened while streaming had gone almost silent.
+   *The number being measured was not the number that mattered.*
+3. **"It's the version-mismatched trainer."** Loaded in 24 of 30 crash dumps. The user then played with it and did
+   not crash. *Correlation across a set is not causation for a member of it.*
+
+Every wrong answer came from reasoning about **what happened just before one crash**. Every right answer came from
+**comparing many sessions against each other**. That is the whole lesson, and the architecture encodes it.
+
+### Five layers, and only the bottom two may be confident
+**1 — Facts.** Read, never inferred: faulting instruction address and exception code (from the minidump), loaded
+modules, video memory used vs total, player position, tracked quest, engine OOM flag, framework versions, mod
+inventory, settings, the crash screenshot. No other tool in this ecosystem opens the minidump at all.
+
+**2 — Grouping.** Cluster crashes by faulting address. The headline is *"you do not have 30 crashes, you have 3
+problems"*, which is a completely different conversation from "the game crashes sometimes". Deterministic, and on
+the real install it separated 30 crashes into 4 families instantly.
+
+**3 — Elimination.** For every suspect, ask whether the same evidence also appears in sessions that ended
+**cleanly**. If it does, it is background noise and must be demoted and labelled as such — never ranked high.
+This is the layer whose absence caused all three failures above. It requires at least two clean sessions before it
+is allowed to conclude anything; with no clean baseline it must say so rather than assume.
+
+**4 — Known fixes, keyed on crash signature.** This is the answer to "but every crash is different". The *fixes*
+differ; the *evidence gathering* does not. So evidence collection is universal code, and fixes are a lookup table
+keyed on a stable signature (faulting address + game version). The table starts with what has been verified
+first-hand and grows.
+
+**5 — Verdict, with an honest confidence and a real "not enough evidence" state.** Always accompanied by what was
+*ruled out* and why. Four eliminated suspects is genuinely valuable to someone who is stuck.
+
+### Guided bisect
+The reliable way to find a cause nobody has seen before, including one with no log signature at all. The app knows
+the mod list, the session history and the crash signatures, so it can drive the experiment instead of leaving the
+user to guess: disable this group, play, report whether the signature changed, restore, halve, repeat. Mechanical,
+honest, and the thing that would have solved the real case fastest.
+
+### Rules the copy must obey
+- Never name a mod the evidence does not support. "Its script errored 48 s before the crash" is not a cause.
+- State correlation as correlation, with the counts visible ("in 24 of 30 crashes"), never as a conclusion.
+- Anything appearing in clean sessions is noise. Say the word "noise" and show the clean-session count.
+- "I don't know yet, here is what is ruled out and here is the next test" is a valid, respectable verdict.
+- Confidence must be able to reach zero.
+
 ## Quality floor
 Responsive to 900 px (the window can be small). Visible focus ring (Trace). Reduced-motion respected.
 Keyboard: rail is a list of buttons; sessions are focusable rows.
