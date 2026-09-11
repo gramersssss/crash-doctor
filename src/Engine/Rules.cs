@@ -29,6 +29,8 @@ public sealed class RuleHit
     public string Title { get; set; } = "";
     public string Detail { get; set; } = "";
     public string? Mod { get; set; }
+    /// <summary>Two or three words for the mods-table chip. See <see cref="HealthItem.Flag"/>.</summary>
+    public string? Flag { get; set; }
     public UiAction? Action { get; set; }
 }
 

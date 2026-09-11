@@ -581,7 +581,7 @@ public static class Analyzer
             foreach (var inc in latestRed.Incompatible)
             {
                 var name = Regex.Match(inc, @"^(.+?) \(version").Groups[1].Value; var owner = d.Mods.OwnerOfPlugin(name.Replace(" ", "")) ?? d.Mods.OwnerOfPlugin(name) ?? name;
-                h.Add(new HealthItem { Severity = "medium", Title = $"Native plugin refuses to load on this patch: {name}", Detail = inc + " Whatever this mod does through its native half is silently off, and its script half may error.", Mod = owner, Action = NexusAction(d, owner) });
+                h.Add(new HealthItem { Severity = "medium", Title = $"Native plugin refuses to load on this patch: {name}", Detail = inc + " Whatever this mod does through its native half is silently off, and its script half may error.", Mod = owner, Flag = "plugin not loading", Action = NexusAction(d, owner) });
             }
         if (latestRed != null)
         {
@@ -598,17 +598,18 @@ public static class Analyzer
                 if (owner == null) title += " (mod not identified)";
                 var detail = msgs.Count == 1 ? msgs[0] : $"{msgs.Count} distinct messages, e.g. {msgs[0]}";
                 if (world) detail += " Another mod changed that sector first, or the game patch did; the patch is skipped."; else if (missing) detail += " The mod references files that are not installed or were removed in a game patch; those parts are skipped.";
-                h.Add(new HealthItem { Severity = world ? "medium" : first.Kind == "xl-error" ? (owner == null ? "low" : "medium") : "low", Title = title, Detail = detail, Mod = owner, Action = owner != null ? NexusAction(d, owner) : null });
+                var flag = world ? "world patch failing" : missing ? "missing resources" : "ArchiveXL problem";
+                h.Add(new HealthItem { Severity = world ? "medium" : first.Kind == "xl-error" ? (owner == null ? "low" : "medium") : "low", Title = title, Detail = detail, Mod = owner, Flag = flag, Action = owner != null ? NexusAction(d, owner) : null });
             }
         }
-        foreach (var w in d.RedscriptWarnings.Take(6)) h.Add(new HealthItem { Severity = w.Contains("overwrites a previous annotation") ? "low" : "medium", Title = w.Contains("overwrites a previous annotation") ? "Two mods replace the same script method" : "redscript warning", Detail = w, Mod = GuessOwnerFromText(d, w) });
-        foreach (var e in d.RedscriptErrors.Take(6)) h.Add(new HealthItem { Severity = "high", Title = "redscript error: a script mod does not compile", Detail = e, Mod = GuessOwnerFromText(d, e) });
+        foreach (var w in d.RedscriptWarnings.Take(6)) h.Add(new HealthItem { Severity = w.Contains("overwrites a previous annotation") ? "low" : "medium", Title = w.Contains("overwrites a previous annotation") ? "Two mods replace the same script method" : "redscript warning", Detail = w, Mod = GuessOwnerFromText(d, w), Flag = w.Contains("overwrites a previous annotation") ? "script overridden" : "redscript warning" });
+        foreach (var e in d.RedscriptErrors.Take(6)) h.Add(new HealthItem { Severity = "high", Title = "redscript error: a script mod does not compile", Detail = e, Mod = GuessOwnerFromText(d, e), Flag = "does not compile" });
         var lastSess = sessions.Where(s => !s.Partial).OrderByDescending(s => s.Start).FirstOrDefault();
         if (lastSess != null)
             foreach (var grp in d.Events.Where(e => e.Kind == "error" && e.Source.StartsWith("CET") && e.At >= lastSess.Start).GroupBy(e => e.Source).Where(g => g.Count() >= 10))
             {
                 var owner = grp.First().Mod ?? grp.Key.Replace("CET · ", "");
-                h.Add(new HealthItem { Severity = "medium", Title = $"{owner} logs the same error {grp.Count()} times per session", Detail = Short(grp.Last().Text) + " A feature of the mod is not working; check for an update.", Mod = owner, Action = NexusAction(d, owner) });
+                h.Add(new HealthItem { Severity = "medium", Title = $"{owner} logs the same error {grp.Count()} times per session", Detail = Short(grp.Last().Text) + " A feature of the mod is not working; check for an update.", Mod = owner, Flag = "error spam", Action = NexusAction(d, owner) });
             }
         if (Directory.Exists(d.Paths.Scripts))
         {
@@ -620,7 +621,7 @@ public static class Analyzer
         if (latestRed != null && latestRed.Incompatible.Count == 0 && d.RedscriptErrors.Count == 0) h.Add(new HealthItem { Severity = "info", Title = "Frameworks loaded cleanly", Detail = $"RED4ext {latestRed.Red4extVersion} and {latestRed.PluginsLoaded.Count} native plugins loaded without warnings; scripts compiled." });
         if (d.Warnings.Count > 0) h.Add(new HealthItem { Severity = "info", Title = "Some sources could not be read", Detail = string.Join(" ", d.Warnings) });
         // The rule catalogue: recognisable causes that need no crash signature at all. See Rules.cs.
-        foreach (var hit in Rules.Run(d, r)) h.Add(new HealthItem { Severity = hit.Severity, Title = hit.Title, Detail = hit.Detail, Mod = hit.Mod, Action = hit.Action });
+        foreach (var hit in Rules.Run(d, r)) h.Add(new HealthItem { Severity = hit.Severity, Title = hit.Title, Detail = hit.Detail, Mod = hit.Mod, Flag = hit.Flag, Action = hit.Action });
         return h;
     }
 

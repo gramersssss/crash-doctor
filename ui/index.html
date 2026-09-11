@@ -653,7 +653,9 @@ function renderHealth(r){
   var el=document.getElementById('health-list'); el.innerHTML='';
   var order={high:0,medium:1,low:2,info:3};
   var list=r.health.slice().sort(function(a,b){return order[a.severity]-order[b.severity];});
-  document.getElementById('health-h1').textContent=list.length? (list.filter(function(h){return h.severity!=='info';}).length+' things worth knowing') : 'Nothing standing out';
+  // Counts the rows on screen, not the non-info ones: the rail badge and this heading used to disagree with
+  // each other and with the list underneath, which reads as a bug even though nothing was wrong.
+  document.getElementById('health-h1').textContent=list.length? (list.length+' things worth knowing') : 'Nothing standing out';
   if(!list.length){ el.innerHTML='<div class="empty" style="border:0">No standing problems found in the logs.</div>'; return; }
   list.forEach(function(h){ var d=document.createElement('div'); d.className='hl'; var m={high:'sig',medium:'amb',low:'grey',info:'trace'}[h.severity];
     d.innerHTML='<div><span class="mark '+m+'">'+esc(h.severity)+'</span></div><div><div class="title">'+esc(h.title)+'</div><div class="detail">'+esc(h.detail)+'</div>'+(h.mod?'<div class="mono muted" style="margin-top:4px">'+esc(h.mod)+'</div>':'')+'</div><div class="act">'+(h.action?'<button class="btn" onclick="act('+JSON.stringify(h.action.id)+')">'+esc(h.action.label)+'</button>':'')+'</div>'; el.appendChild(d); });

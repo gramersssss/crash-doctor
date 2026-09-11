@@ -186,6 +186,12 @@ public sealed class HealthItem
     public string Title { get; set; } = "";
     public string Detail { get; set; } = "";
     public string? Mod { get; set; }
+    /// <summary>
+    /// Two or three words for the chip in the mods table, e.g. "plugin not loading". The title is a sentence and
+    /// belongs in the Health list; squeezed into a table cell it truncates to nonsense. Any item that names a Mod
+    /// should set this; without it the table falls back to a cut-off title.
+    /// </summary>
+    public string? Flag { get; set; }
     public UiAction? Action { get; set; }
 }
 

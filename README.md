@@ -31,7 +31,8 @@ CrashDoctor.exe --json report.json [--html report.html] [--game "D:\Games\Cyberp
 ```
 
 ## Building
-.NET 8 SDK. `build.ps1` produces a single-file, self-contained `dist\CrashDoctor.exe`.
+.NET 8 SDK. `build.ps1 -Version x.y.z` produces a single-file, self-contained exe (no .NET needed on the
+user's PC) in `dist\CrashDoctor-<version>\`, plus the manual-install and Vortex zips for Nexus.
 
 ## Privacy
 Nothing leaves your PC. A saved report contains your game path, hardware model, mod names and log excerpts; share it

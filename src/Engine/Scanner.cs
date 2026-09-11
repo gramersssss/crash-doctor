@@ -62,7 +62,7 @@ public static class Scanner
     static ModRow Flagged(CollectedData d, ModRow m, Report r)
     {
         foreach (var h in r.Health.Where(h => h.Mod != null && (h.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) || h.Mod.Contains(m.Name, StringComparison.OrdinalIgnoreCase)) && h.Severity != "info"))
-            m.Flags.Add(new ModFlag { Label = h.Title.Length > 40 ? h.Title[..40] + "…" : h.Title, Level = h.Severity, Detail = h.Detail });
+            m.Flags.Add(new ModFlag { Label = h.Flag ?? (h.Title.Length > 40 ? h.Title[..40] + "…" : h.Title), Level = h.Severity, Detail = h.Detail });
         // Elimination outranks suspicion. If the clean sessions cleared this mod, that is the whole story: showing
         // "suspect" and "ruled out" side by side would just reproduce the confusion the elimination layer exists to end.
         var newestFirst = r.Sessions.OrderByDescending(x => x.Start).ToList();
@@ -83,7 +83,16 @@ public static class Scanner
     static Dictionary<string, string> PrettySettings(Dictionary<string, string> s)
     {
         var o = new Dictionary<string, string>();
-        foreach (var kv in Labels) if (s.TryGetValue(kv.Key, out var v)) o[kv.Value] = v.Replace("UI-Settings-Video-QualitySetting-", "").Replace("true", "On").Replace("false", "Off");
+        foreach (var kv in Labels)
+            if (s.TryGetValue(kv.Key, out var v))
+            {
+                v = v.Replace("UI-Settings-Video-QualitySetting-", "");
+                // The settings file writes booleans both ways depending on the key, so "Ray tracing: True" sat in a
+                // column of Off / Medium / Ultra until this stopped being case-sensitive.
+                if (v.Equals("true", StringComparison.OrdinalIgnoreCase)) v = "On";
+                else if (v.Equals("false", StringComparison.OrdinalIgnoreCase)) v = "Off";
+                o[kv.Value] = v;
+            }
         return o;
     }
 

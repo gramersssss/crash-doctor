@@ -18,7 +18,10 @@ public sealed class MainForm : Form
         Text = "Crash Doctor for Cyberpunk 2077";
         Width = 1280; Height = 820; MinimumSize = new Size(900, 600); StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(0xED, 0xF0, 0xF3);
-        try { Icon = new Icon(Path.Combine(AppContext.BaseDirectory, "app.ico")); } catch { }
+        // Take the icon out of our own exe, where ApplicationIcon has already embedded it. Reading app.ico from
+        // beside the exe used to be the only attempt, and it never worked: that file is not part of the build
+        // output or of what build.ps1 ships, so the window quietly wore the default WinForms icon.
+        try { Icon = Icon.ExtractAssociatedIcon(Environment.ProcessPath ?? Application.ExecutablePath); } catch { }
         Controls.Add(_web);
         Load += async (_, _) => await InitAsync();
     }
