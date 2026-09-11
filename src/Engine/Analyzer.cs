@@ -545,7 +545,12 @@ public static class Analyzer
             var detail = $"{total} crashes with a readable dump fall into {groups.Count} distinct fault{(groups.Count == 1 ? "" : "s")} - crashes at the same machine instruction are the same bug. "
                 + (repeat.Count > 0 ? $"{repeat.Count} of them repeat: " + Join(repeat.Take(3).Select(g => $"{g.Fault} ({g.Count}x, {g.FirstSeen:d MMM}-{g.LastSeen:d MMM})").ToList()) + ". " : "")
                 + (live.Count == 0 ? "None of them has happened since your last clean session, so nothing is currently recurring." : $"{live.Count} {(live.Count == 1 ? "is" : "are")} still happening since the last clean session.");
-            h.Add(new HealthItem { Severity = live.Count > 0 ? "medium" : "info", Title = groups.Count == 1 ? "All your crashes are one repeating fault" : $"Your crashes are {groups.Count} separate problems, not {total} random ones", Detail = detail });
+            // "3 separate problems, not 3 random ones" was the wording when nothing repeated, which says nothing at
+            // all. Nothing repeating is its own finding, and the opposite of the usual one.
+            var title = groups.Count == 1 ? "All your crashes are one repeating fault"
+                      : groups.Count == total ? $"Your {total} crashes are {total} different faults, none of them repeating"
+                      : $"Your crashes are {groups.Count} separate problems, not {total} random ones";
+            h.Add(new HealthItem { Severity = live.Count > 0 ? "medium" : "info", Title = title, Detail = detail });
 
             // An injected trainer or cheat tool is worth stating, with the count, and without a conclusion attached.
             var inj = groups.Where(g => g.InjectorSessions > 0).ToList();

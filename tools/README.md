@@ -44,11 +44,19 @@ why.
     set OneDrive=C:\temp\fixtures\broken\OneDrive
     CrashDoctor.exe --json out.json --game C:\temp\fixtures\broken\game
 
-Builds an install that deliberately trips every rule in src/Engine/Rules.cs: an upscaler enabler beside the game,
-two archives that downloaded as nothing, saves inside a synced folder, and a copy of a real crash dump with a
-module renamed to a capture hook. A rule that has never been seen to fire is not a rule, it is a hope, and real
-crash data cannot produce these on demand - the whole point of them is that they go wrong on other people's
-machines.
+Builds an install that deliberately trips every rule in src/Engine/Rules.cs. A rule that has never been seen to
+fire is not a rule, it is a hope, and real crash data cannot produce these on demand - the whole point of them is
+that they go wrong on other people's machines. What it manufactures:
+
+- an upscaler enabler sitting beside the game, and two archives that downloaded as nothing
+- saves inside a synced folder (the scan is run with OneDrive pointed at the fixture)
+- three copies of real crash reports, each doctored for one rule: a module renamed to a capture hook, an exception
+  code rewritten to a stack overflow, and the engine's own out-of-memory flag flipped on in the telemetry
+- three RED4ext logs for sessions that each die about a minute in, for the startup-crash rule
+- a Vortex deployment manifest listing five files, three of which are not on disk
+
+The crash reports are copied from the real machine rather than generated, because a minidump is not worth writing
+by hand and because the rest of the report staying real is what makes the fixture honest.
 
 Every rule should fire here and none of them should fire against a healthy install or the `healthy` fixture.
 
@@ -84,3 +92,7 @@ is no invented data anywhere in them.
 
 The three diagnosis shots name a session id, because the newest crash on a machine is whatever happened last and
 is rarely the one worth showing. Those ids are in the report; update them when the report changes.
+
+Re-rendering writes all eight files even when nothing has changed, because the header carries the time of the
+scan. Check `git diff` before committing them: if the only difference is a few pixels in the "Last scan" chip,
+revert them rather than committing eight new binaries.

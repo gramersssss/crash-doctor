@@ -119,7 +119,9 @@ public sealed class MainForm : Form
     {
         var g = _game;
         if (id.StartsWith("nexus:")) { OpenUrl("https://www.nexusmods.com/cyberpunk2077/mods/" + id[6..]); return; }
-        if (id == "settings") { Post(new { cmd = "go", view = "settings" }); return; }
+        // Plain view jumps. "mods" was being emitted as an action id before anything handled it, so "See the mod
+        // list" was a button that did nothing; listing the views here means a new rule can point at any of them.
+        if (id is "settings" or "mods" or "health" or "sessions" or "bisect" or "req") { Post(new { cmd = "go", view = id }); return; }
         if (id == "open:driver") { Run("devmgmt.msc"); return; }
         if (id == "open:redscript" && g != null) { OpenUrl(Path.Combine(g.RedscriptLogs, "redscript_rCURRENT.log")); return; }
         if (id == "open:gamefolder" && g != null) { OpenUrl(g.GameDir); return; }
