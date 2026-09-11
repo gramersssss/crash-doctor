@@ -10,7 +10,11 @@ public static class Scanner
     public static Report Scan(GamePaths g, int days = 30)
     {
         var since = DateTime.Now.AddDays(-days);
+        var timing = Environment.GetEnvironmentVariable("CRASHDOCTOR_TIMING") == "1";
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        void Mark(string what) { if (timing) { Console.Error.WriteLine($"  [timing] {sw.ElapsedMilliseconds,7} ms  {what}"); sw.Restart(); } }
         var d = Collectors.CollectAll(g, since);
+        Mark("(collect total)");
         var r = new Report();
         var (fv, pv) = GameLocator.ExeVersion(g);
         var latestRed = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
@@ -18,8 +22,11 @@ public static class Scanner
         r.System = d.System;
         r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Frameworks = Frameworks(d) };
         Analyzer.Analyze(d, r);
+        Mark("analyze");
         r.ModsList = d.Mods.Mods.OrderBy(m => m.Name).Select(m => Flagged(d, m, r)).ToList();
+        Mark("mod flags");
         r.Requirements = RequirementsCheck.Check(d);
+        Mark("requirements");
         r.Settings = PrettySettings(d.Settings);
         r.Warnings = d.Warnings;
 
@@ -37,6 +44,7 @@ public static class Scanner
             Bisect.Advance(plan, r);
             r.Bisect = Bisect.View(plan, r);
         }
+        Mark("bisect");
         return r;
     }
 

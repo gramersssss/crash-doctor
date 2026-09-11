@@ -49,7 +49,7 @@ public static class RequirementsCheck
         var wv = WebView2Version();
         list.Add(new Requirement { Id = "webview2", Name = "Microsoft WebView2 runtime", Version = wv, Status = wv != null ? "ok" : "missing", Detail = "Used by Crash Doctor itself to draw this window.", DirectInstall = true, Url = WebView2Url });
         var vc = VcRedistInstalled();
-        list.Add(new Requirement { Id = "vcredist", Name = "Visual C++ 2015-2022 runtime (x64)", Status = vc ? "ok" : "missing", Detail = "Needed by RED4ext, Cyber Engine Tweaks and most native plugins.", NeededBy = new() { "RED4ext", "Cyber Engine Tweaks" }, DirectInstall = true, Url = VcRedistUrl });
+        list.Add(new Requirement { Id = "vcredist", Name = "Visual C++ 2015-2022 runtime (x64)", Status = vc ? "ok" : "missing", Detail = "Needed by RED4ext, Cyber Engine Tweaks and most native plugins.", NeededBy = new List<string> { "RED4ext", "Cyber Engine Tweaks" }.Where(n => list.Any(x => x.Name == n && x.Status != "optional")).ToList(), DirectInstall = true, Url = VcRedistUrl });
         // DSX for DualSense mod
         if (inv.Mods.Any(m => m.Name.Contains("DualSense", StringComparison.OrdinalIgnoreCase)))
         {

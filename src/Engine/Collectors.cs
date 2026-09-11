@@ -87,7 +87,16 @@ public static class Collectors
         return d;
     }
 
-    static void Safe(CollectedData d, string what, Action a) { try { a(); } catch (Exception ex) { d.Warnings.Add($"Could not read {what}: {ex.Message}"); } }
+    // CRASHDOCTOR_TIMING=1 prints how long each source took. A scan that crawls on someone else's machine is
+    // otherwise impossible to diagnose remotely, and the cost is one environment variable check per source.
+    static readonly bool Timing = Environment.GetEnvironmentVariable("CRASHDOCTOR_TIMING") == "1";
+    static void Safe(CollectedData d, string what, Action a)
+    {
+        var sw = Timing ? System.Diagnostics.Stopwatch.StartNew() : null;
+        try { a(); }
+        catch (Exception ex) { d.Warnings.Add($"Could not read {what}: {ex.Message}"); }
+        finally { if (sw != null) Console.Error.WriteLine($"  [timing] {sw.ElapsedMilliseconds,7} ms  {what}"); }
+    }
 
     static bool TryTs(string line, out DateTime at)
     {

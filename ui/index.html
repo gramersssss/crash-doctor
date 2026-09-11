@@ -22,14 +22,16 @@ a{color:var(--trace)}
 :focus-visible{outline:2px solid var(--trace);outline-offset:2px}
 
 /* ---------- bezel ---------- */
-.bezel{height:56px;background:var(--ink);color:#C9CFD8;display:flex;align-items:center;gap:0;padding:0 18px;border-bottom:1px solid #000}
-.bezel .brand{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:18px;letter-spacing:.02em;color:#fff;margin-right:26px;display:flex;align-items:center;gap:10px}
+.bezel{height:56px;background:var(--ink);color:#C9CFD8;display:flex;align-items:center;gap:0;padding:0 18px;border-bottom:1px solid #000;overflow:hidden}
+/* the brand and the scan button never shrink or wrap; the readouts give way first, and the least useful ones
+   disappear entirely rather than every value being truncated to three characters and an ellipsis */
+.bezel .brand{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:18px;letter-spacing:.02em;color:#fff;margin-right:26px;display:flex;align-items:center;gap:10px;flex:none;white-space:nowrap}
 .bezel .brand .pulse{width:10px;height:10px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(31,157,106,.25)}
-.bezel .chip{display:flex;flex-direction:column;padding:0 16px;border-left:1px solid #2A313B;min-width:0}
+.bezel .chip{display:flex;flex-direction:column;justify-content:center;padding:0 16px;border-left:1px solid #2A313B;min-width:0;flex:0 1 auto}
 .bezel .chip .k{font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7F8895;line-height:1}
 .bezel .chip .v{font-family:var(--mono);font-size:13px;color:#EDEFF2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
 .bezel .spacer{flex:1}
-.bezel .scan{background:#fff;color:var(--ink);border:0;border-radius:4px;padding:8px 14px;font-family:var(--display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+.bezel .scan{background:#fff;color:var(--ink);border:0;border-radius:4px;padding:8px 14px;font-family:var(--display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px;flex:none;white-space:nowrap;margin-left:14px}
 .bezel .scan:hover{background:#E6EAF0}
 .bezel .scan[disabled]{opacity:.6;cursor:progress}
 
@@ -100,10 +102,12 @@ tr:hover td{background:#F7F9FB}
 /* mods: filters + sortable table */
 .filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 .filters input{padding:8px 10px;border:1px solid var(--line);border-radius:5px;font:inherit;min-width:220px;flex:1 1 220px;max-width:420px}
-.chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--steel);white-space:nowrap}
-.chip:hover{border-color:#B9C1CC}
-.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+/* filter pills. Deliberately NOT called .chip: the bezel owns that name, and sharing it leaked a white
+   background and a rounded border into the header, where it wrecked the instrument readouts. */
+.fchips{display:flex;gap:6px;flex-wrap:wrap}
+.fchip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--steel);white-space:nowrap}
+.fchip:hover{border-color:#B9C1CC}
+.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
 th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
 th.sortable:hover{color:var(--ink)}
 th.sortable i{display:inline-block;width:9px;margin-left:5px;font-style:normal;color:var(--trace)}
@@ -157,6 +161,11 @@ button.mark:hover{filter:brightness(.94)}
 .arow .warn{font-size:12.5px;color:var(--signal);margin-top:4px;line-height:1.45}
 .area .foot{font-size:12.5px;color:var(--steel);margin-top:14px;padding-top:12px;border-top:1px solid var(--line);line-height:1.55}
 @media (max-width:620px){.arow{grid-template-columns:1fr 70px}.arow .bar{display:none}}
+/* the clean bill of health */
+.ok{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--mint);border-radius:8px;padding:26px 28px;max-width:720px}
+.ok h2{font-family:var(--display);font-stretch:semi-condensed;font-size:26px;margin:0 0 10px;line-height:1.2}
+.ok p{font-size:14.5px;line-height:1.6;color:var(--steel);margin:0}
+.ok .fine{margin-top:14px;font-size:13px;color:var(--mint)}
 .evidence{margin-top:18px}
 .ev{display:grid;grid-template-columns:76px 1fr;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .ev:first-of-type{border-top:0}
@@ -222,6 +231,10 @@ button.mark:hover{filter:brightness(.94)}
 .progress.on{display:block}
 .progress i{display:block;height:100%;width:30%;background:var(--trace);animation:slide 1.1s infinite linear}
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
+/* drop readouts in reverse order of usefulness rather than truncating all of them */
+@media (max-width:1180px){.bezel .chip.opt3{display:none}}
+@media (max-width:1020px){.bezel .chip.opt2{display:none}}
+@media (max-width:860px){.bezel .chip.opt1{display:none}}
 @media (max-width:760px){.trace-wrap{padding:14px 12px 10px;background-size:28px 100%}.trace{height:120px}}
 @media (max-width:980px){.dx{grid-template-columns:1fr}.frame{grid-template-columns:150px 1fr}.sess{grid-template-columns:130px 60px 1fr}.sess .dist{display:none}}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;opacity:0;transition:all .18s;z-index:9;max-width:70vw}.toast.on{opacity:1;transform:translate(-50%,0)}.toast.err{background:var(--signal)}
@@ -232,10 +245,10 @@ button.mark:hover{filter:brightness(.94)}
 <header class="bezel">
   <div class="brand"><span class="pulse" id="pulse"></span>Crash Doctor</div>
   <div class="chip"><span class="k">Game</span><span class="v" id="c-game">—</span></div>
-  <div class="chip"><span class="k">GPU</span><span class="v" id="c-gpu">—</span></div>
-  <div class="chip"><span class="k">Driver</span><span class="v" id="c-driver">—</span></div>
+  <div class="chip opt1"><span class="k">GPU</span><span class="v" id="c-gpu">—</span></div>
+  <div class="chip opt2"><span class="k">Driver</span><span class="v" id="c-driver">—</span></div>
   <div class="chip"><span class="k">Mods</span><span class="v" id="c-mods">—</span></div>
-  <div class="chip"><span class="k">Last scan</span><span class="v" id="c-scan">never</span></div>
+  <div class="chip opt3"><span class="k">Last scan</span><span class="v" id="c-scan">never</span></div>
   <div class="spacer"></div>
   <button class="scan" id="btn-scan" onclick="scan()">Scan now</button>
 </header>
@@ -257,7 +270,7 @@ button.mark:hover{filter:brightness(.94)}
     <!-- DIAGNOSIS -->
     <section class="view on" id="v-dx">
       <p class="eyebrow">Diagnosis · latest crash</p>
-      <div id="dx-empty" class="empty" style="display:none">No crash found in the logs yet. Play, and if the game crashes, come back and press <b>Scan now</b>.</div>
+      <div id="dx-empty" style="display:none"></div>
       <div class="dx fade" id="dx-body">
         <div>
           <div class="card verdict" id="dx-card">
@@ -309,8 +322,8 @@ button.mark:hover{filter:brightness(.94)}
       <h1 id="mods-h1">Installed mods</h1>
       <div class="filters">
         <input id="mods-q" placeholder="Filter by name, type or flag..." oninput="renderMods()">
-        <div class="chips" id="mods-status"></div>
-        <div class="chips" id="mods-kind"></div>
+        <div class="fchips" id="mods-status"></div>
+        <div class="fchips" id="mods-kind"></div>
         <button class="btn" onclick="resetMods()">Reset</button>
         <span class="muted" id="mods-count"></span>
       </div>
@@ -387,7 +400,8 @@ function fmtDur(m,known){ if(known===false) return 'length unknown'; if(m<1) ret
 
 function load(r){
   REPORT=r; done();
-  document.getElementById('c-game').textContent=r.game.name+' '+r.game.version+' · '+r.game.store;
+  // an install whose exe carries no version info would otherwise read as "Cyberpunk 2077  · manual"
+  document.getElementById('c-game').textContent=r.game.name+' '+(r.game.version||'version unknown')+' · '+r.game.store;
   document.getElementById('c-gpu').textContent=r.system.gpu+' · '+r.system.vramGB+' GB';
   document.getElementById('c-driver').textContent=r.system.driver;
   document.getElementById('c-mods').textContent=r.mods.enabled+' enabled · '+r.mods.manager;
@@ -403,7 +417,7 @@ function load(r){
 
 function renderDx(r){
   var s=r.latest; var empty=document.getElementById('dx-empty'), body=document.getElementById('dx-body');
-  if(!s){ empty.style.display=''; body.style.display='none'; return; }
+  if(!s){ empty.style.display=''; empty.innerHTML=noCrashPanel(r); body.style.display='none'; return; }
   empty.style.display='none'; body.style.display='';
   var k=KIND[s.endKind]||KIND.unknown;
   var card=document.getElementById('dx-card'); card.className='card verdict '+(k[0]==='engine'?'sig':k[0]);
@@ -498,6 +512,38 @@ function renderArea(s){
       : "Nothing here is failing and there is little overlap, so the map edits in this spot look healthy.";
   host.innerHTML='<div class="area"><p class="eyebrow">Rewriting the ground you were on</p><p class="sub">'+sub+"</p>"+body+
     '<div class="foot">'+foot+"</div></div>";
+}
+
+// The screen a healthy install sees. "Nothing found" is the correct answer for most people most of the time, and
+// it should read as a clean bill of health with the play history behind it - not as a tool that failed to load.
+function noCrashPanel(r){
+  var ss=(r.sessions||[]).filter(function(x){return x.endKind!=='running';});
+  var clean=ss.filter(function(x){return x.endKind==='clean';});
+  var longest=ss.reduce(function(a,x){return (x.durationKnown!==false&&x.minutes>(a?a.minutes:-1))?x:a;},null);
+  var badHealth=(r.health||[]).filter(function(h){return h.severity!=='info';});
+  var missing=(r.requirements||[]).filter(function(q){return q.status==='missing'||q.status==='outdated';});
+
+  var head, lead;
+  if(!ss.length){
+    head='Crash Doctor has not seen the game run yet.';
+    lead='Play for a while, then come back and press <b>Scan now</b>. It reads the logs the game and your mod loaders leave behind, so there is nothing to show until they exist.';
+  } else {
+    head='No crashes to explain.';
+    lead=ss.length+(ss.length===1?' session':' sessions')+' on record'+
+      (clean.length===ss.length?', every one closed normally':', '+clean.length+' closed normally')+
+      (longest?'. The longest ran '+esc(fmtDur(longest.minutes))+'.':'.')+
+      ' Nothing here needs diagnosing, which is the right answer rather than a missing one.';
+  }
+  var next=[];
+  if(missing.length) next.push('<button class="btn primary" onclick=&quot;go(&#39;req&#39;)&quot;>'+missing.length+(missing.length===1?' missing requirement':' missing requirements')+'</button>');
+  if(badHealth.length) next.push('<button class="btn" onclick=&quot;go(&#39;health&#39;)&quot;>'+badHealth.length+' thing'+(badHealth.length===1?'':'s')+' worth knowing</button>');
+  if(ss.length) next.push('<button class="btn" onclick=&quot;go(&#39;sessions&#39;)&quot;>See every session</button>');
+
+  return '<div class="ok"><h2>'+esc(head)+'</h2><p>'+lead+'</p>'+
+    (next.length?'<div class="row" style="margin-top:16px">'+next.join('')+'</div>':'')+
+    // only claim a clean bill of health when the game has actually run and produced logs to judge
+    (ss.length&&!missing.length&&!badHealth.length?'<p class="fine">Frameworks loaded, scripts compiled, no standing problems found.</p>':'')+
+    '</div>';
 }
 
 function renderTrace(r){
@@ -633,10 +679,10 @@ function renderMods(){
   // chips are built from what is actually installed, so they never offer a choice that matches nothing
   var statuses=["all"].concat(all.map(function(m){return m.status;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).sort());
   document.getElementById("mods-status").innerHTML=statuses.map(function(v){
-    return '<button class="chip'+(MODS_STATUS===v?" on":"")+'" onclick="setModFilter(&quot;status&quot;,&quot;'+v+'&quot;)">'+esc(v==="all"?"All statuses":v)+"</button>";}).join("");
+    return '<button class="fchip'+(MODS_STATUS===v?" on":"")+'" onclick="setModFilter(&quot;status&quot;,&quot;'+v+'&quot;)">'+esc(v==="all"?"All statuses":v)+"</button>";}).join("");
   var kinds=[["all","Everything"],["problems","Flagged only"],["cleared","Ruled out"]];
   document.getElementById("mods-kind").innerHTML=kinds.map(function(kv){
-    return '<button class="chip'+(MODS_KIND===kv[0]?" on":"")+'" onclick="setModFilter(&quot;kind&quot;,&quot;'+kv[0]+'&quot;)">'+esc(kv[1])+"</button>";}).join("");
+    return '<button class="fchip'+(MODS_KIND===kv[0]?" on":"")+'" onclick="setModFilter(&quot;kind&quot;,&quot;'+kv[0]+'&quot;)">'+esc(kv[1])+"</button>";}).join("");
 
   var rows=all.filter(function(m){
     if(MODS_STATUS!=="all" && m.status!==MODS_STATUS) return false;

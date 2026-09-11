@@ -20,12 +20,22 @@ public sealed class GamePaths
     public string Tweaks => Path.Combine(GameDir, "r6", "tweaks");
     public string RedscriptLogs => Path.Combine(GameDir, "r6", "logs");
     public string VortexManifest => Path.Combine(GameDir, "vortex.deployment.json");
-    public static string CdprLocal => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CD Projekt Red", "Cyberpunk 2077");
+    // Most of what Crash Doctor reads is not in the game folder at all: crash reports, settings and its own history
+    // live under the user's profile. That makes the app impossible to test against a made-up install, because a
+    // pretend game folder would still be judged against the real machine's crash history.
+    //
+    // CRASHDOCTOR_TEST_ROOT redirects those three roots at once, so a whole synthetic install - clean, empty, broken,
+    // whatever - can be assembled in a directory and scanned in isolation. Unset in every normal run.
+    static string? TestRoot => Environment.GetEnvironmentVariable("CRASHDOCTOR_TEST_ROOT") is { Length: > 0 } r ? r : null;
+    static string LocalAppData => TestRoot is { } t ? Path.Combine(t, "LocalAppData") : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    static string RoamingAppData => TestRoot is { } t ? Path.Combine(t, "AppData") : Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+    public static string CdprLocal => Path.Combine(LocalAppData, "CD Projekt Red", "Cyberpunk 2077");
     public static string UserSettings => Path.Combine(CdprLocal, "UserSettings.json");
     public static string CrashInfo => Path.Combine(CdprLocal, "CrashInfo.json");
-    public static string CrashReporterLog => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "REDEngine", "CrashReporter.log");
-    public static string ReportQueue => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "REDEngine", "ReportQueue");
-    public static string AppData => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CrashDoctor");
+    public static string CrashReporterLog => Path.Combine(LocalAppData, "REDEngine", "CrashReporter.log");
+    public static string ReportQueue => Path.Combine(LocalAppData, "REDEngine", "ReportQueue");
+    public static string AppData => Path.Combine(RoamingAppData, "CrashDoctor");
     public static string ConfigFile => Path.Combine(AppData, "config.json");
 }
 

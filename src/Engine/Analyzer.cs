@@ -493,8 +493,12 @@ public static class Analyzer
     static List<HealthItem> Health(CollectedData d, List<Session> sessions, Elimination el)
     {
         var h = new List<HealthItem>();
-        // How much of a clean baseline exists decides how much anything else here can be trusted. Say it first.
-        if (!el.HasBaseline)
+        // How much of a clean baseline exists decides how much anything else here can be trusted. Say it first -
+        // but only when there is actually a crash to reason about. On an install that has never crashed, warning
+        // that suspects cannot be confirmed is both meaningless and mildly alarming.
+        var anyCrash = sessions.Any(s => s.EndKind is not (EndKind.Clean or EndKind.Running));
+        if (!anyCrash) { /* nothing to eliminate against, and nothing to eliminate */ }
+        else if (!el.HasBaseline)
             h.Add(new HealthItem { Severity = "medium", Title = el.CleanSessions == 0 ? "No session has ended cleanly yet" : "Only one session has ended cleanly",
                 Detail = $"Crash Doctor rules a mod out by checking whether it misbehaves in sessions that end normally too. With {(el.CleanSessions == 0 ? "no clean sessions" : "one clean session")} on record there is nothing to compare against, so every suspect below is a lead rather than a finding. Play until you quit the game normally a couple of times and scan again — the diagnosis gets sharper, not vaguer, the more you play." });
         else
