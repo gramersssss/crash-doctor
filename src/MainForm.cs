@@ -92,9 +92,23 @@ public sealed class MainForm : Form
     void Export()
     {
         if (_report == null) return;
+        // Saved reports get pasted into forum threads, so whether the mod list travels with it is the author's call.
+        // Stated plainly and without characterising what is in the list.
+        var includeMods = true;
+        if (_report.ModsList.Count > 0)
+        {
+            var q = MessageBox.Show(this,
+                $"Include your mod list in the saved report?" + Environment.NewLine + Environment.NewLine +
+                $"It names all {_report.ModsList.Count} of your mods. That is usually what makes a report worth reading, but saved reports often get posted publicly, so it is worth deciding on purpose." + Environment.NewLine + Environment.NewLine +
+                "Leaving it out also removes mod names from the requirements and area panels. The handful of mods the diagnosis actually names still appear, because naming them is the diagnosis." + Environment.NewLine + Environment.NewLine +
+                "Yes - include the mod list.   No - leave it out.   Cancel - do not save.",
+                "Save report", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            if (q == DialogResult.Cancel) return;
+            includeMods = q == DialogResult.Yes;
+        }
         using var dlg = new SaveFileDialog { Filter = "HTML report|*.html", FileName = $"CrashDoctor-report-{DateTime.Now:yyyyMMdd-HHmm}.html", Title = "Save the full report" };
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
-        try { HtmlExporter.Save(_report, dlg.FileName); Post(new { cmd = "toast", text = "Report saved." }); OpenUrl(dlg.FileName); }
+        try { HtmlExporter.Save(_report, dlg.FileName, includeMods); Post(new { cmd = "toast", text = includeMods ? "Report saved." : "Report saved without the mod list." }); OpenUrl(dlg.FileName); }
         catch (Exception ex) { Post(new { cmd = "error", text = "Could not save the report: " + ex.Message }); }
     }
 

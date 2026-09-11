@@ -743,7 +743,7 @@ function renderReq(r){
   document.getElementById('req-all').style.display = list.some(function(x){return x.status!=='ok' && x.directInstall;}) ? '' : 'none';
   list.forEach(function(x){ var d=document.createElement('div'); d.className='hl'; var m={ok:'mint',missing:'sig',outdated:'amb',optional:'grey',unknown:'grey'}[x.status]||'grey'; var label={ok:'installed',missing:'missing',outdated:'outdated',optional:'not needed',unknown:'unknown'}[x.status]||x.status;
     var btn=''; if(x.status!=='ok'){ btn = x.directInstall ? '<button class="btn primary" onclick="act('+JSON.stringify('req:install:'+x.id)+')">Install</button>' : '<button class="btn" onclick="act('+JSON.stringify('req:open:'+x.id)+')">Open download page</button>'; }
-    d.innerHTML='<div><span class="mark '+m+'">'+esc(label)+'</span></div><div><div class="title">'+esc(x.name)+(x.version?' <span class="mono muted">'+esc(x.version)+'</span>':'')+'</div><div class="detail">'+esc(x.detail)+'</div>'+(x.neededBy&&x.neededBy.length?'<div class="muted" style="font-size:12px;margin-top:4px">Needed by '+esc(x.neededBy.length)+' installed mod'+(x.neededBy.length===1?'':'s')+(x.neededBy.length<=4?': '+esc(x.neededBy.join(', ')):'')+'</div>':'')+'</div><div class="act">'+btn+'</div>'; el.appendChild(d); });
+    d.innerHTML='<div><span class="mark '+m+'">'+esc(label)+'</span></div><div><div class="title">'+esc(x.name)+(x.version?' <span class="mono muted">'+esc(x.version)+'</span>':'')+'</div><div class="detail">'+esc(x.detail)+'</div>'+(function(){var n=x.neededByCount||(x.neededBy?x.neededBy.length:0); if(!n) return ''; var names=(x.neededBy&&x.neededBy.length&&n<=4)?': '+esc(x.neededBy.join(', ')):''; return '<div class="muted" style="font-size:12px;margin-top:4px">Needed by '+n+' installed mod'+(n===1?'':'s')+names+'</div>';})()+'</div><div class="act">'+btn+'</div>'; el.appendChild(d); });
 }
 function renderSettings(r){
   var kv=document.getElementById('settings-kv'); kv.innerHTML='';
@@ -753,10 +753,13 @@ function renderSettings(r){
 }
 
 function renderReport(r){
+  // the privacy line travels with the pasted text too, so a reader knows the mod list may be missing by choice
+
   var s=r.latest; var lines=[];
   lines.push('Crash Doctor report — '+fmtDate(r.generatedAt));
   lines.push(r.game.name+' '+r.game.version+' ('+r.game.store+') · '+r.system.gpu+' '+r.system.vramGB+' GB · driver '+r.system.driver+' · '+r.system.os);
   lines.push(r.mods.enabled+' mods enabled via '+r.mods.manager+' · frameworks: '+(r.mods.frameworks||[]).join(', '));
+  if(r.privacy) lines.push(r.privacy);
   lines.push('');
   if(s){ lines.push('LATEST CRASH  '+fmtDate(s.start)+' · '+fmtDur(s.minutes,s.durationKnown)+(s.district?' · '+s.district:'')); lines.push('  '+s.verdict+' (confidence '+['low','fair','good','high'][s.confidence]+')');
     if(s.vramUsedMB&&s.vramTotalMB) lines.push('  VIDEO MEMORY  '+s.vramUsedMB+' / '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)'+(s.exception?'   '+s.exception:''));
@@ -827,7 +830,9 @@ var SAMPLE={
 };
 SAMPLE.latest=SAMPLE.sessions[6];
 document.addEventListener('DOMContentLoaded', function(){
-  if(window.EXPORTED){ load(window.EXPORTED); document.getElementById('btn-scan').style.display='none'; document.getElementById('foot').textContent='Saved report. Open Crash Doctor to scan again.'; }
+  if(window.EXPORTED){ load(window.EXPORTED); document.getElementById('btn-scan').style.display='none';
+    // say what this copy does and does not contain, for whoever ends up reading it
+    document.getElementById('foot').textContent=(window.EXPORTED.privacy?window.EXPORTED.privacy+' ':'')+'Open Crash Doctor to scan again.'; }
   else if(!hasHost()){ load(SAMPLE); }
   else { window.chrome.webview.postMessage({cmd:'ready'}); }
 });

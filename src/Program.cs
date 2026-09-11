@@ -9,7 +9,8 @@ static class Program
     static int Main(string[] args)
     {
         // Headless mode for testing and scripting:
-        //   CrashDoctor.exe --json report.json [--html report.html] [--game "C:\path"]   (any order)
+        //   CrashDoctor.exe --json report.json [--html report.html] [--game "C:\path"] [--no-mods]   (any order)
+        // --no-mods leaves the mod list out of the saved HTML, the same choice the window offers when saving.
         // This used to require --json or --html to be the FIRST argument; putting --game first silently opened the
         // window instead, which looks exactly like the scan hanging and writing nothing.
         if (args.Any(a => a == "--json" || a == "--html"))
@@ -29,7 +30,7 @@ static class Program
                 for (int i = 0; i < args.Length - 1; i++)
                 {
                     if (args[i] == "--json") { Say("serialising"); var json = System.Text.Json.JsonSerializer.Serialize(r, new System.Text.Json.JsonSerializerOptions(Scanner.Json) { WriteIndented = true }); Say($"serialised {json.Length} chars, writing"); File.WriteAllText(args[i + 1], json); Say("written"); }
-                    if (args[i] == "--html") { Say("exporting html"); HtmlExporter.Save(r, args[i + 1]); Say("html written"); }
+                    if (args[i] == "--html") { Say("exporting html"); HtmlExporter.Save(r, args[i + 1], !args.Contains("--no-mods")); Say("html written"); }
                 }
                 Console.WriteLine($"Scanned {g.GameDir}: {r.Sessions.Count} sessions, latest verdict: {r.Latest?.Verdict ?? "(no crash)"}");
                 Console.Out.Flush();

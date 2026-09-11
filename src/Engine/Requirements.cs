@@ -56,6 +56,7 @@ public static class RequirementsCheck
             var dsx = Process.GetProcessesByName("DSX").Length > 0 || Directory.Exists(@"C:\Program Files (x86)\Steam\steamapps\common\DSX");
             list.Add(new Requirement { Id = "dsx", Name = "DSX (DualSense on PC)", Status = dsx ? "ok" : "optional", Detail = "Only needed by Enhanced DualSense Support. Steam app 1812620. Must be running while you play.", NeededBy = inv.Mods.Where(m => m.Name.Contains("DualSense", StringComparison.OrdinalIgnoreCase)).Select(m => m.Name).ToList(), Url = "https://store.steampowered.com/app/1812620/DSX/" });
         }
+        foreach (var q in list) q.NeededByCount = q.NeededBy.Count;
         return list;
     }
 

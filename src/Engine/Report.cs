@@ -20,6 +20,7 @@ public sealed class Report
     public Dictionary<string, string> Settings { get; set; } = new();
     public List<SettingsNote> SettingsNotes { get; set; } = new();
     public List<string> Warnings { get; set; } = new();   // things the scan could not read
+    public string? Privacy { get; set; }                 // what was removed from a saved copy, shown in the page
 }
 
 // All the crashes that faulted at one identical instruction. This is what turns a pile of crashes into a small
@@ -217,6 +218,7 @@ public sealed class Requirement
     public string Status { get; set; } = "unknown"; // ok | missing | outdated | optional | unknown
     public string Detail { get; set; } = "";
     public List<string> NeededBy { get; set; } = new();
+    public int NeededByCount { get; set; }        // kept when the names are withheld from a saved copy
     public bool DirectInstall { get; set; }
     public string? Url { get; set; }
 }
