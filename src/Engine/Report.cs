@@ -26,7 +26,11 @@ public sealed class Report
 // number of separate problems, each of which can be chased, fixed or ruled out on its own.
 public sealed class CrashGroup
 {
-    public string Signature { get; set; } = "";
+    public string Signature { get; set; } = "";   // includes the build; two builds are two groups, deliberately
+    public string Fault { get; set; } = "";       // the readable half
+    public string? Build { get; set; }
+    public int OtherBuilds { get; set; }          // same offset seen under this many other builds
+    public string? BuildNote { get; set; }
     public string Exception { get; set; } = "";
     public string Plain { get; set; } = "";
     public int Count { get; set; }
@@ -114,7 +118,9 @@ public sealed class Session
     public int? VramTotalMB { get; set; }
     public string? Exception { get; set; }        // e.g. "EXCEPTION_ACCESS_VIOLATION (0xC0000005)"
     // From the minidump. Same signature means the same bug, however different the logs around it look.
-    public string? Signature { get; set; }        // e.g. "Cyberpunk2077.exe+0x2A41E06"
+    public string? Signature { get; set; }        // identity, build included: "Cyberpunk2077.exe+0x2A41E06@3.0.80.51928"
+    public string? Fault { get; set; }            // the readable half: "Cyberpunk2077.exe+0x2A41E06"
+    public string? Build { get; set; }            // build of the faulting module the offset was measured in
     public string? FaultingModule { get; set; }
     public string? Injector { get; set; }         // a trainer / cheat tool found inside the game process
     public string? Position { get; set; }         // where the player was standing

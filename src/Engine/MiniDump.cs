@@ -20,9 +20,20 @@ public sealed class DumpInfo
     public string? AccessKind { get; set; }          // read | write | execute
     public ulong AccessedAddress { get; set; }
     public List<string> Modules { get; set; } = new();
+    public string? ModuleVersion { get; set; }       // file version of the faulting module, e.g. 3.0.80.51928
 
-    /// <summary>Stable identity of this crash: same signature means the same bug.</summary>
-    public string? Signature => FaultingModule == null ? null : FaultingModule + "+0x" + FaultingOffset.ToString("X");
+    /// <summary>
+    /// Where it faulted, for people to read: "Cyberpunk2077.exe+0x2A41E06".
+    /// Only comparable within one build of that module - see Signature.
+    /// </summary>
+    public string? Fault => FaultingModule == null ? null : FaultingModule + "+0x" + FaultingOffset.ToString("X");
+
+    /// <summary>
+    /// Stable identity of this crash. An offset means nothing without the build it was measured in: a game patch
+    /// moves every address, so the same offset before and after an update is two unrelated bugs, and one ongoing
+    /// bug changes offset. Grouping on the bare offset would quietly do both wrong.
+    /// </summary>
+    public string? Signature => Fault == null ? null : Fault + (ModuleVersion != null ? "@" + ModuleVersion : "@unknown");
 
     public string ExceptionName => ExceptionCode switch
     {
@@ -100,7 +111,7 @@ public static class MiniDump
                 var count = r.ReadUInt32();
                 if (count <= 8192)
                 {
-                    var entries = new List<(ulong baseAddr, uint size, uint nameRva)>((int)count);
+                    var entries = new List<(ulong baseAddr, uint size, uint nameRva, uint verMs, uint verLs)>((int)count);
                     for (uint i = 0; i < count; i++)
                     {
                         if (fs.Position + 108 > fs.Length) break;
@@ -109,8 +120,12 @@ public static class MiniDump
                         var size = r.ReadUInt32();
                         r.ReadUInt32(); r.ReadUInt32();       // checksum, timestamp
                         var nameRva = r.ReadUInt32();
-                        entries.Add((baseAddr, size, nameRva));
-                        fs.Position = start + 108;            // skip VersionInfo, CV/Misc records, reserved
+                        // VS_FIXEDFILEINFO follows: signature, struct version, then file version as two DWORDs
+                        fs.Position = start + 24 + 8;
+                        var verMs = r.ReadUInt32();
+                        var verLs = r.ReadUInt32();
+                        entries.Add((baseAddr, size, nameRva, verMs, verLs));
+                        fs.Position = start + 108;            // skip the rest of VersionInfo, CV/Misc, reserved
                     }
                     foreach (var e in entries)
                     {
@@ -121,6 +136,8 @@ public static class MiniDump
                         {
                             info.FaultingModule = name;
                             info.FaultingOffset = info.ExceptionAddress - e.baseAddr;
+                            if (e.verMs != 0 || e.verLs != 0)
+                                info.ModuleVersion = $"{e.verMs >> 16}.{e.verMs & 0xFFFF}.{e.verLs >> 16}.{e.verLs & 0xFFFF}";
                         }
                     }
                 }

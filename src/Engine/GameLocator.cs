@@ -121,7 +121,16 @@ public static class GameLocator
 
     public static (string fileVersion, string productVersion) ExeVersion(GamePaths g)
     {
-        try { var v = FileVersionInfo.GetVersionInfo(g.Exe); return (v.FileVersion ?? "", v.ProductVersion ?? ""); } catch { return ("", ""); }
+        // Use the numeric parts, not FileVersion: the string form reads "3.0.5294808" while every other source -
+        // the RED4ext log, and the module record inside a crash dump - says "3.0.80.51928". Matching them means the
+        // build a crash was measured in can be compared against the build now installed.
+        try
+        {
+            var v = FileVersionInfo.GetVersionInfo(g.Exe);
+            var numeric = $"{v.FileMajorPart}.{v.FileMinorPart}.{v.FileBuildPart}.{v.FilePrivatePart}";
+            return (numeric == "0.0.0.0" ? v.FileVersion ?? "" : numeric, v.ProductVersion ?? "");
+        }
+        catch { return ("", ""); }
     }
 
     public static bool GameRunning() => Process.GetProcessesByName("Cyberpunk2077").Length > 0;

@@ -38,8 +38,9 @@ public sealed class BisectPlan
     public List<string> Candidates { get; set; } = new();
     public List<string> Cleared { get; set; } = new();
     public List<BisectStep> Steps { get; set; } = new();
-    public string Status { get; set; } = "running";    // running | found | exhausted | stopped
+    public string Status { get; set; } = "running";    // running | found | exhausted | stopped | stale
     public string? Culprit { get; set; }
+    public string? GameBuild { get; set; }             // the build every round of this run was measured against
 
     public BisectStep? Current => Steps.LastOrDefault(s => s.Outcome == "pending");
 }
@@ -101,6 +102,7 @@ public static class Bisect
             Signature = signature,
             MinutesToBeat = threshold,
             Candidates = candidates,
+            GameBuild = r.Game.FileVersion,
         };
         NextStep(plan);
         Save(plan);
@@ -132,6 +134,17 @@ public static class Bisect
     public static void Advance(BisectPlan p, Report r)
     {
         if (p.Status != "running") return;
+
+        // A game update moves every address, so the fault being hunted can no longer occur under the signature this
+        // run is watching for. Left alone, the next long clean session would be read as "it survived" and would
+        // blame whichever mods happened to be switched off. Stop instead and say why.
+        if (p.GameBuild != null && r.Game.FileVersion.Length > 0 && r.Game.FileVersion != p.GameBuild)
+        {
+            p.Status = "stale";
+            Save(p);
+            return;
+        }
+
         var step = p.Current;
         if (step?.StartedAt == null) return;
 
@@ -205,6 +218,13 @@ public static class Bisect
         {
             v.Headline = "The cause is not among the mods that were tested.";
             v.Detail = "Every candidate was cleared, so this fault comes from something else: the game itself, a driver, hardware, or a tool running alongside the game. Check the Health page for anything injected into the process. Turn your mods back on in Vortex - none of them was responsible.";
+            return v;
+        }
+        if (p.Status == "stale")
+        {
+            v.Headline = "The game updated, so this hunt cannot continue.";
+            v.Detail = $"Every round so far was measured against game build {p.GameBuild}, and an update moves every address - the fault being hunted ({p.Signature.Split('@')[0]}) cannot happen at that address any more. "
+                     + $"Nothing learned in {p.Steps.Count(x => x.Outcome != "pending")} round(s) is wrong, but it cannot be carried forward. Turn your mods back on, play until the crash reappears, then start a new hunt against whatever fault the new build reports.";
             return v;
         }
         if (p.Status == "stopped") { v.Headline = "Bisect stopped."; return v; }

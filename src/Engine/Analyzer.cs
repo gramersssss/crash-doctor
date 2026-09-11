@@ -39,6 +39,8 @@ public static class Analyzer
             groups.Add(new CrashGroup
             {
                 Signature = grp.Key,
+                Fault = list[0].Fault ?? grp.Key,
+                Build = list[0].Build,
                 Exception = withReport?.Dump?.ExceptionName ?? "",
                 Plain = withReport?.Dump?.Plain ?? "",
                 Count = list.Count,
@@ -50,6 +52,18 @@ public static class Analyzer
                 SessionIds = list.Select(x => x.Id).ToList(),
             });
         }
+        // The same offset under two builds is two groups, because after a game patch it is two different
+        // instructions. Say so rather than leaving someone to wonder why one fault is listed twice.
+        foreach (var byFault in groups.GroupBy(g => g.Fault))
+        {
+            var builds = byFault.Select(g => g.Build).Distinct().ToList();
+            if (builds.Count < 2) continue;
+            foreach (var g in byFault)
+            {
+                g.OtherBuilds = builds.Count - 1;
+                g.BuildNote = $"The same offset also appears under {Join(builds.Where(b => b != g.Build).Select(b => b ?? "an unknown build").ToList())}. A game update moves every address, so those are recorded separately: at this offset they are different instructions, not the same bug seen twice.";
+            }
+        }
         return groups.OrderByDescending(g => g.Count).ThenByDescending(g => g.LastSeen).ToList();
     }
 
@@ -59,7 +73,7 @@ public static class Analyzer
     {
         if (g.Count < 2) return;
         foreach (var s in sessions.Where(x => g.SessionIds.Contains(x.Id)))
-            s.Verdict += $" This exact fault ({g.Signature}) has happened {g.Count} times between {g.FirstSeen:d MMM} and {g.LastSeen:d MMM} - it is one repeating problem, not {g.Count} unrelated crashes.";
+            s.Verdict += $" This exact fault ({g.Fault}{(g.OtherBuilds > 0 && g.Build != null ? " on game build " + g.Build : "")}) has happened {g.Count} times between {g.FirstSeen:d MMM} and {g.LastSeen:d MMM} - it is one repeating problem, not {g.Count} unrelated crashes.";
     }
 
     // A crash with no surviving suspect is a legitimate outcome, not a hole to paper over. When elimination has
@@ -137,9 +151,11 @@ public static class Analyzer
             if (report.Dump is { } dump)
             {
                 s.Signature = dump.Signature;
+                s.Fault = dump.Fault;
+                s.Build = dump.ModuleVersion;
                 s.FaultingModule = dump.FaultingModule;
                 s.Injector = MiniDump.InjectorIn(dump.Modules);
-                if (dump.Signature != null) s.Exception = dump.ExceptionName + " at " + dump.Signature;
+                if (dump.Fault != null) s.Exception = dump.ExceptionName + " at " + dump.Fault;
             }
         }
         // The card was full. The engine needs headroom for transient allocations, so failures start well before 100 %:
@@ -527,7 +543,7 @@ public static class Analyzer
             var live = groups.Where(g => g.Current).ToList();
             var total = groups.Sum(g => g.Count);
             var detail = $"{total} crashes with a readable dump fall into {groups.Count} distinct fault{(groups.Count == 1 ? "" : "s")} - crashes at the same machine instruction are the same bug. "
-                + (repeat.Count > 0 ? $"{repeat.Count} of them repeat: " + Join(repeat.Take(3).Select(g => $"{g.Signature} ({g.Count}x, {g.FirstSeen:d MMM}-{g.LastSeen:d MMM})").ToList()) + ". " : "")
+                + (repeat.Count > 0 ? $"{repeat.Count} of them repeat: " + Join(repeat.Take(3).Select(g => $"{g.Fault} ({g.Count}x, {g.FirstSeen:d MMM}-{g.LastSeen:d MMM})").ToList()) + ". " : "")
                 + (live.Count == 0 ? "None of them has happened since your last clean session, so nothing is currently recurring." : $"{live.Count} {(live.Count == 1 ? "is" : "are")} still happening since the last clean session.");
             h.Add(new HealthItem { Severity = live.Count > 0 ? "medium" : "info", Title = groups.Count == 1 ? "All your crashes are one repeating fault" : $"Your crashes are {groups.Count} separate problems, not {total} random ones", Detail = detail });
 

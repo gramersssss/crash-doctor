@@ -26,3 +26,13 @@ machine and there is nothing else to go on.
 
 Note that the GUI ignores `--game` and always locates the real install, so a fixture must be scanned through the
 command line.
+
+## make-twobuild-fixture.py
+
+    python tools/make-twobuild-fixture.py C:	empixtures
+
+Copies two real crash reports and rewrites the faulting module's VS_FIXEDFILEINFO in one of them, producing the
+same faulting offset recorded under two different game builds. That is the case build-keyed signatures exist for,
+and it is the one case a single machine's crash history cannot produce on its own: an install only ever crashes on
+the build it is running. Scan it the same way and both offsets should appear as two separate groups, each saying
+why.
