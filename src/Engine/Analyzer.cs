@@ -22,7 +22,7 @@ public static class Analyzer
         History.Save(merged);
         r.Sessions = merged;
         r.Latest = merged.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).OrderByDescending(s => s.Start).FirstOrDefault();
-        r.Health = Health(d, merged, elimination);
+        r.Health = Health(d, merged, elimination, r);
         r.SettingsNotes = SettingsNotes(d, merged);
     }
 
@@ -506,7 +506,7 @@ public static class Analyzer
     static string? Pretty(string? district) => district == null ? null : Regex.Replace(district.Replace("_", " · "), "(?<=[a-z])(?=[A-Z])", " ");
 
     // ---------- health ----------
-    static List<HealthItem> Health(CollectedData d, List<Session> sessions, Elimination el)
+    static List<HealthItem> Health(CollectedData d, List<Session> sessions, Elimination el, Report r)
     {
         var h = new List<HealthItem>();
         // How much of a clean baseline exists decides how much anything else here can be trusted. Say it first -
@@ -619,6 +619,8 @@ public static class Analyzer
         }
         if (latestRed != null && latestRed.Incompatible.Count == 0 && d.RedscriptErrors.Count == 0) h.Add(new HealthItem { Severity = "info", Title = "Frameworks loaded cleanly", Detail = $"RED4ext {latestRed.Red4extVersion} and {latestRed.PluginsLoaded.Count} native plugins loaded without warnings; scripts compiled." });
         if (d.Warnings.Count > 0) h.Add(new HealthItem { Severity = "info", Title = "Some sources could not be read", Detail = string.Join(" ", d.Warnings) });
+        // The rule catalogue: recognisable causes that need no crash signature at all. See Rules.cs.
+        foreach (var hit in Rules.Run(d, r)) h.Add(new HealthItem { Severity = hit.Severity, Title = hit.Title, Detail = hit.Detail, Mod = hit.Mod, Action = hit.Action });
         return h;
     }
 
