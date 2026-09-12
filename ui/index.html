@@ -758,7 +758,9 @@ function renderReport(r){
   // the privacy line travels with the pasted text too, so a reader knows the mod list may be missing by choice
 
   var s=r.latest; var lines=[];
-  lines.push('Crash Doctor report — '+fmtDate(r.generatedAt));
+  // the version goes on the first line: this text is what people paste into a help thread, and the first question
+  // anyone reading it has to be able to answer is which build produced it
+  lines.push('Crash Doctor '+appVer(r.appVersion)+' report — '+fmtDate(r.generatedAt));
   lines.push(r.game.name+' '+r.game.version+' ('+r.game.store+') · '+r.system.gpu+' '+r.system.vramGB+' GB · driver '+r.system.driver+' · '+r.system.os);
   lines.push(r.mods.enabled+' mods enabled via '+r.mods.manager+' · frameworks: '+(r.mods.frameworks||[]).join(', '));
   if(r.privacy) lines.push(r.privacy);
@@ -777,6 +779,10 @@ function renderReport(r){
 function copyReport(){ var t=document.getElementById('report-pre').textContent; var m=document.getElementById('report-msg'); if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ m.textContent='Copied.'; setTimeout(function(){m.textContent='';},2000); }); } else { m.textContent='Select the text and copy it.'; } }
 function exportReport(){ if(hasHost()) window.chrome.webview.postMessage({cmd:'export'}); else alert('Available in the app.'); }
 function act(id){ if(hasHost()) window.chrome.webview.postMessage({cmd:'action',id:id}); else alert('Action: '+id+' (available in the app)'); }
+
+// "0.5.1+745f2d419ba7..." -> "0.5.1 (745f2d4)". The whole sha stays in the JSON for anyone who needs to check out
+// that commit; forty characters of it in a line someone pastes into a forum is just noise.
+function appVer(v){ if(!v) return '?'; var p=String(v).split('+'); return p.length>1 ? p[0]+' ('+p[1].slice(0,7)+')' : p[0]; }
 
 function go(v){ document.querySelectorAll('.view').forEach(function(x){x.classList.toggle('on',x.id==='v-'+v);}); document.querySelectorAll('.rail button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')===v);}); }
 
@@ -833,8 +839,9 @@ var SAMPLE={
 SAMPLE.latest=SAMPLE.sessions[6];
 document.addEventListener('DOMContentLoaded', function(){
   if(window.EXPORTED){ load(window.EXPORTED); document.getElementById('btn-scan').style.display='none';
-    // say what this copy does and does not contain, for whoever ends up reading it
-    document.getElementById('foot').textContent=(window.EXPORTED.privacy?window.EXPORTED.privacy+' ':'')+'Open Crash Doctor to scan again.'; }
+    // say which build made this and what it does and does not contain, for whoever ends up reading it
+    document.getElementById('foot').textContent='Crash Doctor '+appVer(window.EXPORTED.appVersion)+'. '
+      +(window.EXPORTED.privacy?window.EXPORTED.privacy+' ':'')+'Open Crash Doctor to scan again.'; }
   else if(!hasHost()){ load(SAMPLE); }
   else { window.chrome.webview.postMessage({cmd:'ready'}); }
 });

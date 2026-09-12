@@ -290,10 +290,17 @@ public static class Rules
     static IEnumerable<RuleHit> DeployedFilesAreMissing(CollectedData d, Report r)
     {
         if (!File.Exists(d.Paths.VortexManifest)) return None;
-        // Parsed here rather than taken from the inventory because the inventory drops each entry's deployment
-        // target, and a file with a target does not live at <game>\<relPath>. Getting that wrong would report every
-        // REDmod-deployed file as missing.
+        // Parsed here rather than taken from the inventory, because the inventory drops each entry's deployment
+        // target and a file with a target does not necessarily live at <game>\<relPath>.
+        //
+        // Entries carrying a target are skipped outright rather than guessed at. Every entry on the only machine
+        // this has been run against has an empty target, so which way Vortex stores the path for a REDmod-style
+        // deployment - relPath already including the target, or not - has never been observed. Guess it wrong and
+        // this rule reports *every* file as missing and tells someone with a perfectly healthy install to purge
+        // and redeploy, at high severity. Losing coverage of those entries is the cheaper mistake by a distance.
+        // Remove the skip once a manifest with a non-empty target has actually been looked at.
         List<(string mod, string path)> entries = new();
+        var skipped = 0;
         try
         {
             using var doc = System.Text.Json.JsonDocument.Parse(Files.ReadAllTextShared(d.Paths.VortexManifest));
@@ -303,8 +310,9 @@ public static class Rules
                 var rel = f.TryGetProperty("relPath", out var p) ? p.GetString() : null;
                 if (string.IsNullOrEmpty(rel)) continue;
                 var target = f.TryGetProperty("target", out var t) ? t.GetString() ?? "" : "";
+                if (target.Length > 0) { skipped++; continue; }
                 var src = f.TryGetProperty("source", out var s) ? s.GetString() ?? "" : "";
-                entries.Add((ModInventory.FromFolder(src).Name, Path.Combine(d.Paths.GameDir, target, rel)));
+                entries.Add((ModInventory.FromFolder(src).Name, Path.Combine(d.Paths.GameDir, rel)));
                 if (entries.Count >= 20000) break;   // a manifest this size is already pathological; do not stall the scan
             }
         }
@@ -326,7 +334,10 @@ public static class Rules
                     ? $"None of the {entries.Count} files in Vortex's deployment record is actually on disk. "
                     : $"{missing.Count} of the {entries.Count} files in Vortex's deployment record are not on disk, across {mods.Count} mod{(mods.Count == 1 ? "" : "s")}: {Join(mods.Take(4).ToList())}{(mods.Count > 4 ? $" and {mods.Count - 4} more" : "")}. ")
                 + "Verifying the game files through Steam, GOG or Epic does this - the store deletes everything it does not recognise, and the manager is never told. Antivirus quarantine and a deployment that was interrupted have the same effect. "
-                + "Vortex still lists these mods as installed and the game never sees them, which is the state behind \"the mod does nothing\" and ArchiveXL complaining that a file does not exist. Open Vortex and deploy again - purge first if it says everything is already deployed.",
+                + "Vortex still lists these mods as installed and the game never sees them, which is the state behind \"the mod does nothing\" and ArchiveXL complaining that a file does not exist. Open Vortex and deploy again - purge first if it says everything is already deployed."
+                // Said out loud, not swallowed: it stops the count reading as the whole picture, and it is how
+                // anyone posting a report tells us these entries exist in the wild at all.
+                + (skipped > 0 ? $" ({skipped} further files deploy to their own target folder and were not checked.)" : ""),
             Mod = mods.Count == 1 ? mods[0] : null,
             Flag = mods.Count == 1 ? "files missing" : null,
         });

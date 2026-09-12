@@ -6,6 +6,12 @@ namespace CrashDoctor.Engine;
 
 public sealed class Report
 {
+    /// <summary>
+    /// Which build produced this report, e.g. "0.5.1+745f2d4...". The support model is "post the saved report",
+    /// and without this there is no way to tell whether a report came from the current version or one from three
+    /// releases ago. It cannot be added retroactively: every report made before this existed is unattributable.
+    /// </summary>
+    public string AppVersion { get; set; } = App.Version;
     public DateTime GeneratedAt { get; set; } = DateTime.Now;
     public GameInfo Game { get; set; } = new();
     public SystemInfo System { get; set; } = new();

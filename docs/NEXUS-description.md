@@ -16,7 +16,7 @@ audience has been sold confident crash tools before and they can smell it.
 | Name | Crash Doctor |
 | Category | Utilities |
 | Tagline | Reads your crash dumps and mod logs, and tells you what actually happened. |
-| Version | 0.5.0 |
+| Version | 0.5.1 |
 | Tags | Utilities, Modders Resources, Bug Fix, Performance, Debug |
 | Requirements | Windows 10/11 64-bit. Microsoft WebView2 runtime (already present on up-to-date Windows 11). No .NET install needed. |
 | Permissions | Read-only. Does not modify the game or any mod unless you click a fix and confirm it. |
