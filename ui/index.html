@@ -370,7 +370,18 @@ button.mark:hover{filter:brightness(.94)}
       <p class="eyebrow">Report</p>
       <h1>Share what Crash Doctor found</h1>
       <div class="card">
-        <p>Paste this into a help thread or send it to the mod author. It contains no personal data beyond your game path and hardware.</p>
+        <!-- These two are not the same job and it is unhelpful to present them as if they were. Most places people
+             actually ask for help - a mod's Bugs tab, Nexus comments, Reddit - take text and not files, so the
+             summary is the one that gets used. Saying so beats letting someone save an HTML file and then discover
+             they have nowhere to put it. -->
+        <p><b>Copy summary</b> is the one to paste for help: plain text, short enough for a mod's Bugs tab, a forum
+        post or a Discord message.</p>
+        <p class="sub"><b>Save full report as HTML</b> writes one self-contained file — every session, every crash,
+        the whole health list — that opens in any browser. Most help pages will not let you attach a file, so it is
+        for somewhere that does, for a Crash Doctor bug report, or as your own before-and-after record when you
+        change a setting or switch a mod off.</p>
+        <p class="sub">Neither contains personal data beyond your game path and hardware, and folder paths under
+        your Windows account are replaced before saving.</p>
         <div class="row"><button class="btn primary" onclick="copyReport()">Copy summary</button><button class="btn" onclick="exportReport()">Save full report as HTML</button><span class="muted" id="report-msg"></span></div>
         <pre class="mono" id="report-pre" style="white-space:pre-wrap;background:#F7F9FB;border:1px solid var(--line);border-radius:6px;padding:14px;margin-top:14px;max-height:50vh;overflow:auto"></pre>
       </div>

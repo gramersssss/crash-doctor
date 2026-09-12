@@ -71,8 +71,11 @@ deployed* before it will accept the result. It never enables or disables anythin
 crash" only counts when the run lasted meaningfully longer than that fault's own typical time-to-crash — a
 threshold it computes from your history and shows you, so you can judge it yourself.
 
-**A report you can paste into a help thread.** Copy a summary, or save the whole thing as one HTML file.
-Personal folder paths are stripped, and you can leave your mod list out of the saved copy.
+**A report you can paste into a help thread.** One button copies a plain-text summary short enough for a mod's
+Bugs tab, a forum post or a Discord message. Another saves the whole thing as a single self-contained HTML file
+that opens in any browser — useful where files can be attached, and as your own before-and-after record when you
+change something. Personal folder paths are stripped from both, and you can leave your mod list out of the saved
+copy.
 
 ### What it will not do
 
@@ -81,6 +84,32 @@ naming the culprit is a bonus, not the promise. Its confidence is allowed to rea
 yet — here is what is ruled out and here is the next test" is an answer it will give you.
 
 What it reliably replaces is a week of switching mods off at random.
+
+### This is an early release, and here is exactly how early
+
+Version 0.5.1. Everything it does has been built and tested against **one** machine: a Steam install, Vortex,
+an NVIDIA card with 8 GB, 169 mods, and a few weeks of real crashes. That install is why the tool exists, and it
+is also the whole of its experience.
+
+What it has never seen: an AMD card, a GOG or Epic install, Mod Organizer 2 or a hand-installed setup, REDmod
+deployment, or a card bigger than 8 GB. The evidence it reads is the same everywhere, so most of it should simply
+work — but "should" is doing real work in that sentence, and the video memory reading in particular comes from a
+Windows field that is known to misreport on some cards.
+
+So: if it tells you something that is obviously wrong, that is worth more to me than a thank-you. Post the saved
+report on the Bugs tab. Every report says which build produced it on its first line, so a two-month-old one is
+still useful. The catalogue of things it recognises grows directly from those.
+
+### Windows will warn you the first time
+
+Crash Doctor is an unsigned executable, so SmartScreen shows "Windows protected your PC" the first time you run
+it. Click **More info** and then **Run anyway**. A code-signing certificate costs a few hundred pounds a year,
+which is not something a free tool is going to carry — the same warning appears for most small Windows utilities
+on this site.
+
+If you would rather check than trust: the file is 63 MB because it carries the whole .NET runtime inside it, so it
+does not need .NET installed. The source is MIT and available, and the report the tool saves shows you the commit
+it was built from.
 
 ### Install
 
@@ -140,7 +169,7 @@ Crash Doctor reads the crash dumps, mod-loader logs and Windows driver events al
 [*][b]Health.[/b] Standing problems found before you ever crash: native plugins that refuse to load on your patch, world-sector patches that fail every launch, mods pointing at files that do not exist, scripts erroring every twelve seconds, interrupted downloads that left an empty archive, a DLSS/FSR enabler that overwrote files the game now ships itself, saves sitting in a OneDrive folder.
 [*][b]Requirements.[/b] Detects RED4ext, redscript, Cyber Engine Tweaks, ArchiveXL, TweakXL, Codeware, Equipment-EX and the Microsoft runtimes, shows how many of your installed mods depend on each, and takes you to the right download.
 [*][b]Find it — guided bisect.[/b] For the crash with no signature that nobody has seen before. Crash Doctor tells you which half of your mod list to switch off, and then verifies what is actually deployed before it will accept the result. It never enables or disables anything itself. And "it didn't crash" only counts when the run lasted meaningfully longer than that fault's own typical time-to-crash.
-[*][b]A report you can paste into a help thread.[/b] Copy a summary, or save the whole thing as one HTML file. Personal folder paths are stripped, and you can leave your mod list out of the saved copy.
+[*][b]A report you can paste into a help thread.[/b] One button copies a plain-text summary short enough for a mod's Bugs tab, a forum post or a Discord message. Another saves the whole thing as a single self-contained HTML file that opens in any browser — useful where files can be attached, and as your own before-and-after record when you change something. Personal folder paths are stripped from both, and you can leave your mod list out of the saved copy.
 [/list]
 
 [size=4][b]What it will not do[/b][/size]
@@ -148,6 +177,20 @@ Crash Doctor reads the crash dumps, mod-loader logs and Windows driver events al
 It will not fix every crash, and it does not pretend to. The evidence work is reliable and takes ten seconds; naming the culprit is a bonus, not the promise. Its confidence is allowed to reach zero, and "I don't know yet — here is what is ruled out and here is the next test" is an answer it will give you.
 
 What it reliably replaces is a week of switching mods off at random.
+
+[size=4][b]This is an early release, and here is exactly how early[/b][/size]
+
+Version 0.5.1. Everything it does has been built and tested against [b]one[/b] machine: a Steam install, Vortex, an NVIDIA card with 8 GB, 169 mods, and a few weeks of real crashes. That install is why the tool exists, and it is also the whole of its experience.
+
+What it has never seen: an AMD card, a GOG or Epic install, Mod Organizer 2 or a hand-installed setup, REDmod deployment, or a card bigger than 8 GB. The evidence it reads is the same everywhere, so most of it should simply work — but "should" is doing real work in that sentence, and the video memory reading in particular comes from a Windows field that is known to misreport on some cards.
+
+So: if it tells you something that is obviously wrong, that is worth more to me than a thank-you. Post the saved report on the Bugs tab. Every report says which build produced it on its first line, so a two-month-old one is still useful. The catalogue of things it recognises grows directly from those.
+
+[size=4][b]Windows will warn you the first time[/b][/size]
+
+Crash Doctor is an unsigned executable, so SmartScreen shows "Windows protected your PC" the first time you run it. Click [b]More info[/b] and then [b]Run anyway[/b]. A code-signing certificate costs a few hundred pounds a year, which is not something a free tool is going to carry — the same warning appears for most small Windows utilities on this site.
+
+If you would rather check than trust: the file is 63 MB because it carries the whole .NET runtime inside it, so it does not need .NET installed. The source is MIT and available, and the report the tool saves shows you the commit it was built from.
 
 [size=4][b]Install[/b][/size]
 
