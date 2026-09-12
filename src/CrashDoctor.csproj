@@ -9,7 +9,7 @@
     <LangVersion>12</LangVersion>
     <AssemblyName>CrashDoctor</AssemblyName>
     <RootNamespace>CrashDoctor</RootNamespace>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <Product>Crash Doctor for Cyberpunk 2077</Product>
     <Company>Crash Doctor</Company>
     <Copyright>MIT</Copyright>

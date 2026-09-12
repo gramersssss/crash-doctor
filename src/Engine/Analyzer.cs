@@ -391,7 +391,7 @@ public static class Analyzer
         return set;
     }
 
-    static string Pct(double r) => Math.Round(r * 100) + "%";
+    internal static string Pct(double r) => Math.Round(r * 100) + "%";
     static string Mb(long bytes) => bytes >= 1073741824L ? $"{bytes / 1073741824.0:0.#} GB" : $"{bytes / 1048576L} MB";
     static string Join(List<string> x) => x.Count == 1 ? x[0] : string.Join(", ", x.Take(x.Count - 1)) + " and " + x[^1];
 
@@ -499,9 +499,9 @@ public static class Analyzer
     }
 
     static Evidence Ev(LogEvent e, DateTime crashAt, bool hit) => new() { TMinus = Math.Max(0, (int)Math.Round((crashAt - e.At).TotalSeconds)), Source = e.Source, Text = e.Text, Hit = hit, At = e.At, Mod = e.Mod };
-    static bool SettingOn(CollectedData d, string key) => d.Settings.TryGetValue(key, out var v) && (v == "true" || v == "True");
+    internal static bool SettingOn(CollectedData d, string key) => d.Settings.TryGetValue(key, out var v) && (v == "true" || v == "True");
     static string Dur(double m) => m < 1 ? "under a minute" : m < 60 ? $"{Math.Round(m)} min" : $"{(int)(m / 60)} h {Math.Round(m % 60)} min";
-    static string Short(string t) => t.Length > 110 ? t[..110] + "…" : t;
+    internal static string Short(string t) => t.Length > 110 ? t[..110] + "…" : t;
     static string Ordinal(int n) => n switch { 1 => "first", 2 => "second", 3 => "third", 4 => "fourth", 5 => "fifth", _ => n + "th" };
     static string? Pretty(string? district) => district == null ? null : Regex.Replace(district.Replace("_", " · "), "(?<=[a-z])(?=[A-Z])", " ");
 
@@ -562,67 +562,12 @@ public static class Analyzer
             }
         }
 
-        // Video memory in use at each crash. The engine records this only in the crash report, never in a log, so this
-        // is the one place it can be seen. Reading the run of numbers is more use than any single verdict.
-        var withVram = sessions.Where(s => s.VramUsedMB > 0 && s.VramTotalMB > 0).OrderByDescending(s => s.Start).Take(12).ToList();
-        if (withVram.Count > 0)
-        {
-            var total = withVram[0].VramTotalMB!.Value;
-            var atCeiling = withVram.Where(s => (double)s.VramUsedMB!.Value / s.VramTotalMB!.Value >= 0.95).ToList();
-            var lines = withVram.Select(s => $"{s.Start:d MMM HH:mm} {s.VramUsedMB} MB ({Pct((double)s.VramUsedMB!.Value / s.VramTotalMB!.Value)})");
-            var sev = atCeiling.Count >= 3 ? "high" : atCeiling.Count > 0 ? "medium" : "info";
-            var lead = atCeiling.Count == 0
-                ? $"None of the last {withVram.Count} crashes was short of video memory, so the card is not the constraint."
-                : $"{atCeiling.Count} of the last {withVram.Count} crashes happened with the {total} MB card at 95 % or more. That is where allocations start failing, and a failed allocation crashes the engine with nothing written to any log.";
-            h.Add(new HealthItem { Severity = sev, Title = $"Video memory at the last {withVram.Count} crash{(withVram.Count == 1 ? "" : "es")}", Detail = lead + "  Newest first: " + string.Join(" · ", lines) + $".  Card total {total} MB." + (atCeiling.Count > 0 ? "  Textures and crowd density free the most; ray traced lighting and reflections are next." : ""), Action = new UiAction("settings", "See settings") });
-        }
-        var fg = d.Settings.TryGetValue("FrameGeneration", out var fgv) && fgv != "Off"; var rt = SettingOn(d, "RayTracing"); d.Settings.TryGetValue("RayTracedLighting", out var rtl);
-        if (fg && rt && d.System.VramGB > 0 && d.System.VramGB <= 8) h.Add(new HealthItem { Severity = crashes.Any(c => c.EndKind == EndKind.Gpu) ? "high" : "medium", Title = $"Frame generation with ray tracing on an {d.System.VramGB} GB GPU", Detail = $"Ray traced lighting is {rtl}. This combination sits at the VRAM ceiling on {d.System.VramGB} GB; GPU faults on the map or in dense areas are the usual result. Turn one of them down.", Action = new UiAction("settings", "See settings") });
-        if (d.Settings.TryGetValue("RayTracedPathTracing", out var pt) && pt == "true" && d.System.VramGB <= 12) h.Add(new HealthItem { Severity = "medium", Title = "Path tracing on a card with 12 GB or less", Detail = "Path tracing needs more VRAM than any other setting. Expect faults in dense areas.", Action = new UiAction("settings", "See settings") });
-        if (d.System.DriverDate is { } dd && dd < DateTime.Now.AddMonths(-9)) h.Add(new HealthItem { Severity = "low", Title = $"Graphics driver is from {dd:MMM yyyy}", Detail = "Not necessarily a problem, but frame generation and ray tracing fixes ship in driver updates." });
-
+        // Everything that used to sit here - the video-memory run, the settings that do not fit the card, the
+        // driver age, the plugins RED4ext refused, ArchiveXL's startup complaints, redscript, CET error spam and
+        // duplicated scripts - is now in Rules.cs, where each one can be listed, reasoned about and tested on its
+        // own. What is left in this method is the part that is not a rule: what the clean sessions allow us to
+        // conclude, how much crashed this week, and how many distinct faults that really is.
         var latestRed = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
-        if (latestRed != null)
-            foreach (var inc in latestRed.Incompatible)
-            {
-                var name = Regex.Match(inc, @"^(.+?) \(version").Groups[1].Value; var owner = d.Mods.OwnerOfPlugin(name.Replace(" ", "")) ?? d.Mods.OwnerOfPlugin(name) ?? name;
-                h.Add(new HealthItem { Severity = "medium", Title = $"Native plugin refuses to load on this patch: {name}", Detail = inc + " Whatever this mod does through its native half is silently off, and its script half may error.", Mod = owner, Flag = "plugin not loading", Action = NexusAction(d, owner) });
-            }
-        if (latestRed != null)
-        {
-            var startup = d.Events.Where(e => e.Kind is "xl-error" or "xl-warning" && e.At >= latestRed.Start && e.At <= latestRed.Start.AddMinutes(3)).ToList();
-            // "Some patches have not been applied" is the consequence of a sector error already listed; drop it when that error is present
-            if (startup.Any(e => e.Text.Contains("[WorldStreaming]") && e.Kind == "xl-error")) startup = startup.Where(e => !e.Text.StartsWith("[WorldStreaming] Some patches have not been applied")).ToList();
-            // one item per (mod, kind of problem); distinct messages counted inside it
-            foreach (var grp in startup.GroupBy(e => (owner: e.Mod ?? GuessOwnerFromText(d, e.Text) ?? "", cat: e.Text.Contains("WorldStreaming") ? "world" : (e.Text.Contains("doesn't exist") || e.Text.Contains("non-existent")) ? "missing" : "other")))
-            {
-                var msgs = grp.Select(e => e.Text).Distinct().ToList(); var first = grp.First();
-                var owner = grp.Key.owner == "" ? null : grp.Key.owner;
-                var world = grp.Key.cat == "world"; var missing = grp.Key.cat == "missing";
-                var title = world ? "World sector patch fails every launch" : missing ? "Mod points at resources that do not exist" : "ArchiveXL reports a problem";
-                if (owner == null) title += " (mod not identified)";
-                var detail = msgs.Count == 1 ? msgs[0] : $"{msgs.Count} distinct messages, e.g. {msgs[0]}";
-                if (world) detail += " Another mod changed that sector first, or the game patch did; the patch is skipped."; else if (missing) detail += " The mod references files that are not installed or were removed in a game patch; those parts are skipped.";
-                var flag = world ? "world patch failing" : missing ? "missing resources" : "ArchiveXL problem";
-                h.Add(new HealthItem { Severity = world ? "medium" : first.Kind == "xl-error" ? (owner == null ? "low" : "medium") : "low", Title = title, Detail = detail, Mod = owner, Flag = flag, Action = owner != null ? NexusAction(d, owner) : null });
-            }
-        }
-        foreach (var w in d.RedscriptWarnings.Take(6)) h.Add(new HealthItem { Severity = w.Contains("overwrites a previous annotation") ? "low" : "medium", Title = w.Contains("overwrites a previous annotation") ? "Two mods replace the same script method" : "redscript warning", Detail = w, Mod = GuessOwnerFromText(d, w), Flag = w.Contains("overwrites a previous annotation") ? "script overridden" : "redscript warning" });
-        foreach (var e in d.RedscriptErrors.Take(6)) h.Add(new HealthItem { Severity = "high", Title = "redscript error: a script mod does not compile", Detail = e, Mod = GuessOwnerFromText(d, e), Flag = "does not compile" });
-        var lastSess = sessions.Where(s => !s.Partial).OrderByDescending(s => s.Start).FirstOrDefault();
-        if (lastSess != null)
-            foreach (var grp in d.Events.Where(e => e.Kind == "error" && e.Source.StartsWith("CET") && e.At >= lastSess.Start).GroupBy(e => e.Source).Where(g => g.Count() >= 10))
-            {
-                var owner = grp.First().Mod ?? grp.Key.Replace("CET · ", "");
-                h.Add(new HealthItem { Severity = "medium", Title = $"{owner} logs the same error {grp.Count()} times per session", Detail = Short(grp.Last().Text) + " A feature of the mod is not working; check for an update.", Mod = owner, Flag = "error spam", Action = NexusAction(d, owner) });
-            }
-        if (Directory.Exists(d.Paths.Scripts))
-        {
-            // same file name in two places is only a conflict when the contents are the same script (two mods bundling one fix)
-            var dups = Directory.EnumerateFiles(d.Paths.Scripts, "*.reds", SearchOption.AllDirectories).GroupBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1 && !GenericScriptName(g.Key))
-                .Select(g => g.GroupBy(f => { try { return Fixes.Sha(f); } catch { return f; } }).Where(x => x.Count() > 1).ToList()).Where(x => x.Count > 0).ToList();
-            foreach (var g in dups.Take(5)) foreach (var same in g) h.Add(new HealthItem { Severity = "low", Title = $"{Path.GetFileName(same.First())} is installed {same.Count()} times", Detail = "Identical copies of one script compile more than once; the compiler warns and the last one wins. Two mods are bundling the same fix: " + string.Join(", ", same.Select(f => d.Mods.FileOwner.FirstOrDefault(kv => kv.Key.EndsWith(Path.GetRelativePath(d.Paths.GameDir, f), StringComparison.OrdinalIgnoreCase)).Value ?? Path.GetRelativePath(d.Paths.Scripts, f))) });
-        }
         if (latestRed != null && latestRed.Incompatible.Count == 0 && d.RedscriptErrors.Count == 0) h.Add(new HealthItem { Severity = "info", Title = "Frameworks loaded cleanly", Detail = $"RED4ext {latestRed.Red4extVersion} and {latestRed.PluginsLoaded.Count} native plugins loaded without warnings; scripts compiled." });
         if (d.Warnings.Count > 0) h.Add(new HealthItem { Severity = "info", Title = "Some sources could not be read", Detail = string.Join(" ", d.Warnings) });
         // The rule catalogue: recognisable causes that need no crash signature at all. See Rules.cs.
@@ -631,10 +576,10 @@ public static class Analyzer
     }
 
     // Many mods ship a Config.reds / Utils.reds inside their own folder; that is a naming coincidence, not a conflict.
-    static bool GenericScriptName(string name) => Regex.IsMatch(name, @"^(config|utils|util|helpers|helper|classes|main|module|callback|callbacks|events|settings|init|types|globals|data|core)\.reds$", RegexOptions.IgnoreCase);
+    internal static bool GenericScriptName(string name) => Regex.IsMatch(name, @"^(config|utils|util|helpers|helper|classes|main|module|callback|callbacks|events|settings|init|types|globals|data|core)\.reds$", RegexOptions.IgnoreCase);
 
-    static UiAction? NexusAction(CollectedData d, string? modName) { var row = modName == null ? null : d.Mods.Find(modName); return row?.NexusId != null ? new UiAction("nexus:" + row.NexusId, "Open on Nexus") : null; }
-    static string? GuessOwnerFromText(CollectedData d, string text)
+    internal static UiAction? NexusAction(CollectedData d, string? modName) { var row = modName == null ? null : d.Mods.Find(modName); return row?.NexusId != null ? new UiAction("nexus:" + row.NexusId, "Open on Nexus") : null; }
+    internal static string? GuessOwnerFromText(CollectedData d, string text)
     {
         var m = Regex.Match(text, @"r6\\scripts\\([^\\]+)\\"); if (m.Success) { var f = d.Mods.FileOwner.FirstOrDefault(kv => kv.Key.StartsWith(@"r6\scripts\" + m.Groups[1].Value + @"\", StringComparison.OrdinalIgnoreCase)); if (f.Value != null) return f.Value; return m.Groups[1].Value; }
         var q = Regex.Match(text, "\"([^\"\\\\]+)\\\\"); // first path segment inside quotes, e.g. "pinkydude\..."

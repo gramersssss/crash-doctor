@@ -354,6 +354,33 @@ public static class Collectors
             }
         }
         catch { }
+        return Override(s);
+    }
+
+    // CRASHDOCTOR_TEST_ROOT redirects the file roots, which is enough for every rule that reads a file. Two rules
+    // read the machine instead - the card's size and the driver's date - and a fixture cannot fake hardware, so
+    // those two could never be watched firing on a developer's own PC. This is the seam that lets them be:
+    //
+    //   set CRASHDOCTOR_TEST_SYSTEM=vramgb=8;ramgb=16;driverdate=2023-04-01
+    //
+    // Ignored entirely unless the variable is set, and it only ever replaces what WMI already reported.
+    static SystemInfo Override(SystemInfo s)
+    {
+        var spec = Environment.GetEnvironmentVariable("CRASHDOCTOR_TEST_SYSTEM");
+        if (string.IsNullOrWhiteSpace(spec)) return s;
+        foreach (var part in spec.Split(';', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var kv = part.Split('=', 2); if (kv.Length != 2) continue;
+            var v = kv[1].Trim();
+            switch (kv[0].Trim().ToLowerInvariant())
+            {
+                case "vramgb": if (int.TryParse(v, out var vram)) s.VramGB = vram; break;
+                case "ramgb": if (int.TryParse(v, out var ram)) s.RamGB = ram; break;
+                case "driverdate": if (DateTime.TryParse(v, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt)) s.DriverDate = dt; break;
+                case "gpu": s.Gpu = v; break;
+                case "laptop": s.Laptop = v is "1" or "true" or "True"; break;
+            }
+        }
         return s;
     }
     static string NvidiaFriendly(string drv)

@@ -24,6 +24,11 @@ machine, which is how a "never played" fixture first reported five sessions and 
 `CRASHDOCTOR_TIMING=1` prints how long each source and phase took. Useful when a scan crawls on someone else's
 machine and there is nothing else to go on.
 
+`CRASHDOCTOR_TEST_SYSTEM=vramgb=8;ramgb=16;driverdate=2023-04-01` replaces what WMI reported about the machine.
+`CRASHDOCTOR_TEST_ROOT` is enough for every rule that reads a file, but two of them read the hardware - the card's
+size and the driver's date - and no fixture can fake a graphics card. Without this seam those two rules could only
+ever be watched firing on a PC that happened to have the wrong card in it. Ignored unless set.
+
 Note that the GUI ignores `--game` and always locates the real install, so a fixture must be scanned through the
 command line.
 
@@ -52,13 +57,19 @@ that they go wrong on other people's machines. What it manufactures:
 - saves inside a synced folder (the scan is run with OneDrive pointed at the fixture)
 - three copies of real crash reports, each doctored for one rule: a module renamed to a capture hook, an exception
   code rewritten to a stack overflow, and the engine's own out-of-memory flag flipped on in the telemetry
-- three RED4ext logs for sessions that each die about a minute in, for the startup-crash rule
+- three RED4ext logs for sessions that each die about a minute in, one of which also names a native plugin the
+  loader refused, and an ArchiveXL log with a failing world-sector patch and a missing resource
+- a redscript log with one script that does not compile and one method two mods both replace
+- a CET mod log with twenty-one identical errors, and one script bundled byte-for-byte by two mods
+- graphics settings with frame generation, ray tracing and path tracing all on
 - a Vortex deployment manifest listing five files, three of which are not on disk
 
 The crash reports are copied from the real machine rather than generated, because a minidump is not worth writing
 by hand and because the rest of the report staying real is what makes the fixture honest.
 
-Every rule should fire here and none of them should fire against a healthy install or the `healthy` fixture.
+Every rule should fire here and none of them should fire against a healthy install or the `healthy` fixture. The
+fixture is self-sufficient on purpose: several of these conditions happen to be true on the author's own machine
+too, and verification that leans on that quietly stops covering them the day they get fixed.
 
 ## make-icon.py
 

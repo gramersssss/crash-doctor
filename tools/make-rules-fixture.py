@@ -5,13 +5,12 @@ demand - the whole point of them is that they are the things that go wrong on *o
 conditions are manufactured here instead.
 
 Run: python tools/make-rules-fixture.py <outdir>
-Then:
-    set CRASHDOCTOR_TEST_ROOT=<outdir>\\broken
-    set OneDrive=<outdir>\\broken\\OneDrive
-    CrashDoctor.exe --json out.json --game <outdir>\\broken\\game
 
-Every rule in src/Engine/Rules.cs should appear in out.json's health list, and none of them should appear when
-the same build is run against the `healthy` fixture or a real install.
+It prints the exact variables to set before scanning. One of them, CRASHDOCTOR_TEST_SYSTEM, stands in for the card
+size and the driver date: two rules read the machine rather than a file, and no fixture can fake hardware.
+
+Every rule in src/Engine/Rules.cs should appear in out.json's health list, and none of them should appear when the
+same build is run against the `healthy` fixture or a real install.
 """
 import io, json, os, re, shutil, struct, sys, datetime
 
@@ -186,7 +185,11 @@ for day, secs in ((3, 71), (2, 48), (1, 96)):
          "[%s] [info    ] [  4120] [RED4ext] Loading plugins..." % t(1, 400)]
     for i, (name, ver) in enumerate(PLUGINS):
         L.append("[%s] [info    ] [  4120] [RED4ext] %s (version: %s, author(s): someone) has been loaded" % (t(2 + i, 0), name, ver))
-    L += ["[%s] [info    ] [  4120] [RED4ext] %d plugin(s) loaded" % (t(6, 0), len(PLUGINS)),
+    # NativePluginsRefusingToLoad rides along on the same logs: RED4ext names the plugin it would not load and the
+    # runtime it wanted, every launch.
+    L += ["[%s] [warning ] [  4120] [RED4ext] Trainer Bridge (version: 1.0.2) is incompatible with the current patch "
+          "(requested runtime 3.0.80.33925, game is 3.0.80.51928)." % t(4, 500),
+          "[%s] [info    ] [  4120] [RED4ext] %d plugin(s) loaded" % (t(6, 0), len(PLUGINS)),
           "[%s] [info    ] [  4120] [RED4ext] RED4ext has been started" % t(6, 200),
           "[%s] [error   ] [  4120] [RED4ext] Crash report" % t(secs, 0),
           "[%s] [error   ] [  4120] [RED4ext] File: scriptable.cpp" % t(secs, 1),
@@ -194,6 +197,31 @@ for day, secs in ((3, 71), (2, 48), (1, 96)):
     os.makedirs(os.path.join(game, "red4ext", "logs"), exist_ok=True)
     io.open(os.path.join(game, "red4ext", "logs", "red4ext-%s.log" % start.strftime("%Y-%m-%d-%H-%M-%S")),
             "w", encoding="utf-8").write("\n".join(L) + "\n")
+
+    # ArchiveXlStartupProblems: a world sector patch that cannot be applied, logged in the first three minutes.
+    A = ["[%s] [8800] [info] ArchiveXL 1.27.2 initialized." % t(3, 0),
+         '[%s] [8800] [error] [WorldStreaming] jigjig.xl: Sector "jig_jig_unleashed.streamingsector" '
+         "doesn't exist." % t(20, 0),
+         '[%s] [8800] [error] [EntityAnimation] Animation "base\\animations\\ui\\photomode.anims" '
+         "doesn't exist. Skipped." % t(22, 0)]
+    os.makedirs(os.path.join(game, "red4ext", "plugins", "ArchiveXL"), exist_ok=True)
+    io.open(os.path.join(game, "red4ext", "plugins", "ArchiveXL", "ArchiveXL-%s.log" % start.strftime("%Y-%m-%d-%H-%M-%S")),
+            "w", encoding="utf-8").write("\n".join(A) + "\n")
+
+# ScriptErrorSpam: one CET mod erroring far more than the ten-per-session threshold, after the newest session began.
+newest = (NOW - datetime.timedelta(days=1)).replace(microsecond=0)
+cet_mod = os.path.join(game, "bin", "x64", "plugins", "cyber_engine_tweaks", "mods", "TriggerBridge")
+os.makedirs(cet_mod, exist_ok=True)
+io.open(os.path.join(cet_mod, "init.lua"), "w", encoding="utf-8").write("return {}\n")
+io.open(os.path.join(cet_mod, "TriggerBridge.log"), "w", encoding="utf-8").write("".join(
+    "[%s] [4120] init.lua:144: attempt to call global 'CloseClientProcess' (a nil value)\n"
+    % (newest + datetime.timedelta(seconds=30 + i * 12)).strftime("%Y-%m-%d %H:%M:%S") for i in range(21)))
+
+# DuplicatedScripts: the same script, byte for byte, bundled by two different mods.
+SHARED = "// shared compatibility fix\n@replaceMethod(VehicleComponent) func Fix() -> Void {}\n"
+for mod in ("ComputerAnywhere", "IdleAnywhere"):
+    os.makedirs(os.path.join(game, "r6", "scripts", mod), exist_ok=True)
+    io.open(os.path.join(game, "r6", "scripts", mod, "liftcheck.reds"), "w", encoding="utf-8").write(SHARED)
 
 
 # ---------------------------------------------------------------- DeployedFilesAreMissing
@@ -215,8 +243,45 @@ io.open(os.path.join(game, "vortex.deployment.json"), "w", encoding="utf-8").wri
               for rel, src in present + absent],
 }, indent=2))
 
+# ---------------------------------------------------------------- RedscriptProblems
+# One script that does not compile, and one method two mods are both replacing.
+os.makedirs(os.path.join(game, "r6", "logs"), exist_ok=True)
+REDSCRIPT_LOG = [
+    "[INFO] Compiling 61 modules",
+    r"[WARN] At r6\scripts\BetterLoot\loot.reds:44:1:",
+    "  @replaceMethod(LootManager) overwrites a previous annotation on ProcessLoot",
+    r"[ERROR] At r6\scripts\WeaponWheel\wheel.reds:12:3:",
+    "  expected a value of type Int32, found String",
+]
+io.open(os.path.join(game, "r6", "logs", "redscript_rCURRENT.log"), "w", encoding="utf-8").write(
+    "\n".join(REDSCRIPT_LOG) + "\n")
+
+
+# ---------------------------------------------------------------- SettingsOverTheVramBudget
+# Frame generation and ray tracing both on, plus path tracing. Whether this can fire depends on the card in the
+# machine running the scan, which no fixture can fake - hence CRASHDOCTOR_TEST_SYSTEM, printed below.
+io.open(os.path.join(fx, "LocalAppData", "CD Projekt Red", "Cyberpunk 2077", "UserSettings.json"),
+        "w", encoding="utf-8").write(json.dumps({"var": [
+    {"name": "FrameGeneration", "value": "On"},
+    {"name": "RayTracing", "value": "true"},
+    {"name": "RayTracedLighting", "value": "Ultra"},
+    {"name": "RayTracedPathTracing", "value": "true"},
+    {"name": "TextureQuality", "value": "High"},
+    {"name": "CrowdDensity", "value": "High"},
+    {"name": "Resolution", "value": "2560x1440"},
+]}, indent="	"))
+
 print("fixture:", fx)
 for what, msg in done.items():
     print("  %-6s %s" % (what, msg))
 print("  startup crash sessions: 3")
 print("  vortex manifest: %d files, %d of them missing" % (len(present) + len(absent), len(absent)))
+print("  redscript: 1 error, 1 annotation overwrite")
+print("  red4ext: 1 incompatible plugin; archivexl: 2 startup errors")
+print("  cet: 21 identical errors from one mod; scripts: 1 file bundled twice")
+print()
+print("Scan it with all three variables set - the third stands in for hardware, which a fixture cannot fake:")
+print("  set CRASHDOCTOR_TEST_ROOT=%s" % fx)
+print("  set OneDrive=%s" % os.path.join(fx, "OneDrive"))
+print("  set CRASHDOCTOR_TEST_SYSTEM=vramgb=8;ramgb=16;driverdate=2023-04-01")
+print("  CrashDoctor.exe --json out.json --game %s" % game)
