@@ -139,5 +139,11 @@ Responsive to 900 px (the window can be small). Visible focus ring (Trace). Redu
 Keyboard: rail is a list of buttons; sessions are focusable rows.
 
 ## Things tried / rejected
-- Dark + neon: rejected, it is the default for anything Cyberpunk and reads as fan art, not an instrument.
+- Dark + neon: rejected *as the default*, because it is the default for anything Cyberpunk and reads as fan art, not
+  an instrument. It came back later as opt-in skins (Terminal, Pause menu) chosen under Settings, at the owner's
+  request. That is consistent with the rejection rather than a reversal of it: the default is still Instrument, the
+  skins are palette, type and texture over the same tokens, and nothing about the reasoning or the wording changes
+  with them. Every colour lives in the theme tokens at the top of index.html; add a skin there, never by hand in a rule.
+- Graphics profiles write the game's settings file, the second sanctioned write after known fixes. Same contract:
+  only when asked, confirmed natively, backed up first, read back after, one-click undo, and never while the game runs.
 - Numbered steps in the diagnosis: rejected unless the actions truly must happen in order (they usually don't).

@@ -13,7 +13,18 @@ world-sector patches that fail every launch, mods pointing at missing files, err
 VRAM) and a **Requirements** screen that detects each framework your installed mods depend on and takes you to the right
 download.
 
-Crash Doctor only reads. It never changes the game or your mods unless you click a fix and confirm it.
+**Graphics profiles** save the game's graphics settings under a name — Quality, Performance, Streaming — so you can
+switch between them in one click, and edit them without launching the game. Only options the game's own settings file
+lists as valid can be edited; resolution and upscaler modes, which depend on your monitor and card, are saved and
+restored exactly as the game wrote them.
+
+**Appearance:** light, dark, or match Windows, plus two optional skins in the game's own style — Terminal, like the
+computers you jack into, and Pause menu.
+
+Crash Doctor reads by default. It changes something only when you ask: a reviewed fix to a mod file, or applying a
+graphics profile. Both ask for confirmation, back up what they change first, and can be undone in one click. Profiles
+touch only graphics and display settings — never controls, audio or key bindings — and refuse to apply while the game
+is running, because the game rewrites its settings when it exits.
 
 ## Requirements
 - Windows 10 / 11, 64-bit
@@ -27,7 +38,16 @@ Crash Doctor only reads. It never changes the game or your mods unless you click
 
 ## Headless use
 ```
-CrashDoctor.exe --json report.json [--html report.html] [--game "D:\Games\Cyberpunk 2077"]
+CrashDoctor.exe --json report.json [--html report.html] [--game "D:\Games\Cyberpunk 2077"] [--no-mods]
+```
+
+Graphics profiles, for a launcher script that picks a quality before starting the game:
+```
+CrashDoctor.exe --profiles
+CrashDoctor.exe --profile-save "Quality"
+CrashDoctor.exe --profile-set "Quality" TextureQuality High
+CrashDoctor.exe --profile-apply "Quality"
+CrashDoctor.exe --profile-undo
 ```
 
 ## Building

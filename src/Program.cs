@@ -13,6 +13,38 @@ static class Program
         // --no-mods leaves the mod list out of the saved HTML, the same choice the window offers when saving.
         // This used to require --json or --html to be the FIRST argument; putting --game first silently opened the
         // window instead, which looks exactly like the scan hanging and writing nothing.
+        // Graphics profiles from the command line, so a launcher can switch quality before starting the game:
+        //   CrashDoctor.exe --profiles | --profile-save "Name" | --profile-apply "Name" | --profile-undo
+        // Applying and undoing refuse while the game is running, back up first, and read the result back.
+        if (args.Any(a => a.StartsWith("--profile")))
+        {
+            string? Arg(string flag) { for (int i = 0; i < args.Length - 1; i++) if (args[i] == flag) return args[i + 1]; return null; }
+            ProfileResult? res = null;
+            if (args.Contains("--profiles"))
+            {
+                var cur = GraphicsProfiles.Current();
+                foreach (var p in GraphicsProfiles.Summaries(cur))
+                    Console.WriteLine($"{p.Name}{(p.MatchesGame ? "  (active)" : "")}  -  " + string.Join(", ", p.Headline.Select(kv => $"{kv.Key} {kv.Value}")));
+                Console.WriteLine($"{cur.Count} graphics options in the game's settings file, {cur.Count(o => o.Editable)} editable.");
+                Environment.Exit(0);
+            }
+            if (Arg("--profile-save") is { } save) res = GraphicsProfiles.SaveCurrent(save);
+            else if (Arg("--profile-apply") is { } apply) res = GraphicsProfiles.Apply(apply);
+            else if (args.Contains("--profile-undo")) res = GraphicsProfiles.Undo();
+            else if (Array.IndexOf(args, "--profile-set") is var si and >= 0 && si + 3 < args.Length)
+            {
+                // --profile-set "Name" TextureQuality High   (setting by its short name; value as the game spells it)
+                var key = GraphicsProfiles.Current().FirstOrDefault(o => o.Key.EndsWith("/" + args[si + 2], StringComparison.OrdinalIgnoreCase))?.Key ?? args[si + 2];
+                System.Text.Json.Nodes.JsonNode? val;
+                try { val = System.Text.Json.Nodes.JsonNode.Parse(args[si + 3]); } catch { val = System.Text.Json.Nodes.JsonValue.Create(args[si + 3]); }
+                res = GraphicsProfiles.Update(args[si + 1], new() { [key] = val });
+            }
+            if (res == null) { Console.Error.WriteLine("Use --profiles, --profile-save \"Name\", --profile-set \"Name\" Setting Value, --profile-apply \"Name\" or --profile-undo."); return 2; }
+            (res.Ok ? Console.Out : Console.Error).WriteLine(res.Message);
+            Console.Out.Flush();
+            Environment.Exit(res.Ok ? 0 : 1);
+        }
+
         if (args.Any(a => a == "--json" || a == "--html"))
         {
             try

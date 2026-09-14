@@ -71,11 +71,29 @@ deployed* before it will accept the result. It never enables or disables anythin
 crash" only counts when the run lasted meaningfully longer than that fault's own typical time-to-crash — a
 threshold it computes from your history and shows you, so you can judge it yourself.
 
+**What the messages mean.** When a crash's evidence contains a line somebody already understands — ArchiveXL
+saying a world patch no longer fits the map, a Lua mod calling a function that never loaded, Windows resetting the
+graphics driver — Crash Doctor explains it in plain language, with the exact line that matched and where the
+knowledge comes from. It explains messages; it never uses them to blame a mod.
+
 **A report you can paste into a help thread.** One button copies a plain-text summary short enough for a mod's
 Bugs tab, a forum post or a Discord message. Another saves the whole thing as a single self-contained HTML file
 that opens in any browser — useful where files can be attached, and as your own before-and-after record when you
 change something. Personal folder paths are stripped from both, and you can leave your mod list out of the saved
 copy.
+
+**Copy for an AI.** Builds the same evidence into a question for Claude, ChatGPT or whatever assistant you already
+use — the fault, the video memory at the crash, what the clean sessions have ruled out and why — and asks it not to
+invent mod names. Crash Doctor sends nothing anywhere; it only puts text on your clipboard.
+
+**Graphics profiles.** Save the game's graphics settings under a name and switch between them in one click —
+a quality profile for exploring, a lighter one for dense districts or streaming. Edit a profile without launching
+the game: only values the game's own settings file allows are offered, and resolution and upscaler modes, which
+depend on your monitor and card, are kept exactly as the game wrote them. Applying backs up your current settings
+first, refuses while the game is running, and Undo puts them back.
+
+**Light, dark, or Night City.** Match your Windows theme, or pick one of two skins in the game's own style:
+Terminal, like the computers you jack into, and Pause menu.
 
 ### What it will not do
 
@@ -121,11 +139,12 @@ folder. Add `CrashDoctor.exe` to Vortex's dashboard as a tool if you want a laun
 
 Press **Scan now**. Nothing leaves your PC, ever.
 
-### It only reads
+### It changes nothing unless you ask
 
-Crash Doctor does not change your game or your mods. The one exception is a small catalogue of reviewed fixes
-for specific known problems: those are applied only when you click and confirm, the original file is backed
-up first, and one click puts it back.
+Scanning only reads. Crash Doctor changes something in exactly two cases, both because you clicked and confirmed:
+applying one of a small catalogue of reviewed fixes to a specific mod file, and applying a graphics profile. Either
+way the original is backed up first and one click puts it back. Profiles touch graphics and display settings only —
+never controls, audio or key bindings. Crash Doctor never enables, disables or deletes a mod.
 
 ### Requirements
 
@@ -169,7 +188,11 @@ Crash Doctor reads the crash dumps, mod-loader logs and Windows driver events al
 [*][b]Health.[/b] Standing problems found before you ever crash: native plugins that refuse to load on your patch, world-sector patches that fail every launch, mods pointing at files that do not exist, scripts erroring every twelve seconds, interrupted downloads that left an empty archive, a DLSS/FSR enabler that overwrote files the game now ships itself, saves sitting in a OneDrive folder.
 [*][b]Requirements.[/b] Detects RED4ext, redscript, Cyber Engine Tweaks, ArchiveXL, TweakXL, Codeware, Equipment-EX and the Microsoft runtimes, shows how many of your installed mods depend on each, and takes you to the right download.
 [*][b]Find it — guided bisect.[/b] For the crash with no signature that nobody has seen before. Crash Doctor tells you which half of your mod list to switch off, and then verifies what is actually deployed before it will accept the result. It never enables or disables anything itself. And "it didn't crash" only counts when the run lasted meaningfully longer than that fault's own typical time-to-crash.
+[*][b]What the messages mean.[/b] When a crash's evidence contains a line somebody already understands — ArchiveXL saying a world patch no longer fits the map, a Lua mod calling a function that never loaded, Windows resetting the graphics driver — Crash Doctor explains it in plain language, with the exact line that matched and where the knowledge comes from. It explains messages; it never uses them to blame a mod.
 [*][b]A report you can paste into a help thread.[/b] One button copies a plain-text summary short enough for a mod's Bugs tab, a forum post or a Discord message. Another saves the whole thing as a single self-contained HTML file that opens in any browser — useful where files can be attached, and as your own before-and-after record when you change something. Personal folder paths are stripped from both, and you can leave your mod list out of the saved copy.
+[*][b]Copy for an AI.[/b] Builds the same evidence into a question for Claude, ChatGPT or whatever assistant you already use — the fault, the video memory at the crash, what the clean sessions have ruled out and why — and asks it not to invent mod names. Crash Doctor sends nothing anywhere; it only puts text on your clipboard.
+[*][b]Graphics profiles.[/b] Save the game's graphics settings under a name and switch between them in one click — a quality profile for exploring, a lighter one for dense districts or streaming. Edit a profile without launching the game: only values the game's own settings file allows are offered, and resolution and upscaler modes, which depend on your monitor and card, are kept exactly as the game wrote them. Applying backs up your current settings first, refuses while the game is running, and Undo puts them back.
+[*][b]Light, dark, or Night City.[/b] Match your Windows theme, or pick one of two skins in the game's own style: Terminal, like the computers you jack into, and Pause menu.
 [/list]
 
 [size=4][b]What it will not do[/b][/size]
@@ -200,9 +223,9 @@ If you would rather check than trust: the file is 63 MB because it carries the w
 
 Press [b]Scan now[/b]. Nothing leaves your PC, ever.
 
-[size=4][b]It only reads[/b][/size]
+[size=4][b]It changes nothing unless you ask[/b][/size]
 
-Crash Doctor does not change your game or your mods. The one exception is a small catalogue of reviewed fixes for specific known problems: those are applied only when you click and confirm, the original file is backed up first, and one click puts it back.
+Scanning only reads. Crash Doctor changes something in exactly two cases, both because you clicked and confirmed: applying one of a small catalogue of reviewed fixes to a specific mod file, and applying a graphics profile. Either way the original is backed up first and one click puts it back. Profiles touch graphics and display settings only — never controls, audio or key bindings. Crash Doctor never enables, disables or deletes a mod.
 
 [size=4][b]Requirements[/b][/size]
 

@@ -36,6 +36,9 @@ def hook(call):
     return "\n".join([
         "<script>",
         "window.EXPORTED.privacy=null;",
+        # pin the default theme: headless Edge follows Windows dark mode, and the Nexus shots must not depend on it
+        "document.documentElement.setAttribute('data-theme','instrument');",
+        "try{localStorage.setItem('cd.theme','instrument')}catch(e){}",
         "document.addEventListener('DOMContentLoaded',function(){",
         "  var b=document.getElementById('btn-scan'); if(b) b.style.display='';",
         '  document.getElementById("foot").textContent="' + LIVE_FOOT + '";',

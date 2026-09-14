@@ -25,6 +25,9 @@ public sealed class Report
     public List<ModRow> ModsList { get; set; } = new();
     public List<Requirement> Requirements { get; set; } = new();
     public Dictionary<string, string> Settings { get; set; } = new();
+    public List<GraphicsOption> Graphics { get; set; } = new();       // the game's graphics options, editable ones marked
+    public List<ProfileSummary> Profiles { get; set; } = new();       // saved graphics profiles
+    public DateTime? SettingsBackup { get; set; }                     // newest backup an Undo would restore
     public List<SettingsNote> SettingsNotes { get; set; } = new();
     public List<string> Warnings { get; set; } = new();   // things the scan could not read
     public string? Privacy { get; set; }                 // what was removed from a saved copy, shown in the page

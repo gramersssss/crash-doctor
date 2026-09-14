@@ -60,7 +60,79 @@ public sealed class MainForm : Form
             case "scan": await ScanAsync(); break;
             case "export": Export(); break;
             case "action": await ActionAsync(doc.RootElement.TryGetProperty("id", out var id) ? id.GetString() ?? "" : ""); break;
+            case "theme": ApplyWindowTheme(doc.RootElement); break;
+            case "profile": ProfileAction(doc.RootElement); break;
         }
+    }
+
+    // Graphics profiles. Saving, editing and deleting only touch Crash Doctor's own files; applying and undoing write
+    // the game's settings file, so those two ask first - the page already told the user what will happen, but a
+    // write to something the game owns gets a second, native confirmation that cannot be clicked through by accident.
+    void ProfileAction(JsonElement m)
+    {
+        string S(string k) => m.TryGetProperty(k, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
+        var op = S("op"); var name = S("name");
+        ProfileResult res;
+        try
+        {
+            switch (op)
+            {
+                case "save": res = GraphicsProfiles.SaveCurrent(name); break;
+                case "delete":
+                    if (MessageBox.Show(this, $"Delete the profile \"{name}\"?\n\nThe game's current settings are not affected.", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    res = GraphicsProfiles.Delete(name); break;
+                case "update":
+                    var edits = new Dictionary<string, System.Text.Json.Nodes.JsonNode?>();
+                    if (m.TryGetProperty("edits", out var e) && e.ValueKind == JsonValueKind.Object)
+                        foreach (var p in e.EnumerateObject()) edits[p.Name] = System.Text.Json.Nodes.JsonNode.Parse(p.Value.GetRawText());
+                    res = GraphicsProfiles.Update(name, edits, S("newName"), m.TryGetProperty("notes", out var n) ? n.GetString() : null); break;
+                case "apply":
+                    if (MessageBox.Show(this, $"Put the \"{name}\" graphics settings into the game?\n\nYour current settings are backed up first, and Undo puts them back. Only graphics and display settings change; controls, audio and key bindings are left alone.", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    res = GraphicsProfiles.Apply(name); break;
+                case "undo":
+                    if (MessageBox.Show(this, "Put back the game's graphics settings from before the last profile was applied?", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    res = GraphicsProfiles.Undo(); break;
+                default: return;
+            }
+        }
+        catch (Exception ex) { res = new ProfileResult { Ok = false, Message = "That did not work: " + ex.Message }; }
+
+        if (_report != null) Scanner.RefreshProfiles(_report);
+        Post(new { cmd = "profiles", ok = res.Ok, message = res.Message, graphics = _report?.Graphics, profiles = _report?.Profiles, settingsBackup = _report?.SettingsBackup });
+    }
+
+    // The page picks the theme; the window around it has to follow, or a dark theme sits inside a white title bar
+    // and flashes the light background while resizing. Windows 11 lets the caption take the header's own colour;
+    // Windows 10 only offers dark or light, and ignores the colour call, which is fine.
+    [System.Runtime.InteropServices.DllImport("dwmapi.dll")]
+    static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
+    const int DwmUseImmersiveDarkMode = 20, DwmCaptionColor = 35;
+
+    void ApplyWindowTheme(JsonElement m)
+    {
+        try
+        {
+            var dark = m.TryGetProperty("dark", out var d) && d.ValueKind == JsonValueKind.True;
+            if (m.TryGetProperty("paper", out var p) && TryColor(p.GetString(), out var paper)) BackColor = paper;
+            var on = dark ? 1 : 0;
+            DwmSetWindowAttribute(Handle, DwmUseImmersiveDarkMode, ref on, sizeof(int));
+            if (m.TryGetProperty("caption", out var cap) && TryColor(cap.GetString(), out var cc))
+            {
+                var colorref = cc.R | (cc.G << 8) | (cc.B << 16);   // COLORREF is 0x00BBGGRR
+                DwmSetWindowAttribute(Handle, DwmCaptionColor, ref colorref, sizeof(int));
+            }
+        }
+        catch { /* cosmetic; never worth an error */ }
+    }
+
+    static bool TryColor(string? hex, out Color c)
+    {
+        c = default;
+        if (string.IsNullOrWhiteSpace(hex)) return false;
+        hex = hex.Trim().TrimStart('#');
+        if (hex.Length != 6 || !int.TryParse(hex, System.Globalization.NumberStyles.HexNumber, null, out var v)) return false;
+        c = Color.FromArgb((v >> 16) & 255, (v >> 8) & 255, v & 255);
+        return true;
     }
 
     async Task ScanAsync()

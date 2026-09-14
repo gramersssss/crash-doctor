@@ -30,6 +30,7 @@ public static class Scanner
         r.Requirements = RequirementsCheck.Check(d);
         Mark("requirements");
         r.Settings = PrettySettings(d.Settings);
+        RefreshProfiles(r);
         r.Warnings = d.Warnings;
 
         // A bisect in progress reads its own result out of the logs, so playing and rescanning is the whole loop.
@@ -96,6 +97,13 @@ public static class Scanner
                 o[kv.Value] = v;
             }
         return o;
+    }
+
+    /// <summary>Profiles and the graphics options are cheap to re-read, so the window refreshes them after every profile action without a full scan.</summary>
+    public static void RefreshProfiles(Report r)
+    {
+        try { r.Graphics = GraphicsProfiles.Current(); r.Profiles = GraphicsProfiles.Summaries(r.Graphics); r.SettingsBackup = GraphicsProfiles.LastBackup(); }
+        catch { /* a profile problem must never cost the diagnosis */ }
     }
 
     public static string ToJson(Report r) => JsonSerializer.Serialize(r, Json);

@@ -4,15 +4,53 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crash Doctor</title>
+<script>
+/* before first paint: a dark theme must not flash the light one first */
+(function(){ try{ var t=localStorage.getItem('cd.theme')||'system';
+  if(t==='system') t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'instrument-dark':'instrument';
+  document.documentElement.setAttribute('data-theme',t); }catch(e){} })();
+</script>
 <style>
-:root{
-  --paper:#EDF0F3; --card:#FFFFFF; --ink:#10141A; --steel:#5B6472; --line:#D6DBE2;
+/* ---------- themes ----------
+   Every colour, radius and typeface in the app comes from these tokens, so a theme is a block of values and not a
+   second stylesheet. "Instrument" is the default and the design brief (DESIGN.md). The rest are opt-in, chosen
+   under Settings, and remembered per machine. "System" is not a theme of its own: script resolves it to Instrument
+   or Instrument Dark and follows Windows when that changes. */
+:root, [data-theme="instrument"]{
+  color-scheme:light;
+  --paper:#EDF0F3; --card:#FFFFFF; --ink:#10141A; --steel:#5B6472; --line:#D6DBE2; --line-strong:#B9C1CC;
   --signal:#D93A3A; --amber:#E09A1B; --mint:#1F9D6A; --trace:#2F6FED;
   --signal-bg:#FBE9E9; --amber-bg:#FBF1DC; --mint-bg:#E3F5EC; --trace-bg:#E6EEFF; --grey-bg:#E9ECF0;
+  --amber-ink:#8A5A00; --mint-ink:#116B47; --trace-ink:#1C4FB8; --ev-text:#2B333D;
+  --sunk:#F7F9FB; --soft:#FAFBFC; --todo-bg:#FDF6F6; --on-fill:#FFFFFF;
+  --primary:#10141A; --primary-fg:#FFFFFF; --primary-hover:#242B35;
+  --bezel-bg:#10141A; --bezel-fg:#C9CFD8; --bezel-brand:#FFFFFF; --bezel-key:#7F8895; --bezel-value:#EDEFF2;
+  --bezel-line:#2A313B; --bezel-edge:#000000; --bezel-btn:#FFFFFF; --bezel-btn-fg:#10141A; --bezel-btn-hover:#E6EAF0;
+  --rail-bg:#E4E8ED; --rail-hover:#D9DEE5; --rail-on:#10141A; --rail-on-fg:#FFFFFF; --badge:#FFFFFF; --badge-on:#2A313B; --badge-on-fg:#C9CFD8;
+  --tip-bg:#10141A; --tip-fg:#FFFFFF; --tip-muted:#AEB6C2;
+  --grid:rgba(16,20,26,.045); --bar:#10141A; --pulse-glow:rgba(31,157,106,.25);
+  --c-clean:#1F9D6A; --c-gpu:#D93A3A; --c-vram:#C2410C; --c-script:#E09A1B; --c-engine:#A34D9E; --c-unknown:#9AA3AF; --c-running:#2F6FED;
+  --radius:8px; --radius-sm:5px; --radius-pill:999px;
   --display:"Bahnschrift","Bahnschrift SemiCondensed","Segoe UI",Arial,sans-serif;
   --body:"Segoe UI",system-ui,Arial,sans-serif;
   --mono:"Cascadia Mono","Consolas","Courier New",monospace;
   --rail:196px;
+}
+/* The same instrument at night: same layout and hierarchy, inverted ground, colours lifted to stay legible. */
+[data-theme="instrument-dark"]{
+  color-scheme:dark;
+  --paper:#0E1217; --card:#161B22; --ink:#E6EAF0; --steel:#8B94A1; --line:#262D36; --line-strong:#3A434E;
+  --signal:#F0605A; --amber:#F0B040; --mint:#3CC08A; --trace:#6E9BFF;
+  --signal-bg:#3A1C1E; --amber-bg:#3A2E14; --mint-bg:#14302A; --trace-bg:#18264A; --grey-bg:#222932;
+  --amber-ink:#F3C56A; --mint-ink:#6FD9AD; --trace-ink:#9CBBFF; --ev-text:#C9D1DB;
+  --sunk:#12171D; --soft:#12171D; --todo-bg:#2A1719; --on-fill:#FFFFFF;
+  --primary:#E6EAF0; --primary-fg:#0E1217; --primary-hover:#C9D1DB;
+  --bezel-bg:#0A0D11; --bezel-fg:#AEB6C2; --bezel-brand:#FFFFFF; --bezel-key:#6B7482; --bezel-value:#E6EAF0;
+  --bezel-line:#1E242C; --bezel-edge:#000000; --bezel-btn:#E6EAF0; --bezel-btn-fg:#0E1217; --bezel-btn-hover:#FFFFFF;
+  --rail-bg:#11161C; --rail-hover:#1B2129; --rail-on:#E6EAF0; --rail-on-fg:#0E1217; --badge:#222932; --badge-on:#C9D1DB; --badge-on-fg:#0E1217;
+  --tip-bg:#E6EAF0; --tip-fg:#0E1217; --tip-muted:#4A5360;
+  --grid:rgba(230,234,240,.05); --bar:#E6EAF0; --pulse-glow:rgba(60,192,138,.28);
+  --c-clean:#3CC08A; --c-gpu:#F0605A; --c-vram:#F07A3A; --c-script:#F0B040; --c-engine:#C77DC2; --c-unknown:#7C8592; --c-running:#6E9BFF;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -22,29 +60,29 @@ a{color:var(--trace)}
 :focus-visible{outline:2px solid var(--trace);outline-offset:2px}
 
 /* ---------- bezel ---------- */
-.bezel{height:56px;background:var(--ink);color:#C9CFD8;display:flex;align-items:center;gap:0;padding:0 18px;border-bottom:1px solid #000;overflow:hidden}
+.bezel{height:56px;background:var(--bezel-bg);color:var(--bezel-fg);display:flex;align-items:center;gap:0;padding:0 18px;border-bottom:1px solid var(--bezel-edge);overflow:hidden}
 /* the brand and the scan button never shrink or wrap; the readouts give way first, and the least useful ones
    disappear entirely rather than every value being truncated to three characters and an ellipsis */
-.bezel .brand{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:18px;letter-spacing:.02em;color:#fff;margin-right:26px;display:flex;align-items:center;gap:10px;flex:none;white-space:nowrap}
-.bezel .brand .pulse{width:10px;height:10px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px rgba(31,157,106,.25)}
-.bezel .chip{display:flex;flex-direction:column;justify-content:center;padding:0 16px;border-left:1px solid #2A313B;min-width:0;flex:0 1 auto}
-.bezel .chip .k{font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7F8895;line-height:1}
-.bezel .chip .v{font-family:var(--mono);font-size:13px;color:#EDEFF2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
+.bezel .brand{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:18px;letter-spacing:.02em;color:var(--bezel-brand);margin-right:26px;display:flex;align-items:center;gap:10px;flex:none;white-space:nowrap}
+.bezel .brand .pulse{width:10px;height:10px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px var(--pulse-glow)}
+.bezel .chip{display:flex;flex-direction:column;justify-content:center;padding:0 16px;border-left:1px solid var(--bezel-line);min-width:0;flex:0 1 auto}
+.bezel .chip .k{font-family:var(--display);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--bezel-key);line-height:1}
+.bezel .chip .v{font-family:var(--mono);font-size:13px;color:var(--bezel-value);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px}
 .bezel .spacer{flex:1}
-.bezel .scan{background:#fff;color:var(--ink);border:0;border-radius:4px;padding:8px 14px;font-family:var(--display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px;flex:none;white-space:nowrap;margin-left:14px}
-.bezel .scan:hover{background:#E6EAF0}
+.bezel .scan{background:var(--bezel-btn);color:var(--bezel-btn-fg);border:0;border-radius:var(--radius-sm);padding:8px 14px;font-family:var(--display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px;flex:none;white-space:nowrap;margin-left:14px}
+.bezel .scan:hover{background:var(--bezel-btn-hover)}
 .bezel .scan[disabled]{opacity:.6;cursor:progress}
 
 /* ---------- frame ---------- */
 .frame{display:grid;grid-template-columns:var(--rail) 1fr;height:calc(100% - 56px)}
-.rail{background:#E4E8ED;border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
-.rail button{text-align:left;background:transparent;border:0;border-radius:6px;padding:9px 12px;color:var(--steel);font-family:var(--display);font-stretch:semi-condensed;font-size:14px;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center}
-.rail button:hover{background:#D9DEE5;color:var(--ink)}
-.rail button.on{background:var(--ink);color:#fff}
-.rail .n{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:9px;background:#fff;color:var(--steel)}
-.rail button.on .n{background:#2A313B;color:#C9CFD8}
-.rail .n.sig{background:var(--signal);color:#fff}
-.rail .n.amb{background:var(--amber);color:#fff}
+.rail{background:var(--rail-bg);border-right:1px solid var(--line);padding:16px 10px;display:flex;flex-direction:column;gap:2px}
+.rail button{text-align:left;background:transparent;border:0;border-radius:var(--radius-sm);padding:9px 12px;color:var(--steel);font-family:var(--display);font-stretch:semi-condensed;font-size:14px;letter-spacing:.04em;display:flex;justify-content:space-between;align-items:center}
+.rail button:hover{background:var(--rail-hover);color:var(--ink)}
+.rail button.on{background:var(--rail-on);color:var(--rail-on-fg)}
+.rail .n{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:var(--radius-pill);background:var(--badge);color:var(--steel)}
+.rail button.on .n{background:var(--badge-on);color:var(--badge-on-fg)}
+.rail .n.sig{background:var(--signal);color:var(--on-fill)}
+.rail .n.amb{background:var(--amber);color:var(--on-fill)}
 .rail .foot{margin-top:auto;font-size:11px;color:var(--steel);padding:8px 12px;line-height:1.5}
 .main{overflow:auto;padding:24px 28px 40px}
 .view{display:none;max-width:1120px}
@@ -54,24 +92,24 @@ a{color:var(--trace)}
 .eyebrow{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);margin:0 0 8px}
 h1{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:34px;line-height:1.1;margin:0 0 14px;letter-spacing:-.005em}
 h2{font-family:var(--display);font-stretch:semi-condensed;font-weight:600;font-size:18px;margin:28px 0 10px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:20px 22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}
 .muted{color:var(--steel)}
 .mono{font-family:var(--mono);font-size:12.5px}
 .mark{display:inline-block;padding:2px 8px;border-radius:4px;font-family:var(--display);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
 .mark.sig{background:var(--signal-bg);color:var(--signal)}
-.mark.amb{background:var(--amber-bg);color:#8A5A00}
-.mark.mint{background:var(--mint-bg);color:#116B47}
+.mark.amb{background:var(--amber-bg);color:var(--amber-ink)}
+.mark.mint{background:var(--mint-bg);color:var(--mint-ink)}
 .mark.grey{background:var(--grey-bg);color:var(--steel)}
-.mark.trace{background:var(--trace-bg);color:#1C4FB8}
-.btn{border:1px solid var(--line);background:#fff;border-radius:5px;padding:7px 12px;font-size:13px;color:var(--ink)}
-.btn:hover{border-color:#B9C1CC;background:#F7F9FB}
-.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
-.btn.primary:hover{background:#242B35}
+.mark.trace{background:var(--trace-bg);color:var(--trace-ink)}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:var(--radius-sm);padding:7px 12px;font-size:13px;color:var(--ink)}
+.btn:hover{border-color:var(--line-strong);background:var(--sunk)}
+.btn.primary{background:var(--primary);color:var(--primary-fg);border-color:var(--primary)}
+.btn.primary:hover{background:var(--primary-hover);border-color:var(--primary-hover)}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 table{border-collapse:collapse;width:100%;font-size:13px}
 th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-family:var(--display);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);font-weight:600;position:sticky;top:0;background:#fff}
-tr:hover td{background:#F7F9FB}
+th{font-family:var(--display);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);font-weight:600;position:sticky;top:0;background:var(--card)}
+tr:hover td{background:var(--sunk)}
 
 /* ---------- diagnosis ---------- */
 .dx{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
@@ -86,7 +124,7 @@ tr:hover td{background:#F7F9FB}
 .conf .dots i{width:9px;height:9px;border-radius:50%;background:var(--line);display:inline-block}
 .conf .dots i.on{background:var(--ink)}
 /* video memory at the crash — read out of the crash report, never in any log */
-.vram{margin:2px 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:6px;background:#FAFBFC}
+.vram{margin:2px 0 16px;padding:12px 14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--soft)}
 .vram .lbl{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:12px;color:var(--steel);margin-bottom:7px}
 .vram .lbl b{font-family:var(--display);font-size:14px;color:var(--ink);letter-spacing:.02em}
 .vram .bar{position:relative;height:10px;border-radius:5px;background:var(--grey-bg);overflow:hidden}
@@ -105,9 +143,9 @@ tr:hover td{background:#F7F9FB}
 /* filter pills. Deliberately NOT called .chip: the bezel owns that name, and sharing it leaked a white
    background and a rounded border into the header, where it wrecked the instrument readouts. */
 .fchips{display:flex;gap:6px;flex-wrap:wrap}
-.fchip{border:1px solid var(--line);background:#fff;border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--steel);white-space:nowrap}
-.fchip:hover{border-color:#B9C1CC}
-.fchip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.fchip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:5px 11px;font-size:12.5px;color:var(--steel);white-space:nowrap}
+.fchip:hover{border-color:var(--line-strong)}
+.fchip.on{background:var(--primary);border-color:var(--primary);color:var(--primary-fg)}
 th.sortable{cursor:pointer;user-select:none;white-space:nowrap}
 th.sortable:hover{color:var(--ink)}
 th.sortable i{display:inline-block;width:9px;margin-left:5px;font-style:normal;color:var(--trace)}
@@ -129,14 +167,14 @@ button.mark:hover{filter:brightness(.94)}
 .steps i.done{background:var(--mint)}
 .steps i.now{background:var(--trace)}
 .checklist{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:12px}
-.checklist .h{background:#F7F9FB;border-bottom:1px solid var(--line);padding:9px 14px;font-family:var(--display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.checklist .h{background:var(--sunk);border-bottom:1px solid var(--line);padding:9px 14px;font-family:var(--display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel);display:flex;justify-content:space-between;align-items:center;gap:10px}
 .checklist ul{list-style:none;margin:0;padding:0;max-height:260px;overflow:auto}
 .checklist li{padding:7px 14px;border-bottom:1px solid var(--line);font-size:13px;display:flex;gap:9px;align-items:center}
 .checklist li:last-child{border-bottom:0}
 .checklist li b{font-weight:400}
 .checklist li .tick{width:14px;flex:none;color:var(--mint);font-size:12px}
 .checklist li.todo .tick{color:var(--signal)}
-.checklist li.todo{background:#FDF6F6}
+.checklist li.todo{background:var(--todo-bg)}
 .bstat{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px}
 .bstat dl{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin:0;font-size:13px}
 .bstat dt{color:var(--steel)}
@@ -172,7 +210,7 @@ button.mark:hover{filter:brightness(.94)}
 .ev .t{font-family:var(--mono);font-size:12.5px;color:var(--ink);font-weight:600;white-space:nowrap}
 .ev .t.hit{color:var(--signal)}
 .ev .src{font-family:var(--display);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--steel);margin-bottom:2px}
-.ev .txt{font-family:var(--mono);font-size:12.5px;color:#2B333D;word-break:break-word}
+.ev .txt{font-family:var(--mono);font-size:12.5px;color:var(--ev-text);word-break:break-word}
 .suspect{padding:14px 0;border-top:1px solid var(--line)}
 .suspect:first-child{border-top:0;padding-top:0}
 .suspect .name{font-weight:600;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
@@ -182,7 +220,7 @@ button.mark:hover{filter:brightness(.94)}
 
 /* ---------- session trace (signature) ---------- */
 .trace-wrap{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px 22px 14px;margin-top:18px;
-  background-image:linear-gradient(to right, rgba(16,20,26,.045) 1px, transparent 1px);background-size:40px 100%}
+  background-image:linear-gradient(to right, var(--grid) 1px, transparent 1px);background-size:40px 100%}
 .trace-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
 .legend{display:flex;gap:14px;font-size:12px;color:var(--steel);flex-wrap:wrap}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
@@ -192,9 +230,9 @@ button.mark:hover{filter:brightness(.94)}
 .trace .bar:hover{opacity:.75}
 .trace .cap{pointer-events:none}
 .trace .base{stroke:var(--line);stroke-width:1}
-.tip{position:absolute;pointer-events:none;background:var(--ink);color:#fff;border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;max-width:320px;transform:translate(-50%,-110%);opacity:0;transition:opacity .1s;z-index:5}
+.tip{position:absolute;pointer-events:none;background:var(--tip-bg);color:var(--tip-fg);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.4;max-width:320px;transform:translate(-50%,-110%);opacity:0;transition:opacity .1s;z-index:5}
 .tip.on{opacity:1}
-.tip .t{font-family:var(--mono);color:#AEB6C2;font-size:11.5px}
+.tip .t{font-family:var(--mono);color:var(--tip-muted);font-size:11.5px}
 .trace-foot{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-family:var(--mono);font-size:11.5px;color:var(--steel);margin-top:6px}
 @keyframes drawin{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 .trace g.day{transform-origin:left;animation:drawin .6s cubic-bezier(.2,.7,.2,1) both}
@@ -203,18 +241,18 @@ button.mark:hover{filter:brightness(.94)}
 .fade{animation:fadeup .35s .12s ease-out both}
 
 /* ---------- sessions list ---------- */
-.sess{display:grid;grid-template-columns:150px 70px 1fr 120px;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:center;background:#fff;cursor:pointer}
-.sess:hover{background:#F7F9FB}
+.sess{display:grid;grid-template-columns:150px 70px 1fr 120px;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:center;background:var(--card);cursor:pointer}
+.sess:hover{background:var(--sunk)}
 .sess:first-of-type{border-radius:8px 8px 0 0}
 .sess:last-of-type{border-radius:0 0 8px 8px;border-bottom:0}
 .sess .dur{font-family:var(--mono);font-size:12.5px;color:var(--steel)}
 .sess .end{display:flex;align-items:center;gap:8px}
 .sess .end i{width:10px;height:10px;border-radius:2px;flex:none}
 .sesslist{border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.i-clean{background:var(--mint)}.i-gpu{background:var(--signal)}.i-vram{background:#C2410C}.i-script{background:var(--amber)}.i-engine{background:#A34D9E}.i-unknown{background:#9AA3AF}.i-running{background:var(--trace)}
+.i-clean{background:var(--c-clean)}.i-gpu{background:var(--c-gpu)}.i-vram{background:var(--c-vram)}.i-script{background:var(--c-script)}.i-engine{background:var(--c-engine)}.i-unknown{background:var(--c-unknown)}.i-running{background:var(--c-running)}
 
 /* ---------- health ---------- */
-.hl{display:grid;grid-template-columns:90px 1fr 220px;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);background:#fff}
+.hl{display:grid;grid-template-columns:90px 1fr 220px;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--card)}
 .hl:last-child{border-bottom:0}
 .hl .title{font-weight:600}
 .hl .detail{color:var(--steel);font-size:13px;margin-top:3px}
@@ -237,7 +275,128 @@ button.mark:hover{filter:brightness(.94)}
 @media (max-width:860px){.bezel .chip.opt1{display:none}}
 @media (max-width:760px){.trace-wrap{padding:14px 12px 10px;background-size:28px 100%}.trace{height:120px}}
 @media (max-width:980px){.dx{grid-template-columns:1fr}.frame{grid-template-columns:150px 1fr}.sess{grid-template-columns:130px 60px 1fr}.sess .dist{display:none}}
-.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--ink);color:#fff;padding:10px 16px;border-radius:6px;font-size:13px;opacity:0;transition:all .18s;z-index:9;max-width:70vw}.toast.on{opacity:1;transform:translate(-50%,0)}.toast.err{background:var(--signal)}
+.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--tip-bg);color:var(--tip-fg);padding:10px 16px;border-radius:6px;font-size:13px;opacity:0;transition:all .18s;z-index:9;max-width:70vw}.toast.on{opacity:1;transform:translate(-50%,0)}.toast.err{background:var(--signal)}
+
+/* ---------- Cyberpunk skins ----------
+   Opt-in looks that borrow the game's own screen language. They are palettes, type and a little texture: no game
+   art, logos or typefaces are used, so nothing here is CD PROJEKT's. Everything about layout and wording is the
+   same app underneath, which is also why the diagnosis stays exactly as honest in neon as it is in grey.
+
+   Terminal: the computers you jack into in Night City. Cyan text on black glass, monospace everywhere, scanlines. */
+[data-theme="terminal"]{
+  color-scheme:dark;
+  --paper:#04070B; --card:#08111A; --ink:#C4FCFF; --steel:#58A9B2; --line:#11303A; --line-strong:#1E5B68;
+  --signal:#FF4F5A; --amber:#F3E600; --mint:#2CF0A8; --trace:#5EF6FF;
+  --signal-bg:#2A0D14; --amber-bg:#24220A; --mint-bg:#0A2A22; --trace-bg:#0A2A31; --grey-bg:#0E1C24;
+  --amber-ink:#F3E600; --mint-ink:#2CF0A8; --trace-ink:#5EF6FF; --ev-text:#93ECF1;
+  --sunk:#06101A; --soft:#06101A; --todo-bg:#210C12; --on-fill:#04070B;
+  --primary:#5EF6FF; --primary-fg:#04070B; --primary-hover:#A9FBFF;
+  --bezel-bg:#020406; --bezel-fg:#58A9B2; --bezel-brand:#5EF6FF; --bezel-key:#2E6C76; --bezel-value:#C4FCFF;
+  --bezel-line:#11303A; --bezel-edge:#1E5B68; --bezel-btn:#5EF6FF; --bezel-btn-fg:#020406; --bezel-btn-hover:#A9FBFF;
+  --rail-bg:#050A0F; --rail-hover:#0C1C25; --rail-on:#0C2A33; --rail-on-fg:#5EF6FF; --badge:#0C1C25; --badge-on:#5EF6FF; --badge-on-fg:#04070B;
+  --tip-bg:#08111A; --tip-fg:#C4FCFF; --tip-muted:#58A9B2;
+  --grid:rgba(94,246,255,.06); --bar:#5EF6FF; --pulse-glow:rgba(44,240,168,.4);
+  --c-clean:#2CF0A8; --c-gpu:#FF4F5A; --c-vram:#FF8A3D; --c-script:#F3E600; --c-engine:#D46BFF; --c-unknown:#3C6670; --c-running:#5EF6FF;
+  --radius:0; --radius-sm:0; --radius-pill:0;
+  --display:"Cascadia Mono","Consolas","Courier New",monospace;
+  --body:"Cascadia Mono","Consolas","Courier New",monospace;
+}
+[data-theme="terminal"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,.22) 0 1px,transparent 1px 3px),
+             radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.45) 100%)}
+[data-theme="terminal"] h1{font-weight:400;letter-spacing:.02em;text-shadow:0 0 10px rgba(94,246,255,.45)}
+[data-theme="terminal"] h1::before{content:"> ";color:var(--steel)}
+[data-theme="terminal"] h1::after{content:"_";margin-left:4px;animation:cd-blink 1.1s steps(1) infinite}
+@keyframes cd-blink{50%{opacity:0}}
+[data-theme="terminal"] .bezel .brand{text-shadow:0 0 8px rgba(94,246,255,.55)}
+[data-theme="terminal"] .card,[data-theme="terminal"] .trace-wrap,[data-theme="terminal"] .area,[data-theme="terminal"] .ok{box-shadow:0 0 0 1px rgba(94,246,255,.05),0 0 22px rgba(94,246,255,.05)}
+[data-theme="terminal"] .rail button.on{box-shadow:inset 2px 0 0 var(--trace)}
+[data-theme="terminal"] .eyebrow{color:var(--signal)}
+
+/* Pause menu: the settings and inventory screens. Red display type on dark glass, cyan for values and selection,
+   yellow for warnings, corners cut off. */
+[data-theme="pause"]{
+  color-scheme:dark;
+  --paper:#0A090D; --card:#140D12; --ink:#FFE6DF; --steel:#C99592; --line:#3A1A20; --line-strong:#6E2C33;
+  --signal:#FF4A57; --amber:#F3E600; --mint:#5EF6FF; --trace:#5EF6FF;
+  --signal-bg:#3A1017; --amber-bg:#2E2A08; --mint-bg:#0B2A2E; --trace-bg:#0B2A2E; --grey-bg:#221519;
+  --amber-ink:#F3E600; --mint-ink:#5EF6FF; --trace-ink:#5EF6FF; --ev-text:#FFCFC6;
+  --sunk:#1A1016; --soft:#1A1016; --todo-bg:#2E0F16; --on-fill:#0A090D;
+  --primary:#FF5C5C; --primary-fg:#0A090D; --primary-hover:#FF8F84;
+  --bezel-bg:#060508; --bezel-fg:#C9636A; --bezel-brand:#FF5C5C; --bezel-key:#8C3C43; --bezel-value:#5EF6FF;
+  --bezel-line:#3A1A20; --bezel-edge:#5C2329; --bezel-btn:#FF5C5C; --bezel-btn-fg:#060508; --bezel-btn-hover:#FF8F84;
+  --rail-bg:#0C0A0F; --rail-hover:#261218; --rail-on:#FF5C5C; --rail-on-fg:#0A090D; --badge:#261218; --badge-on:#0A090D; --badge-on-fg:#FF5C5C;
+  --tip-bg:#1A0E13; --tip-fg:#FFE6DF; --tip-muted:#C9636A;
+  --grid:rgba(255,92,92,.07); --bar:#FF5C5C; --pulse-glow:rgba(94,246,255,.4);
+  --c-clean:#5EF6FF; --c-gpu:#FF4A57; --c-vram:#FF8A3D; --c-script:#F3E600; --c-engine:#D46BFF; --c-unknown:#6C4B51; --c-running:#FFFFFF;
+  --radius:0; --radius-sm:0; --radius-pill:0;
+  --display:"Bahnschrift SemiCondensed","Bahnschrift","Segoe UI",Arial,sans-serif;
+}
+[data-theme="pause"] body{background:radial-gradient(1100px 620px at 88% -8%,rgba(255,70,80,.14),transparent 62%),
+  radial-gradient(900px 520px at -10% 110%,rgba(94,246,255,.06),transparent 60%),var(--paper)}
+[data-theme="pause"] h1{text-transform:uppercase;letter-spacing:.06em;color:var(--primary);text-shadow:0 0 14px rgba(255,92,92,.35)}
+[data-theme="pause"] h2,[data-theme="pause"] .bezel .brand{text-transform:uppercase;letter-spacing:.06em}
+[data-theme="pause"] .eyebrow{color:var(--trace)}
+[data-theme="pause"] .card,[data-theme="pause"] .area,[data-theme="pause"] .ok,[data-theme="pause"] .pick,[data-theme="pause"] .bstat{
+  clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,16px 100%,0 calc(100% - 16px))}
+[data-theme="pause"] .btn,[data-theme="pause"] .bezel .scan,[data-theme="pause"] .rail button.on{
+  clip-path:polygon(0 0,calc(100% - 9px) 0,100% 9px,100% 100%,0 100%)}
+[data-theme="pause"] .btn{text-transform:uppercase;letter-spacing:.05em;font-family:var(--display)}
+[data-theme="pause"] .rail button{text-transform:uppercase}
+[data-theme="pause"] tr:hover td,[data-theme="pause"] .sess:hover{box-shadow:inset 3px 0 0 var(--primary)}
+[data-theme="pause"] .dx .verdict{border-left-width:3px}
+
+/* Square everything in both skins, dots included - round corners are the one thing neither screen has. */
+[data-theme="terminal"] *,[data-theme="pause"] *{border-radius:0 !important}
+@media (prefers-reduced-motion:reduce){[data-theme="terminal"] h1::after{animation:none}}
+
+/* ---------- graphics profiles ---------- */
+.profs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.prof{border:1px solid var(--line);background:var(--card);border-radius:var(--radius);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.prof.active{border-color:var(--mint)}
+.prof .top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.prof .nm{font-family:var(--display);font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.prof .phl{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12.5px;padding:0;border:0;background:none}
+.prof .phl span:nth-child(odd){color:var(--steel)}
+.prof .phl span:nth-child(even){font-family:var(--mono);font-size:12px}
+.prof .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+.prof.new{justify-content:center;border-style:dashed}
+.prof.new input{padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font:inherit;background:var(--card);color:var(--ink);width:100%}
+.profbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 0;font-size:12.5px;color:var(--steel)}
+.notice{border-left:3px solid var(--amber);background:var(--amber-bg);padding:9px 12px;margin:0 0 12px;font-size:13px;border-radius:0 var(--radius-sm) var(--radius-sm) 0}
+.gfx-group{font-family:var(--display);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--steel);grid-column:1/-1;padding:14px 0 4px;border-bottom:1px solid var(--line)}
+.gfx-group:first-child{padding-top:0}
+.gfx{display:grid;grid-template-columns:minmax(180px,260px) minmax(120px,1fr) minmax(160px,1fr);gap:0 16px;font-size:13.5px;align-items:center}
+.gfx.view{grid-template-columns:minmax(180px,260px) 1fr}
+.gfx > div{padding:5px 0;border-bottom:1px solid var(--line)}
+.gfx .k{color:var(--steel)}
+.gfx .v{font-family:var(--mono);font-size:12.5px}
+.gfx .diff{color:var(--trace);font-weight:600}
+.gfx .lock{color:var(--steel);font-family:var(--mono);font-size:12px}
+.gfx select,.gfx input[type=number]{font:inherit;font-family:var(--mono);font-size:12.5px;padding:4px 6px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--card);color:var(--ink);max-width:100%}
+.gfx .row-changed{background:var(--trace-bg)}
+.edithead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.edithead input{padding:7px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font:inherit;background:var(--card);color:var(--ink);min-width:220px}
+
+/* ---------- theme picker ---------- */
+.themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.theme{border:1px solid var(--line);background:var(--card);padding:0;text-align:left;cursor:pointer;border-radius:var(--radius);overflow:hidden;color:var(--ink)}
+.theme:hover{border-color:var(--line-strong)}
+.theme.on{outline:2px solid var(--trace);outline-offset:2px}
+.theme .pv{display:block;height:74px;position:relative;background:var(--paper);overflow:hidden}
+.theme .pv i{position:absolute;display:block}
+.theme .pv .b{left:0;right:0;top:0;height:14px;background:var(--bezel-bg)}
+.theme .pv .r{left:0;top:14px;bottom:0;width:30px;background:var(--rail-bg)}
+.theme .pv .c{left:40px;right:10px;top:24px;bottom:10px;background:var(--card);border:1px solid var(--line)}
+.theme .pv .t1{left:48px;top:32px;width:46%;height:6px;background:var(--ink)}
+.theme .pv .t2{left:48px;top:44px;width:28%;height:5px;background:var(--steel)}
+.theme .pv .a1{left:48px;bottom:17px;width:14px;height:6px;background:var(--signal)}
+.theme .pv .a2{left:66px;bottom:17px;width:14px;height:6px;background:var(--amber)}
+.theme .pv .a3{left:84px;bottom:17px;width:14px;height:6px;background:var(--mint)}
+.theme .pv.half{display:grid;grid-template-columns:1fr 1fr}
+.theme .pv.half > span{position:relative;display:block;background:var(--paper);overflow:hidden}
+.theme .nm{display:block;padding:9px 11px 2px;font-family:var(--display);font-size:13.5px;letter-spacing:.02em}
+.theme .ds{display:block;padding:0 11px 10px;font-size:12px;color:var(--steel);line-height:1.35}
 </style>
 </head>
 <body>
@@ -360,9 +519,14 @@ button.mark:hover{filter:brightness(.94)}
 
     <!-- SETTINGS -->
     <section class="view" id="v-settings">
-      <p class="eyebrow">Settings · what the game was running with</p>
-      <h1>Graphics settings</h1>
-      <div class="card"><div class="kv" id="settings-kv"></div></div>
+      <p class="eyebrow">Settings</p>
+      <h1>Settings</h1>
+      <h2 style="margin-top:6px">Appearance</h2>
+      <div class="themes" id="themes"></div>
+      <h2>Graphics profiles</h2>
+      <div id="profiles"></div>
+      <h2 id="gfx-h">Graphics settings <span class="muted" style="font-size:13px;font-weight:400">· what the game is set to now</span></h2>
+      <div class="card" id="gfx-card"><div class="kv" id="settings-kv"></div></div>
       <div id="settings-notes" style="margin-top:14px"></div>
     </section>
 
@@ -390,7 +554,7 @@ button.mark:hover{filter:brightness(.94)}
         <p class="sub">None of them contains personal data beyond your game path and hardware, and folder paths
         under your Windows account are replaced first.</p>
         <div class="row"><button class="btn primary" onclick="copyReport()">Copy summary</button><button class="btn primary" onclick="copyForAi()">Copy for an AI</button><button class="btn" onclick="exportReport()">Save full report as HTML</button><span class="muted" id="report-msg"></span></div>
-        <pre class="mono" id="report-pre" style="white-space:pre-wrap;background:#F7F9FB;border:1px solid var(--line);border-radius:6px;padding:14px;margin-top:14px;max-height:50vh;overflow:auto"></pre>
+        <pre class="mono" id="report-pre" style="white-space:pre-wrap;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:14px;margin-top:14px;max-height:50vh;overflow:auto"></pre>
       </div>
     </section>
   </main>
@@ -406,7 +570,7 @@ function scan(){
   if(hasHost()){ window.chrome.webview.postMessage({cmd:'scan'}); }
   else { setTimeout(function(){ load(SAMPLE); }, 700); }
 }
-if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='noscan'){ done(); } }); }
+if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
 function toast(text,isErr){ var t=document.getElementById('toast'); t.textContent=text; t.className='toast on'+(isErr?' err':''); clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; }, isErr?9000:3500); }
 function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent='Scan now'; }
 
@@ -615,15 +779,17 @@ function renderTrace(r){
   var widths=sessions.map(widthOf);
   var total=widths.reduce(function(a,b){return a+b;},0)+ (sessions.length-1)*6;
   var scale=Math.min(1,avail/total); var x=pad+ (avail-total*scale)/2;
-  var colors={clean:'#1F9D6A',gpu:'#D93A3A',script:'#E09A1B',engine:'#A34D9E',unknown:'#9AA3AF',running:'#2F6FED'};
+  // Colours come from the theme. "vram" was missing from this table, so every crash caused by video memory was
+  // drawn in the grey reserved for unknown endings while the legend promised orange.
+  var colors={clean:'var(--c-clean)',gpu:'var(--c-gpu)',vram:'var(--c-vram)',script:'var(--c-script)',engine:'var(--c-engine)',unknown:'var(--c-unknown)',running:'var(--c-running)'};
   var g=document.createElementNS(svgNS,'g'); g.setAttribute('class','day'); svg.appendChild(g);
   var lastDay=''; var lastLabelX;
   sessions.forEach(function(s,i){
     var w=widths[i]*scale; var h=s.durationKnown===false?14:18+Math.min(s.minutes,240)/240*70; var y=baseY-h;
-    var rect=document.createElementNS(svgNS,'rect'); rect.setAttribute('x',x);rect.setAttribute('y',y);rect.setAttribute('width',w);rect.setAttribute('height',h);rect.setAttribute('rx',2);rect.setAttribute('fill','#10141A');rect.setAttribute('fill-opacity',s.endKind==='clean'?'.22':'.55');rect.setAttribute('class','bar');
-    var cap=document.createElementNS(svgNS,'rect'); cap.setAttribute('x',x+w-4);cap.setAttribute('y',y-3);cap.setAttribute('width',4);cap.setAttribute('height',h+3);cap.setAttribute('fill',colors[s.endKind]||colors.unknown);cap.setAttribute('class','cap');
+    var rect=document.createElementNS(svgNS,'rect'); rect.setAttribute('x',x);rect.setAttribute('y',y);rect.setAttribute('width',w);rect.setAttribute('height',h);rect.setAttribute('rx',2);rect.style.fill='var(--bar)';rect.setAttribute('fill-opacity',s.endKind==='clean'?'.22':'.55');rect.setAttribute('class','bar');
+    var cap=document.createElementNS(svgNS,'rect'); cap.setAttribute('x',x+w-4);cap.setAttribute('y',y-3);cap.setAttribute('width',4);cap.setAttribute('height',h+3);cap.style.fill=colors[s.endKind]||colors.unknown;cap.setAttribute('class','cap');
     var day=new Date(s.start).toLocaleDateString(undefined,{month:'short',day:'numeric'});
-    if(day!==lastDay && (lastLabelX===undefined || x-lastLabelX>44)){ lastLabelX=x; var t=document.createElementNS(svgNS,'text'); t.setAttribute('x',x);t.setAttribute('y',H-8);t.setAttribute('font-family','Cascadia Mono, Consolas, monospace');t.setAttribute('font-size','11');t.setAttribute('fill','#5B6472');t.textContent=day; g.appendChild(t); lastDay=day; }
+    if(day!==lastDay && (lastLabelX===undefined || x-lastLabelX>44)){ lastLabelX=x; var t=document.createElementNS(svgNS,'text'); t.setAttribute('x',x);t.setAttribute('y',H-8);t.setAttribute('font-family','Cascadia Mono, Consolas, monospace');t.setAttribute('font-size','11');t.style.fill='var(--steel)';t.textContent=day; g.appendChild(t); lastDay=day; }
     (function(s,x,w,y){
       rect.addEventListener('mousemove',function(ev){ var b=host.getBoundingClientRect(); tip.style.left=(ev.clientX-b.left)+'px'; tip.style.top=(ev.clientY-b.top-8)+'px'; tip.innerHTML='<div class="t">'+esc(fmtDate(s.start))+' · '+esc(fmtDur(s.minutes,s.durationKnown))+'</div>'+esc(s.verdict); tip.className='tip on'; });
       rect.addEventListener('mouseleave',function(){ tip.className='tip'; });
@@ -791,9 +957,109 @@ function renderReq(r){
     var btn=''; if(x.status!=='ok'){ btn = x.directInstall ? '<button class="btn primary" onclick="act('+JSON.stringify('req:install:'+x.id)+')">Install</button>' : '<button class="btn" onclick="act('+JSON.stringify('req:open:'+x.id)+')">Open download page</button>'; }
     d.innerHTML='<div><span class="mark '+m+'">'+esc(label)+'</span></div><div><div class="title">'+esc(x.name)+(x.version?' <span class="mono muted">'+esc(x.version)+'</span>':'')+'</div><div class="detail">'+esc(x.detail)+'</div>'+(function(){var n=x.neededByCount||(x.neededBy?x.neededBy.length:0); if(!n) return ''; var names=(x.neededBy&&x.neededBy.length&&n<=4)?': '+esc(x.neededBy.join(', ')):''; return '<div class="muted" style="font-size:12px;margin-top:4px">Needed by '+n+' installed mod'+(n===1?'':'s')+names+'</div>';})()+'</div><div class="act">'+btn+'</div>'; el.appendChild(d); });
 }
+/* ---------- graphics settings and profiles ----------
+   The engine decides what is editable and validates every value again before saving; the page only offers what the
+   game's own file says is allowed. Applying and undoing write the game's settings, so the window asks for a native
+   confirmation on top of this page, and refuses while the game is running. */
+var EDITING=null;   // {name, edits:{key:value}} while a profile is open for editing
+
+// floats are stored as 0.1500000059; nobody set that, they set 0.15
+function gshow(v){ if(v===true) return 'On'; if(v===false) return 'Off'; if(v===null||v===undefined) return ''; if(typeof v==='number'&&!Number.isInteger(v)) return String(Math.round(v*100)/100); return String(v).replace('UI-Settings-Video-QualitySetting-',''); }
+// The settings that move video memory and frame rate the most, first. Everything else follows in the game's own groups.
+var GFX_FIRST=['/graphics/presets/TextureQuality','/graphics/performance/CrowdDensity','/graphics/raytracing/RayTracing','/graphics/raytracing/RayTracedLighting','/graphics/raytracing/RayTracedReflections','/graphics/raytracing/RayTracedPathTracing','/graphics/advanced/ScreenSpaceReflectionsQuality','/graphics/presets/FrameGeneration','/graphics/presets/ResolutionScaling','/graphics/presets/DLSS','/video/display/Resolution'];
+function gfxOrdered(g){ var first=GFX_FIRST.map(function(k){ return g.filter(function(o){return o.key===k;})[0]; }).filter(Boolean).map(function(o){ return Object.assign({},o,{group:'The ones that matter most'}); });
+  return first.concat(g.filter(function(o){ return GFX_FIRST.indexOf(o.key)<0; })); }
+function gsame(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
+function profileOp(msg){ if(hasHost()) window.chrome.webview.postMessage(Object.assign({cmd:'profile'},msg)); else toast('Profiles are available in the app, not in a saved report.',true); }
+
+function renderProfiles(r){
+  var host=document.getElementById('profiles'); if(!host) return;
+  var g=r.graphics||[], ps=r.profiles||[];
+  if(!g.length){ host.innerHTML='<div class="empty" style="padding:22px">The game\u2019s settings file was not found. Launch Cyberpunk 2077 once so it creates one, then scan again.</div>'; return; }
+  var html='';
+  if(r.game&&r.game.running) html+='<div class="notice">Cyberpunk 2077 is running. You can save and edit profiles, but close the game before applying one \u2014 it rewrites its settings when it exits, which would undo the change.</div>';
+  html+='<div class="profs">';
+  ps.forEach(function(p){
+    var n=esc(p.name).replace(/'/g,'&#39;'), q='&quot;'+n+'&quot;';
+    html+='<div class="prof'+(p.matchesGame?' active':'')+'"><div class="top"><span class="nm">'+esc(p.name)+'</span>'
+      +(p.matchesGame?'<span class="mark mint">in the game now</span>':'')+'</div>'
+      +'<div class="phl">'+Object.keys(p.headline||{}).map(function(k){ return '<span>'+esc(k)+'</span><span>'+esc(p.headline[k])+'</span>'; }).join('')+'</div>'
+      +(p.notes?'<div class="muted" style="font-size:12.5px">'+esc(p.notes)+'</div>':'')
+      +'<div class="acts">'
+      +(p.matchesGame?'':'<button class="btn primary" onclick="profileOp({op:&quot;apply&quot;,name:'+q+'})">Apply to game</button>')
+      +'<button class="btn" onclick="editProfile('+q+')">Edit</button>'
+      +'<button class="btn" onclick="profileOp({op:&quot;save&quot;,name:'+q+'})" title="Replace this profile with what the game is set to now">Update from game</button>'
+      +'<button class="btn" onclick="profileOp({op:&quot;delete&quot;,name:'+q+'})">Delete</button>'
+      +'</div></div>';
+  });
+  html+='<div class="prof new"><div class="nm" style="font-size:14px">Save the current settings</div>'
+    +'<div class="muted" style="font-size:12.5px">Keeps everything the game is set to now under a name, so you can switch back to it in one click.</div>'
+    +'<input id="prof-name" placeholder="e.g. Quality, Performance, Streaming" maxlength="60" onkeydown="if(event.key===&quot;Enter&quot;)saveProfile()">'
+    +'<div class="acts"><button class="btn primary" onclick="saveProfile()">Save as profile</button></div></div>';
+  html+='</div>';
+  html+='<div class="profbar">'
+    +(r.settingsBackup?'<button class="btn" onclick="profileOp({op:&quot;undo&quot;})">Undo last change</button><span>Your settings from before the last change were backed up '+esc(fmtDate(r.settingsBackup))+'.</span>'
+      :'<span>Applying a profile backs up the game\u2019s current settings first, and Undo puts them back. Only graphics and display settings are touched \u2014 never controls, audio or key bindings.</span>')
+    +'</div>';
+  host.innerHTML=html;
+}
+function saveProfile(){ var i=document.getElementById('prof-name'); var n=(i&&i.value||'').trim(); if(!n){ toast('Give the profile a name first.',true); if(i) i.focus(); return; } profileOp({op:'save',name:n}); }
+
+function editProfile(name){
+  var p=(REPORT.profiles||[]).filter(function(x){return x.name===name;})[0]; if(!p) return;
+  EDITING={name:name,edits:{}}; renderGraphics(REPORT);
+  var h=document.getElementById('gfx-h'); if(h) h.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function stopEditing(){ EDITING=null; renderGraphics(REPORT); }
+function setEdit(key,raw){
+  var o=(REPORT.graphics||[]).filter(function(x){return x.key===key;})[0]; if(!o||!EDITING) return; var v;
+  if(o.type==='bool') v=(raw==='true');
+  else if(o.type==='int'||o.type==='float'){ v=Number(raw); if(isNaN(v)) return; if(o.type==='int') v=Math.round(v); }
+  else v=o.values[Number(raw)];
+  EDITING.edits[key]=v; renderGraphics(REPORT,true);
+}
+function saveEdits(){
+  if(!EDITING) return; var nn=document.getElementById('edit-name'), nt=document.getElementById('edit-notes');
+  profileOp({op:'update',name:EDITING.name,newName:nn?nn.value.trim():'',notes:nt?nt.value:'',edits:EDITING.edits});
+}
+
+function renderGraphics(r,keepScroll){
+  var card=document.getElementById('gfx-card'), head=document.getElementById('gfx-h'); if(!card) return;
+  var g=gfxOrdered(r.graphics||[]);
+  if(!g.length){   // older report, or no settings file: the plain list is still worth showing
+    var kv='<div class="kv">'; Object.keys(r.settings||{}).forEach(function(k){ kv+='<div class="k">'+esc(k)+'</div><div class="v">'+esc(r.settings[k])+'</div>'; }); card.innerHTML=kv+'</div>'; return;
+  }
+  var prof=EDITING?(r.profiles||[]).filter(function(x){return x.name===EDITING.name;})[0]:null;
+  if(EDITING&&!prof){ EDITING=null; }
+  head.innerHTML=prof?'Editing \u201c'+esc(prof.name)+'\u201d':'Graphics settings <span class="muted" style="font-size:13px;font-weight:400">\u00b7 what the game is set to now</span>';
+  var html='';
+  if(prof){
+    var n=Object.keys(EDITING.edits).length;
+    html+='<div class="edithead"><input id="edit-name" value="'+esc(prof.name)+'" maxlength="60" title="Profile name">'
+      +'<input id="edit-notes" value="'+esc(prof.notes||'')+'" placeholder="Notes (optional)" style="flex:1">'
+      +'<button class="btn primary" onclick="saveEdits()">Save profile</button><button class="btn" onclick="stopEditing()">Cancel</button>'
+      +'<span class="muted" style="font-size:12.5px">'+(n?n+' unsaved change'+(n===1?'':'s'):'No changes yet')+'. Saving does not change the game \u2014 Apply does.</span></div>';
+  }
+  html+='<div class="gfx'+(prof?'':' view')+'">';
+  if(prof) html+='<div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">Setting</div><div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">In the game now</div><div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">In this profile</div>';
+  var last='';
+  g.forEach(function(o){
+    if(o.group!==last){ html+='<div class="gfx-group">'+esc(o.group)+'</div>'; last=o.group; }
+    if(!prof){ html+='<div class="k">'+esc(o.label)+'</div><div class="v">'+esc(gshow(o.value))+'</div>'; return; }
+    var saved=prof.options[o.key], pv=EDITING.edits.hasOwnProperty(o.key)?EDITING.edits[o.key]:(saved?saved.value:o.value);
+    var differs=!gsame(pv,o.value), edited=EDITING.edits.hasOwnProperty(o.key), cls=edited?' row-changed':'';
+    var ctl;
+    if(!o.editable) ctl='<span class="lock" title="'+esc(o.note||'')+'">'+esc(gshow(pv))+' \u00b7 set in game</span>';
+    else if(o.type==='bool') ctl='<select onchange="setEdit(&quot;'+o.key+'&quot;,this.value)"><option value="true"'+(pv===true?' selected':'')+'>On</option><option value="false"'+(pv===false?' selected':'')+'>Off</option></select>';
+    else if(o.type==='int'||o.type==='float') ctl='<input type="number" min="'+o.min+'" max="'+o.max+'" step="'+(o.step||1)+'" value="'+esc(gshow(pv))+'" onchange="setEdit(&quot;'+o.key+'&quot;,this.value)">';
+    else ctl='<select onchange="setEdit(&quot;'+o.key+'&quot;,this.value)">'+o.values.map(function(v,i){ return '<option value="'+i+'"'+(gsame(v,pv)?' selected':'')+'>'+esc(gshow(v))+'</option>'; }).join('')+'</select>';
+    html+='<div class="k'+cls+'">'+esc(o.label)+'</div><div class="v'+cls+'">'+esc(gshow(o.value))+'</div><div class="'+cls+(differs?' diff':'')+'">'+ctl+'</div>';
+  });
+  card.innerHTML=html+'</div>';
+}
+
 function renderSettings(r){
-  var kv=document.getElementById('settings-kv'); kv.innerHTML='';
-  Object.keys(r.settings).forEach(function(k){ kv.innerHTML+='<div class="k">'+esc(k)+'</div><div class="v">'+esc(r.settings[k])+'</div>'; });
+  renderProfiles(r); renderGraphics(r);
   var notes=document.getElementById('settings-notes'); notes.innerHTML='';
   (r.settingsNotes||[]).forEach(function(n){ notes.innerHTML+='<div class="card" style="margin-bottom:10px;border-left:4px solid var(--'+(n.level==='high'?'signal':n.level==='medium'?'amber':'mint')+')"><b>'+esc(n.title)+'</b><div class="muted" style="margin-top:4px">'+esc(n.detail)+'</div></div>'; });
 }
@@ -932,6 +1198,40 @@ function act(id){ if(hasHost()) window.chrome.webview.postMessage({cmd:'action',
 // that commit; forty characters of it in a line someone pastes into a forum is just noise.
 function appVer(v){ if(!v) return '?'; var p=String(v).split('+'); return p.length>1 ? p[0]+' ('+p[1].slice(0,7)+')' : p[0]; }
 
+
+/* ---------- themes ---------- */
+var THEMES=[
+  {id:'system',name:'Match Windows',desc:'Light or dark, following your Windows setting.'},
+  {id:'instrument',name:'Instrument',desc:'The default. Calm, light, easy to read for long.'},
+  {id:'instrument-dark',name:'Instrument dark',desc:'The same layout on a dark ground.'},
+  {id:'terminal',name:'Terminal',desc:'The computers you jack into in Night City.'},
+  {id:'pause',name:'Pause menu',desc:'The game\u2019s own menu screens.'}
+];
+function themeChoice(){ try{ return localStorage.getItem('cd.theme')||'system'; }catch(e){ return 'system'; } }
+function resolveTheme(id){ return id==='system' ? (window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'instrument-dark':'instrument') : id; }
+function applyTheme(id){
+  try{ localStorage.setItem('cd.theme',id); }catch(e){}
+  var t=resolveTheme(id); document.documentElement.setAttribute('data-theme',t);
+  // tell the window around the page, so its title bar and the frame behind the page match
+  if(hasHost()){ var cs=getComputedStyle(document.documentElement);
+    window.chrome.webview.postMessage({cmd:'theme',dark:cs.colorScheme==='dark'||t!=='instrument',
+      paper:cs.getPropertyValue('--paper').trim(),caption:cs.getPropertyValue('--bezel-bg').trim()}); }
+  renderThemes();
+}
+function renderThemes(){
+  var host=document.getElementById('themes'); if(!host) return; var cur=themeChoice();
+  var mini='<i class="b"></i><i class="r"></i><i class="c"></i><i class="t1"></i><i class="t2"></i><i class="a1"></i><i class="a2"></i><i class="a3"></i>';
+  host.innerHTML=THEMES.map(function(t){
+    var pv = t.id==='system'
+      ? '<span class="pv half"><span data-theme="instrument">'+mini+'</span><span data-theme="instrument-dark">'+mini+'</span></span>'
+      : '<span class="pv" data-theme="'+t.id+'">'+mini+'</span>';
+    return '<button class="theme'+(t.id===cur?' on':'')+'" onclick="applyTheme(&quot;'+t.id+'&quot;)" aria-pressed="'+(t.id===cur)+'">'+pv
+      +'<span class="nm">'+esc(t.name)+'</span><span class="ds">'+esc(t.desc)+'</span></button>';
+  }).join('');
+}
+// follow Windows live when "Match Windows" is chosen
+try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){ if(themeChoice()==='system') applyTheme('system'); }); }catch(e){}
+
 function go(v){ document.querySelectorAll('.view').forEach(function(x){x.classList.toggle('on',x.id==='v-'+v);}); document.querySelectorAll('.rail button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')===v);}); }
 
 /* ---------- sample data (from a real machine, Sep 2026) for browser preview ---------- */
@@ -986,6 +1286,7 @@ var SAMPLE={
 };
 SAMPLE.latest=SAMPLE.sessions[6];
 document.addEventListener('DOMContentLoaded', function(){
+  renderThemes(); if(hasHost()) applyTheme(themeChoice());
   if(window.EXPORTED){ load(window.EXPORTED); document.getElementById('btn-scan').style.display='none';
     // say which build made this and what it does and does not contain, for whoever ends up reading it
     document.getElementById('foot').textContent='Crash Doctor '+appVer(window.EXPORTED.appVersion)+'. '

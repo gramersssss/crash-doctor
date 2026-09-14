@@ -73,12 +73,14 @@ too, and verification that leans on that quietly stops covering them the day the
 
 ## make-icon.py
 
-    python tools/make-icon.py
+    python tools/make-icon.py            # writes src/app.ico
+    python tools/make-icon.py --sheet    # every palette side by side, writes nothing
 
 Draws `src/app.ico`, which `<ApplicationIcon>` embeds in the exe. The mark is a vital-signs trace that runs flat,
-spikes once in the signal red and carries on - the app's own brand dot taken one step further, in the app's own
-three colours. It is deliberately not neon-on-black: DESIGN.md rejects that look as fan art rather than an
-instrument.
+spikes once and carries on, on a tile with its top-right corner cut away. The shipped palette is the game's own -
+Night City yellow tile, black trace, hot-red spike - chosen by Gary on 14 Sep so the icon matches the game; the
+original grey Instrument version and two dark ones (pause-menu yellow, terminal cyan) are kept as alternatives in
+`PALETTES`. No game art, logo or typeface is used.
 
 Nine sizes are drawn separately rather than resized from one, because the detailed trace turns to mush at 16 px;
 below 48 px a simplified trace with a heavier stroke is used instead. It also writes `test/icon-sheet.png` (not
@@ -107,3 +109,18 @@ is rarely the one worth showing. Those ids are in the report; update them when t
 Re-rendering writes all eight files even when nothing has changed, because the header carries the time of the
 scan. Check `git diff` before committing them: if the only difference is a few pixels in the "Last scan" chip,
 revert them rather than committing eight new binaries.
+
+## test-profiles.py
+
+    python tools/test-profiles.py <scratch folder>
+
+End-to-end test of graphics profiles: save, edit, reject invalid values, apply, apply again, undo twice back to a
+byte-identical file, and a refused third undo. It runs against a copy of this machine's real UserSettings.json in
+`<scratch folder>/profile-sandbox`, with `CRASHDOCTOR_TEST_ROOT` pointed there, and its last check hashes the real
+file before and after - it fails if the real one changed at all.
+
+It needs a real settings file because the fixtures' ones are simplified stand-ins in an older shape that the profile
+code does not read. So it only runs on a PC where the game has been launched at least once.
+
+What it cannot test from the command line: the refusal to apply while Cyberpunk 2077 is running (the check is a
+process lookup; start the game and click Apply to see it), and the native confirmation dialogs in the window.
