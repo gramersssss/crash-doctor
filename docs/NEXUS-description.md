@@ -103,6 +103,12 @@ uses, on NVIDIA, AMD and Intel cards alike, every 5 seconds, and shows each sess
 90 % with a curve of the whole session. That is how you find out whether High textures were actually safe. Nothing
 runs after the window is closed, and when the game closes the scan runs again by itself.
 
+**What changed since your last clean session.** For every crash, a dated list of what is different between this
+install and the one that last played without a problem: mods installed or updated in Vortex, read from its own log,
+how many files its deployments added and removed, native plugins that changed version between the two sessions (from
+the RED4ext logs, so it works with any mod manager), mod files written by hand, and a game update. Being new is not
+evidence of guilt, and it says so; it is the shortest list to test first.
+
 **Where you were.** Player position, district and tracked quest at the crash, plus which mods were rewriting the
 world sectors underfoot at that moment.
 
@@ -212,6 +218,7 @@ Then press [b]Scan now[/b]. If you want video memory recorded while you play, le
 [*][b]Things ruled out, with the reason shown.[/b] If a mod's errors also appear in sessions that ended perfectly normally, it is noise, and Crash Doctor says so and demotes it instead of blaming it. It will not draw that conclusion at all until it has at least two clean sessions to compare against.
 [*][b]The video memory number nobody else shows you.[/b] Used and total, at the instant of the crash, straight out of the crash report. "8129 of 8006 MB in use, past what the card physically holds" ends an argument that otherwise runs for days.
 [*][b]Video memory recorded while you play.[/b] The game only writes that number into crash reports, so a session that did not crash leaves nothing. While the Crash Doctor window is open it reads the same Windows GPU counters Task Manager uses, on NVIDIA, AMD and Intel cards alike, every 5 seconds, and shows each session's peak, median and minutes above 90 % with a curve of the whole session. That is how you find out whether High textures were actually safe. Nothing runs after the window is closed, and when the game closes the scan runs again by itself.
+[*][b]What changed since your last clean session.[/b] For every crash, a dated list of what is different between this install and the one that last played without a problem: mods installed or updated in Vortex, read from its own log, how many files its deployments added and removed, native plugins that changed version between the two sessions (from the RED4ext logs, so it works with any mod manager), mod files written by hand, and a game update. Being new is not evidence of guilt, and it says so; it is the shortest list to test first.
 [*][b]Where you were.[/b] Player position, district and tracked quest at the crash, plus which mods were rewriting the world sectors underfoot at that moment.
 [*][b]Health.[/b] Standing problems found before you ever crash: native plugins that refuse to load on your patch, world-sector patches that fail every launch, mods pointing at files that do not exist, scripts erroring every twelve seconds, interrupted downloads that left an empty archive, a DLSS/FSR enabler that overwrote files the game now ships itself, saves sitting in a OneDrive folder.
 [*][b]Requirements check.[/b] Detects RED4ext, redscript, Cyber Engine Tweaks, ArchiveXL, TweakXL, Codeware, Equipment-EX and the Microsoft runtimes, shows how many of your installed mods depend on each, and takes you to the right download.

@@ -20,10 +20,21 @@ public static class Analyzer
         r.CrashGroups = GroupBySignature(d, sessions);
         foreach (var g in r.CrashGroups) NoteGroupOnSessions(g, sessions);
         var merged = History.Merge(sessions, History.Load());
-        History.Save(merged);
         // remembered sessions carry whatever recording they had when saved; refresh from the files that still exist
         VramLogs.Attach(d.VramLogs, merged);
+        // What is different between this install and the one that last played without a problem. Done for every
+        // crash on every scan: Vortex's history and file times cover remembered crashes whose logs have rotated, and
+        // the plugin-version diff comes back for any whose logs still exist. Cheap, and it means a wording fix or a
+        // new source reaches old crashes too instead of freezing whatever was written into history the first time.
+        foreach (var s in merged.Where(x => x.EndKind is not (EndKind.Clean or EndKind.Running))) CompareWithLastClean(d, s, merged);
+        History.Save(merged);
         r.Sessions = merged;
+        // and the same question for right now, for the no-crash screen: what has changed since the last clean session
+        var latestClean = merged.Where(x => x.EndKind == EndKind.Clean && x.End != null).OrderByDescending(x => x.End).FirstOrDefault();
+        var latestLog = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
+        r.RecentChangesSince = latestClean?.End;
+        r.RecentChanges = latestClean == null ? new() : ChangeLog.Between(d, latestClean.End!.Value, DateTime.Now, ChangeLog.LogOf(d, latestClean), latestLog);
+        r.RecentChangesNote = ChangeLog.Note(d, r.RecentChanges, r.RecentChangesSince, forCrash: false);
         r.Latest = merged.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).OrderByDescending(s => s.Start).FirstOrDefault();
         r.Health = Health(d, merged, elimination, r);
         r.SettingsNotes = SettingsNotes(d, merged);
@@ -131,6 +142,26 @@ public static class Analyzer
             if (!list.Any(s => s.Start <= t && (s.End ?? DateTime.Now).AddMinutes(1) >= t))
                 list.Add(new Session { Id = "c" + t.ToString("yyyyMMddHHmmss"), Start = t, End = t, CrashTime = t, EndKind = EndKind.Unknown, Minutes = 0, Partial = true, DurationKnown = false });
         return list;
+    }
+
+    // What changed between the last session that ended normally and this crash (Changes.cs). The pool decides which
+    // clean session counts: fresh sessions for the first pass, everything remembered for the second. A crash whose
+    // clean predecessor is older than the history read for this scan gets an honest "no comparison" rather than an
+    // empty list that would read as "nothing changed".
+    static void CompareWithLastClean(CollectedData d, Session s, List<Session> pool)
+    {
+        var lastClean = pool.Where(x => x.EndKind == EndKind.Clean && x.End != null && x.End < s.Start).OrderByDescending(x => x.End).FirstOrDefault();
+        var to = s.CrashTime ?? s.End ?? s.Start;
+        s.ChangesSince = lastClean?.End;
+        s.Changes = new();
+        if (lastClean == null) { s.ChangesNote = ChangeLog.Note(d, s.Changes, null, forCrash: true); return; }
+        if (lastClean.End < d.Since)
+        {
+            s.ChangesNote = $"The last session that ended normally before this crash was on {lastClean.End:d MMM}, further back than the {Math.Round((DateTime.Now - d.Since).TotalDays)} days of history this scan read, so there is no comparison for it.";
+            return;
+        }
+        s.Changes = ChangeLog.Between(d, lastClean.End!.Value, to, ChangeLog.LogOf(d, lastClean), ChangeLog.LogOf(d, s));
+        s.ChangesNote = ChangeLog.Note(d, s.Changes, s.ChangesSince, forCrash: true);
     }
 
     static bool IsGpuMessage(string? m) => m != null && (m.Contains("Gpu Crash", StringComparison.OrdinalIgnoreCase) || m.Contains("DXGI_ERROR", StringComparison.OrdinalIgnoreCase) || m.Contains("device removed", StringComparison.OrdinalIgnoreCase));

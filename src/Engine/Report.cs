@@ -30,6 +30,9 @@ public sealed class Report
     public DateTime? SettingsBackup { get; set; }                     // newest backup an Undo would restore
     public ArchiveSummary? Archive { get; set; }                      // crash logs kept before the game rotates them
     public VramLogSummary? VramLogs { get; set; }                     // video memory recorded while the game ran
+    public List<Change> RecentChanges { get; set; } = new();          // what changed since the last clean session, up to now
+    public DateTime? RecentChangesSince { get; set; }
+    public string? RecentChangesNote { get; set; }
     public List<string> NewCrashes { get; set; } = new();             // crash session ids the user has not seen yet, newest first
     public List<SettingsNote> SettingsNotes { get; set; } = new();
     public List<string> Warnings { get; set; } = new();   // things the scan could not read
@@ -145,6 +148,10 @@ public sealed class Session
     // Video memory recorded by Crash Doctor while this session ran (see VramMonitor.cs). Re-read from its CSV on
     // every scan rather than trusted from history, so a recording that is still being written keeps updating.
     public VramLogView? VramLog { get; set; }
+    // What changed between the last session that ended normally and this crash (Changes.cs). Facts, not suspects.
+    public List<Change> Changes { get; set; } = new();
+    public DateTime? ChangesSince { get; set; }   // when that clean session ended; null when there is none to compare with
+    public string? ChangesNote { get; set; }
     [JsonIgnore] public string? Red4extLog { get; set; }
     [JsonIgnore] public DateTime? CrashTime { get; set; }
     [JsonIgnore] public string? EngineMessage { get; set; }

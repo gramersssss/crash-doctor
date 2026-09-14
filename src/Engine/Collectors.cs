@@ -64,6 +64,13 @@ public sealed class CollectedData
     public SystemInfo System { get; set; } = new();
     public ModInventory Mods { get; set; } = new();
     public List<VramLogView> VramLogs { get; set; } = new();   // video memory recorded by Crash Doctor while the game ran
+    // what changed between sessions (Changes.cs): Vortex's install/deploy history, mod-folder file times, the exe's time
+    public List<ModInstall> ModInstalls { get; } = new();
+    public List<Deployment> Deployments { get; } = new();
+    public List<(string rel, DateTime at)> ChangedFiles { get; } = new();
+    public DateTime? GameExeWritten { get; set; }
+    public bool VortexLogRead { get; set; }
+    public DateTime Since { get; set; }        // how far back this scan read; comparisons older than this are refused, not faked
 }
 
 public static class Collectors
@@ -73,7 +80,7 @@ public static class Collectors
 
     public static CollectedData CollectAll(GamePaths g, DateTime since)
     {
-        var d = new CollectedData { Paths = g };
+        var d = new CollectedData { Paths = g, Since = since };
         Safe(d, "RED4ext logs", () => ReadRed4ext(d, since));
         Safe(d, "crash reporter log", () => ReadCrashReporter(d, since));
         Safe(d, "crash reports", () => ReadCrashReports(d, since));
@@ -86,6 +93,8 @@ public static class Collectors
         Safe(d, "system information", () => d.System = ReadSystem());
         Safe(d, "mod list", () => d.Mods = ModInventory.Read(g));
         Safe(d, "video memory logs", () => d.VramLogs = Engine.VramLogs.ReadAll());
+        Safe(d, "Vortex install history", () => ChangeLog.ReadVortexLog(d, since));
+        Safe(d, "mod folder file times", () => ChangeLog.ReadFileTimes(d, since));
         return d;
     }
 

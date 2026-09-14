@@ -93,7 +93,10 @@ Every wrong answer came from reasoning about **what happened just before one cra
 modules, video memory used vs total, player position, tracked quest, engine OOM flag, framework versions, mod
 inventory, settings, the crash screenshot. Since 0.6 also video memory *through* a session, sampled from the Windows
 GPU counters while the app's window is open, because the crash report only ever gives the instant of death and the
-question that decides whether a settings change was safe is how the card ran the rest of the time. No other tool in this ecosystem opens the minidump at all.
+question that decides whether a settings change was safe is how the card ran the rest of the time. And what changed
+between the last clean session and the crash: Vortex's install log, deployment counts, native plugin versions from
+the two sessions' logs, hand-written mod files, a game update. The most useful question on the worst night was not
+"what was logged before the crash" but "what is different from the install that played fine for five days". No other tool in this ecosystem opens the minidump at all.
 
 **2 — Grouping.** Cluster crashes by faulting address. The headline is *"you do not have 30 crashes, you have 3
 problems"*, which is a completely different conversation from "the game crashes sometimes". Deterministic, and on

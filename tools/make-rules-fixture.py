@@ -209,6 +209,32 @@ for day, secs in ((3, 71), (2, 48), (1, 96)):
             "w", encoding="utf-8").write("\n".join(A) + "\n")
 
 # ScriptErrorSpam: one CET mod erroring far more than the ten-per-session threshold, after the newest session began.
+# ---------------------------------------------------------------- what changed since the last clean session
+# One session four days ago that quit through the menu, with ArchiveXL a version older than the crashes carry, and a
+# Vortex log recording an install and a deployment the day after it. The oldest crash (day 3) then has a clean session
+# to compare against and should list three things: the install, the deployment, and the ArchiveXL version change.
+cstart = (NOW - datetime.timedelta(days=4)).replace(microsecond=0)
+cend = cstart + datetime.timedelta(minutes=48)
+t = lambda d, ms=0: (cstart + datetime.timedelta(seconds=d)).strftime("%Y-%m-%d %H:%M:%S") + ".%03d" % ms
+C = ["[%s] [info    ] [  4120] [RED4ext] RED4ext (v1.30.0) is initializing..." % t(0, 101),
+     "[%s] [info    ] [  4120] [RED4ext] Product version: 2.31" % t(0, 102),
+     "[%s] [info    ] [  4120] [RED4ext] File version: 3.0.80.51928" % t(0, 103),
+     "[%s] [info    ] [  4120] [RED4ext] Loading plugins..." % t(1, 400)]
+for i, (name, ver) in enumerate([("ArchiveXL", "1.27.1"), ("Codeware", "1.20.3"), ("TweakXL", "1.11.4")]):
+    C.append("[%s] [info    ] [  4120] [RED4ext] %s (version: %s, author(s): someone) has been loaded" % (t(2 + i, 0), name, ver))
+C += ["[%s] [info    ] [  4120] [RED4ext] 3 plugin(s) loaded" % t(6, 0),
+      "[%s] [info    ] [  4120] [RED4ext] RED4ext has been started" % t(6, 200),
+      "[%s] [info    ] [  4120] [RED4ext] RED4ext has been shut down" % (cend.strftime("%Y-%m-%d %H:%M:%S") + ".880")]
+io.open(os.path.join(game, "red4ext", "logs", "red4ext-%s.log" % cstart.strftime("%Y-%m-%d-%H-%M-%S")), "w", encoding="utf-8").write("\n".join(C) + "\n")
+vx = os.path.join(fx, "AppData", "Vortex"); os.makedirs(vx, exist_ok=True)
+utc = lambda dt: dt.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+inst = (NOW - datetime.timedelta(days=3, hours=2)).astimezone()
+staging = "Trainer Bridge-77777-1-0-2-1757000000"
+VL = ["%s [INFO] [RENDERER] [cyberpunk-2077-vortex-support] Extracted mod info from path: C:\\Users\\someone\\AppData\\Roaming\\Vortex\\cyberpunk2077\\mods\\%s.installing " % (utc(inst), staging),
+      '%s [DEBG] [RENDERER] deployment progress {"text":"Starting deployment","percent":0}' % utc(inst + datetime.timedelta(minutes=1)),
+      '%s [DEBG] [RENDERER] deployment {"added":3,"removed":0,"source changed":0,"modified":0}' % utc(inst + datetime.timedelta(minutes=1, seconds=4))]
+io.open(os.path.join(vx, "vortex.log"), "w", encoding="utf-8").write("\n".join(VL) + "\n")
+
 # ---------------------------------------------------------------- VideoMemoryWhilePlaying
 # A recording Crash Doctor's own window would have made during the newest of those sessions (VramMonitor.cs), in the
 # CSV shape the recorder writes: card-wide use climbing from 60 % to 97 % of an 8006 MB card over two and a half
@@ -295,6 +321,7 @@ print("  redscript: 1 error, 1 annotation overwrite")
 print("  red4ext: 1 incompatible plugin; archivexl: 2 startup errors")
 print("  cet: 21 identical errors from one mod; scripts: 1 file bundled twice")
 print("  video memory recording: 1 session, 30 readings climbing to 97%")
+print("  what changed: 1 clean session 4 days back, then a Vortex install + deployment and an ArchiveXL version change")
 print()
 print("Scan it with all three variables set - the third stands in for hardware, which a fixture cannot fake:")
 print("  set CRASHDOCTOR_TEST_ROOT=%s" % fx)

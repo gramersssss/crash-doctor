@@ -198,6 +198,13 @@ button.mark:hover{filter:brightness(.94)}
 .arow .n{font-family:var(--mono);font-size:12px;color:var(--steel);text-align:right;white-space:nowrap}
 .arow .warn{font-size:12.5px;color:var(--signal);margin-top:4px;line-height:1.45}
 .area .foot{font-size:12.5px;color:var(--steel);margin-top:14px;padding-top:12px;border-top:1px solid var(--line);line-height:1.55}
+/* what changed between the last clean session and a crash (Changes.cs): a dated list of facts */
+.changes .crow{display:grid;grid-template-columns:120px 1fr;gap:12px;padding:8px 0;border-top:1px solid var(--line);font-size:13px;align-items:baseline}
+.changes .crow:first-of-type{border-top:0}
+.changes .crow .t{font-family:var(--mono);font-size:12px;color:var(--steel);white-space:nowrap}
+.changes .crow .k{display:inline-block;margin-right:6px;padding:1px 6px;border-radius:4px;font-family:var(--display);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;background:var(--grey-bg);color:var(--steel)}
+.changes .crow .k.installed,.changes .crow .k.enabled,.changes .crow .k.plugin{background:var(--amber-bg);color:var(--amber-ink)}
+.changes .crow .k.game{background:var(--signal-bg);color:var(--signal)}
 @media (max-width:620px){.arow{grid-template-columns:1fr 70px}.arow .bar{display:none}}
 /* the clean bill of health */
 .ok{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--mint);border-radius:8px;padding:26px 28px;max-width:720px}
@@ -474,6 +481,7 @@ button.mark:hover{filter:brightness(.94)}
           </div>
           <div id="dx-knowledge"></div>
           <div id="dx-area"></div>
+          <div id="dx-changes"></div>
           <div class="trace-wrap">
             <div class="trace-head">
               <p class="eyebrow" style="margin:0">Session trace · how each play session ended</p>
@@ -640,7 +648,7 @@ function renderDx(r){
   document.getElementById('dx-flagnote').innerHTML='';
   document.getElementById('dx-sentence').textContent=s.verdict;
   renderVram(s); renderVramLog(s);
-  renderArea(s); renderSaved(r,s);
+  renderArea(s); renderChanges(s); renderSaved(r,s);
   var dots=''; for(var i=0;i<3;i++) dots+='<i class="'+(i<s.confidence?'on':'')+'"></i>';
   document.getElementById('dx-conf').innerHTML=dots;
   document.getElementById('dx-conf-txt').textContent=['low','fair','good','high'][s.confidence]||'';
@@ -755,6 +763,17 @@ function renderArea(s){
     '<div class="foot">'+foot+"</div></div>";
 }
 
+// What changed between the last session that ended normally and this crash. The engine decides the wording of the
+// note above the list; the page only lays it out. It is a list of facts, and it is never a list of suspects.
+function changeRows(list){
+  return list.map(function(c){ return '<div class="crow"><div class="t">'+esc(fmtDate(c.at))+'</div><div><span class="k '+esc(c.kind)+'">'+esc(c.kind)+'</span>'+esc(c.text)+'</div></div>'; }).join('');
+}
+function renderChanges(s){
+  var host=document.getElementById('dx-changes'); if(!host) return;
+  if(!s||s.endKind==='clean'||s.endKind==='running'||!s.changesNote){ host.innerHTML=''; return; }
+  host.innerHTML='<div class="area changes"><p class="eyebrow">What changed since the last clean session</p><p class="sub">'+esc(s.changesNote)+'</p>'+changeRows(s.changes||[])+'</div>';
+}
+
 // The screen a healthy install sees. "Nothing found" is the correct answer for most people most of the time, and
 // it should read as a clean bill of health with the play history behind it - not as a tool that failed to load.
 function noCrashPanel(r){
@@ -782,7 +801,8 @@ function noCrashPanel(r){
   if(badHealth.length) next.push('<button class="btn" onclick=&quot;go(&#39;health&#39;)&quot;>'+badHealth.length+' thing'+(badHealth.length===1?'':'s')+' worth knowing</button>');
   if(ss.length) next.push('<button class="btn" onclick=&quot;go(&#39;sessions&#39;)&quot;>See every session</button>');
 
-  return '<div class="ok"><h2>'+esc(head)+'</h2><p>'+lead+'</p>'+
+  var recent=(ss.length&&r.recentChangesNote)?'<div class="changes" style="margin-top:18px"><p class="eyebrow">Since your last clean session</p><p class="sub">'+esc(r.recentChangesNote)+'</p>'+changeRows(r.recentChanges||[])+'</div>':'';
+  return '<div class="ok"><h2>'+esc(head)+'</h2><p>'+lead+'</p>'+recent+
     (next.length?'<div class="row" style="margin-top:16px">'+next.join('')+'</div>':'')+
     // only claim a clean bill of health when the game has actually run and produced logs to judge
     (ss.length&&!missing.length&&!badHealth.length?'<p class="fine">Frameworks loaded, scripts compiled, no standing problems found.</p>':'')+
@@ -1211,6 +1231,7 @@ function renderReport(r){
   if(s){ lines.push('LATEST CRASH  '+fmtDate(s.start)+' · '+fmtDur(s.minutes,s.durationKnown)+(s.district?' · '+s.district:'')); lines.push('  '+s.verdict+' (confidence '+['low','fair','good','high'][s.confidence]+')');
     if(s.vramUsedMB&&s.vramTotalMB) lines.push('  VIDEO MEMORY  '+s.vramUsedMB+' / '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)'+(s.exception?'   '+s.exception:''));
     if(s.vramLog&&s.vramLog.totalMB) lines.push('  VIDEO MEMORY RECORDED  '+vlogLine(s.vramLog));
+    if(s.changesNote){ lines.push('  CHANGED SINCE LAST CLEAN SESSION  '+s.changesNote); (s.changes||[]).forEach(function(c){ lines.push('    '+fmtDate(c.at)+'  '+c.text); }); }
     s.evidence.forEach(function(e){ lines.push('  T-'+e.tMinus+'s  ['+e.source+'] '+e.text); });
     s.suspects.forEach(function(x){ lines.push('  suspect: '+x.mod+' — '+x.why); }); lines.push(''); }
   lines.push('SESSIONS (newest first)');
@@ -1264,6 +1285,7 @@ function buildAiPrompt(r){
     if(s.vramUsedMB&&s.vramTotalMB) add('Video memory in use at the crash: '+s.vramUsedMB+' of '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)');
     if(s.vramLog&&s.vramLog.totalMB) add('Video memory recorded by the tool through the whole session: '+vlogLine(s.vramLog));
     if(s.position) add('Player position: '+s.position);
+    if(s.changesNote){ head('## What changed between the last session that ended normally and this crash'); add(s.changesNote); (s.changes||[]).forEach(function(c){ add('- '+fmtDate(c.at)+': '+c.text); }); add('Treat these as the first things to test, not as culprits.'); }
 
     if((s.evidence||[]).length){
       head('## What the logs show in the seconds before it');

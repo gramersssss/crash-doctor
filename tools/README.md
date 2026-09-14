@@ -65,6 +65,10 @@ that they go wrong on other people's machines. What it manufactures:
 - a Vortex deployment manifest listing five files, three of which are not on disk
 - a video memory recording (the CSV `VramMonitor.cs` writes while the game runs) for the newest of the three
   sessions, climbing to 97 % of an 8006 MB card over two and a half minutes
+- for "what changed since your last clean session" (`Changes.cs`): a fourth session, four days back, that quit
+  through the menu with ArchiveXL 1.27.1, and a `AppData\Vortex\vortex.log` recording an install and a deployment
+  the day after it. Every crash should then list three things: the install, the deployment, and the ArchiveXL
+  version change 1.27.1 to 1.27.2
 
 `CrashDoctor.exe --vram-probe` prints the graphics adapters DXGI reports and one reading of the Windows GPU memory
 counters, the way the recorder takes it. It is the thing to ask someone with an AMD or Intel card to run and paste,

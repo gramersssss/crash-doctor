@@ -36,6 +36,7 @@ public sealed class GamePaths
     public static string CrashReporterLog => Path.Combine(LocalAppData, "REDEngine", "CrashReporter.log");
     public static string ReportQueue => Path.Combine(LocalAppData, "REDEngine", "ReportQueue");
     public static string AppData => Path.Combine(RoamingAppData, "CrashDoctor");
+    public static string VortexDir => Path.Combine(RoamingAppData, "Vortex");   // vortex.log, vortex1.log ... (install history)
     public static string ConfigFile => Path.Combine(AppData, "config.json");
 }
 

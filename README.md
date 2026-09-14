@@ -30,6 +30,13 @@ median and minutes above 90 %, with a curve of the whole session, and Health sum
 closes, the scan runs again by itself. Nothing runs after the window is closed; it can be switched off under Settings.
 `CrashDoctor.exe --vram-probe` prints one reading and which adapter was picked.
 
+**What changed since your last clean session.** For every crash, a dated list of what is different between this
+install and the one that last played without a problem: mods installed or updated in Vortex (from its own log) and
+how many files its deployments added and removed, native plugins that changed version between the two sessions (from
+the RED4ext logs, so it works with any mod manager), mod files written by hand, and a game update. It is a list of
+facts, and it says so: being new is not evidence of guilt, but it is the shortest list to test first. The no-crash
+screen shows the same list for right now.
+
 **New crashes are flagged.** If the game crashed since you last looked, a notice sits at the top of every page until you
 open the crash or dismiss it, and those crashes are marked new in Sessions.
 
