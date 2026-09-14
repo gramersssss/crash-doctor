@@ -16,10 +16,10 @@ audience has been sold confident crash tools before and they can smell it.
 | Name | Crash Doctor |
 | Category | Utilities |
 | Tagline | Reads your crash dumps and mod logs, and tells you what actually happened. |
-| Version | 0.5.1 |
+| Version | 0.6.0 |
 | Tags | Utilities, Modders Resources, Bug Fix, Performance, Debug |
 | Requirements | Windows 10/11 64-bit. Microsoft WebView2 runtime (already present on up-to-date Windows 11). No .NET install needed. |
-| Permissions | Read-only. Does not modify the game or any mod unless you click a fix and confirm it. |
+| Permissions | Reads by default. Changes a mod file or the game's graphics settings only when you click and confirm; always backed up and undoable. |
 | Licence | MIT |
 
 ---
@@ -105,7 +105,7 @@ What it reliably replaces is a week of switching mods off at random.
 
 ### This is an early release, and here is exactly how early
 
-Version 0.5.1. Everything it does has been built and tested against **one** machine: a Steam install, Vortex,
+Version 0.6.0. Everything it does has been built and tested against **one** machine: a Steam install, Vortex,
 an NVIDIA card with 8 GB, 169 mods, and a few weeks of real crashes. That install is why the tool exists, and it
 is also the whole of its experience.
 
@@ -203,7 +203,7 @@ What it reliably replaces is a week of switching mods off at random.
 
 [size=4][b]This is an early release, and here is exactly how early[/b][/size]
 
-Version 0.5.1. Everything it does has been built and tested against [b]one[/b] machine: a Steam install, Vortex, an NVIDIA card with 8 GB, 169 mods, and a few weeks of real crashes. That install is why the tool exists, and it is also the whole of its experience.
+Version 0.6.0. Everything it does has been built and tested against [b]one[/b] machine: a Steam install, Vortex, an NVIDIA card with 8 GB, 169 mods, and a few weeks of real crashes. That install is why the tool exists, and it is also the whole of its experience.
 
 What it has never seen: an AMD card, a GOG or Epic install, Mod Organizer 2 or a hand-installed setup, REDmod deployment, or a card bigger than 8 GB. The evidence it reads is the same everywhere, so most of it should simply work — but "should" is doing real work in that sentence, and the video memory reading in particular comes from a Windows field that is known to misreport on some cards.
 
