@@ -62,6 +62,14 @@ public sealed class MainForm : Form
             case "action": await ActionAsync(doc.RootElement.TryGetProperty("id", out var id) ? id.GetString() ?? "" : ""); break;
             case "theme": ApplyWindowTheme(doc.RootElement); break;
             case "profile": ProfileAction(doc.RootElement); break;
+            case "archive":
+                // switching crash-log keeping on or off; the next scan starts or stops saving
+                var cfg = GameLocator.LoadConfig();
+                cfg.KeepCrashLogs = doc.RootElement.TryGetProperty("enabled", out var en) && en.ValueKind == JsonValueKind.True;
+                GameLocator.SaveConfig(cfg);
+                if (_report != null) _report.Archive = CrashArchive.Summary();
+                Post(new { cmd = "archive", archive = _report?.Archive ?? CrashArchive.Summary() });
+                break;
         }
     }
 
@@ -160,7 +168,7 @@ public sealed class MainForm : Form
         if (dlg.ShowDialog(this) != DialogResult.OK) return false;
         if (!GameLocator.IsGameDir(dlg.SelectedPath)) { MessageBox.Show(this, "That folder does not contain bin\\x64\\Cyberpunk2077.exe.", "Crash Doctor"); return false; }
         _game = new GamePaths { GameDir = dlg.SelectedPath, Store = "manual" };
-        GameLocator.SaveConfig(new GameLocator.Config { GamePath = dlg.SelectedPath });
+        var keep = GameLocator.LoadConfig(); keep.GamePath = dlg.SelectedPath; GameLocator.SaveConfig(keep);
         return true;
     }
 
@@ -197,6 +205,14 @@ public sealed class MainForm : Form
         if (id == "open:driver") { Run("devmgmt.msc"); return; }
         if (id == "open:redscript" && g != null) { OpenUrl(Path.Combine(g.RedscriptLogs, "redscript_rCURRENT.log")); return; }
         if (id == "open:gamefolder" && g != null) { OpenUrl(g.GameDir); return; }
+        if (id == "open:crashlogs") { Directory.CreateDirectory(CrashArchive.Folder); OpenUrl(CrashArchive.Folder); return; }
+        if (id.StartsWith("open:crashlog:"))
+        {
+            var e = CrashArchive.Index().FirstOrDefault(x => x.SessionId == id["open:crashlog:".Length..]);
+            var zip = e == null ? null : Path.Combine(CrashArchive.Folder, e.Zip);
+            if (zip != null && File.Exists(zip)) Run("explorer.exe", "/select,\"" + zip + "\""); else OpenUrl(CrashArchive.Folder);
+            return;
+        }
         if (id == "pickgame") { if (PickGameFolder()) await ScanAsync(); return; }
         if (id.StartsWith("fix:") && g != null)
         {
@@ -266,5 +282,5 @@ public sealed class MainForm : Form
     }
 
     static void OpenUrl(string url) { try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { } }
-    static void Run(string cmd) { try { Process.Start(new ProcessStartInfo(cmd) { UseShellExecute = true }); } catch { } }
+    static void Run(string cmd, string? args = null) { try { Process.Start(new ProcessStartInfo(cmd) { UseShellExecute = true, Arguments = args ?? "" }); } catch { } }
 }

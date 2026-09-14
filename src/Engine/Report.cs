@@ -28,6 +28,7 @@ public sealed class Report
     public List<GraphicsOption> Graphics { get; set; } = new();       // the game's graphics options, editable ones marked
     public List<ProfileSummary> Profiles { get; set; } = new();       // saved graphics profiles
     public DateTime? SettingsBackup { get; set; }                     // newest backup an Undo would restore
+    public ArchiveSummary? Archive { get; set; }                      // crash logs kept before the game rotates them
     public List<SettingsNote> SettingsNotes { get; set; } = new();
     public List<string> Warnings { get; set; } = new();   // things the scan could not read
     public string? Privacy { get; set; }                 // what was removed from a saved copy, shown in the page

@@ -92,6 +92,10 @@ the game: only values the game's own settings file allows are offered, and resol
 depend on your monitor and card, are kept exactly as the game wrote them. Applying backs up your current settings
 first, refuses while the game is running, and Undo puts them back.
 
+**Crash logs, kept.** The game deletes its logs after a few launches, which is how most crashes end up with
+nothing left to examine. The first time Crash Doctor sees a crash it zips the crash report and that session's logs,
+and keeps the three most recent clean sessions to compare against. It only copies, and you can switch it off.
+
 **Light, dark, or Night City.** Match your Windows theme, or pick one of two skins in the game's own style:
 Terminal, like the computers you jack into, and Neon.
 
@@ -192,6 +196,7 @@ Crash Doctor reads the crash dumps, mod-loader logs and Windows driver events al
 [*][b]A report you can paste into a help thread.[/b] One button copies a plain-text summary short enough for a mod's Bugs tab, a forum post or a Discord message. Another saves the whole thing as a single self-contained HTML file that opens in any browser — useful where files can be attached, and as your own before-and-after record when you change something. Personal folder paths are stripped from both, and you can leave your mod list out of the saved copy.
 [*][b]Copy for an AI.[/b] Builds the same evidence into a question for Claude, ChatGPT or whatever assistant you already use — the fault, the video memory at the crash, what the clean sessions have ruled out and why — and asks it not to invent mod names. Crash Doctor sends nothing anywhere; it only puts text on your clipboard.
 [*][b]Graphics profiles.[/b] Save the game's graphics settings under a name and switch between them in one click — a quality profile for exploring, a lighter one for dense districts or streaming. Edit a profile without launching the game: only values the game's own settings file allows are offered, and resolution and upscaler modes, which depend on your monitor and card, are kept exactly as the game wrote them. Applying backs up your current settings first, refuses while the game is running, and Undo puts them back.
+[*][b]Crash logs, kept.[/b] The game deletes its logs after a few launches, which is how most crashes end up with nothing left to examine. The first time Crash Doctor sees a crash it zips the crash report and that session's logs, and keeps the three most recent clean sessions to compare against. It only copies, and you can switch it off.
 [*][b]Light, dark, or Night City.[/b] Match your Windows theme, or pick one of two skins in the game's own style: Terminal, like the computers you jack into, and Neon.
 [/list]
 

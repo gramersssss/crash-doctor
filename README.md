@@ -18,6 +18,10 @@ switch between them in one click, and edit them without launching the game. Only
 lists as valid can be edited; resolution and upscaler modes, which depend on your monitor and card, are saved and
 restored exactly as the game wrote them.
 
+**Crash logs are kept.** The game deletes its logs after a few launches. The first time Crash Doctor sees a crash it
+zips that crash's report and logs into `%APPDATA%\CrashDoctor\crash-logs`, plus the three most recent clean sessions
+to compare against. It only copies, and it can be switched off under Settings.
+
 **Appearance:** light, dark, or match Windows, plus two optional skins in the game's own style — Terminal, like the
 computers you jack into, and Neon.
 

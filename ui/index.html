@@ -378,6 +378,10 @@ button.mark:hover{filter:brightness(.94)}
 .edithead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 .edithead input{padding:7px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font:inherit;background:var(--card);color:var(--ink);min-width:220px}
 
+.saved{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 0;font-size:12.5px;color:var(--steel)}
+.saved .ok{color:var(--mint);font-weight:600}
+.switch{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.switch input{margin-top:3px;width:16px;height:16px;accent-color:var(--trace)}
 /* ---------- theme picker ---------- */
 .themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
 .theme{border:1px solid var(--line);background:var(--card);padding:0;text-align:left;cursor:pointer;border-radius:var(--radius);overflow:hidden;color:var(--ink)}
@@ -438,6 +442,7 @@ button.mark:hover{filter:brightness(.94)}
             <p class="sentence" id="dx-sentence"></p>
             <div id="dx-vram"></div>
             <div class="conf"><span>Confidence</span><span class="dots" id="dx-conf"></span><span id="dx-conf-txt"></span></div>
+            <div id="dx-saved"></div>
             <div class="evidence">
               <p class="eyebrow" style="margin-top:6px">Evidence · seconds before the crash</p>
               <div id="dx-evidence"></div>
@@ -521,7 +526,9 @@ button.mark:hover{filter:brightness(.94)}
     <section class="view" id="v-settings">
       <p class="eyebrow">Settings</p>
       <h1>Settings</h1>
-      <h2 style="margin-top:6px">Appearance</h2>
+      <h2 style="margin-top:6px">Crash logs</h2>
+      <div class="card" id="archive-card"></div>
+      <h2>Appearance</h2>
       <div class="themes" id="themes"></div>
       <h2>Graphics profiles</h2>
       <div id="profiles"></div>
@@ -570,7 +577,7 @@ function scan(){
   if(hasHost()){ window.chrome.webview.postMessage({cmd:'scan'}); }
   else { setTimeout(function(){ load(SAMPLE); }, 700); }
 }
-if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
+if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?'Crash logs will be kept from the next scan.':'Crash logs will not be kept. Copies already saved are left where they are.',false); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
 function toast(text,isErr){ var t=document.getElementById('toast'); t.textContent=text; t.className='toast on'+(isErr?' err':''); clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; }, isErr?9000:3500); }
 function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent='Scan now'; }
 
@@ -607,7 +614,7 @@ function renderDx(r){
   document.getElementById('dx-flagnote').innerHTML='';
   document.getElementById('dx-sentence').textContent=s.verdict;
   renderVram(s);
-  renderArea(s);
+  renderArea(s); renderSaved(r,s);
   var dots=''; for(var i=0;i<3;i++) dots+='<i class="'+(i<s.confidence?'on':'')+'"></i>';
   document.getElementById('dx-conf').innerHTML=dots;
   document.getElementById('dx-conf-txt').textContent=['low','fair','good','high'][s.confidence]||'';
@@ -1058,7 +1065,34 @@ function renderGraphics(r,keepScroll){
   card.innerHTML=html+'</div>';
 }
 
+/* ---------- crash logs kept before the game rotates them ---------- */
+function fmtBytes(b){ return b>=1073741824?(b/1073741824).toFixed(1)+' GB':b>=1048576?Math.round(b/1048576)+' MB':Math.max(1,Math.round(b/1024))+' KB'; }
+function renderSaved(r,s){
+  var host=document.getElementById('dx-saved'); if(!host) return;
+  var a=r.archive, e=a&&s?(a.entries||[]).filter(function(x){return x.sessionId===s.id;})[0]:null;
+  if(!s||!a){ host.innerHTML=''; return; }
+  if(e){
+    var just=(a.savedThisScan||[]).indexOf(s.id)>=0;
+    host.innerHTML='<div class="saved"><span class="ok">\u2713 Logs '+(just?'saved just now':'saved')+'</span><span>'
+      +(e.logsMissing?'Only the crash report was left \u2014 the session\u2019s own logs had already been rotated away by the game.':'A copy of this crash\u2019s logs is kept, so it can still be compared after the game deletes them.')
+      +' '+fmtBytes(e.bytes)+'.</span><button class="btn" onclick="act(&quot;open:crashlog:'+esc(s.id)+'&quot;)">Show file</button></div>';
+  } else if(!a.enabled){
+    host.innerHTML='<div class="saved"><span>Crash logs are not being kept. Turn it on under Settings to save a copy of each crash before the game deletes its logs.</span></div>';
+  } else host.innerHTML='';
+}
+function renderArchive(r){
+  var host=document.getElementById('archive-card'); if(!host) return; var a=r.archive;
+  if(!a){ host.innerHTML='<span class="muted">Not available in a saved report.</span>'; return; }
+  host.innerHTML='<label class="switch"><input type="checkbox"'+(a.enabled?' checked':'')+' onchange="setArchive(this.checked)">'
+    +'<span><b>Keep a copy of every crash\u2019s logs</b><br><span class="muted" style="font-size:13px">The game deletes its logs after a few launches, which is how most crashes end up with nothing left to examine. '
+    +'Crash Doctor zips the crash report and that session\u2019s logs the first time it sees a crash, and keeps the three most recent clean sessions to compare against. It only copies; nothing in the game folder changes.</span></span></label>'
+    +'<div class="saved"><span>'+(a.crashes?a.crashes+' crash'+(a.crashes===1?'':'es'):'No crashes')+' and '+a.clean+' clean session'+(a.clean===1?'':'s')+' kept, '+fmtBytes(a.bytes)+' in total.</span>'
+    +'<button class="btn" onclick="act(&quot;open:crashlogs&quot;)">Open folder</button></div>';
+}
+function setArchive(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'archive',enabled:!!on}); else toast('Available in the app.',true); }
+
 function renderSettings(r){
+  renderArchive(r);
   renderProfiles(r); renderGraphics(r);
   var notes=document.getElementById('settings-notes'); notes.innerHTML='';
   (r.settingsNotes||[]).forEach(function(n){ notes.innerHTML+='<div class="card" style="margin-bottom:10px;border-left:4px solid var(--'+(n.level==='high'?'signal':n.level==='medium'?'amber':'mint')+')"><b>'+esc(n.title)+'</b><div class="muted" style="margin-top:4px">'+esc(n.detail)+'</div></div>'; });

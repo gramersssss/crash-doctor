@@ -23,6 +23,8 @@ public static class Scanner
         r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Frameworks = Frameworks(d) };
         Analyzer.Analyze(d, r);
         Mark("analyze");
+        try { r.Archive = CrashArchive.Preserve(d, r.Sessions); } catch { /* keeping logs must never cost the diagnosis */ }
+        Mark("crash log archive");
         r.ModsList = d.Mods.Mods.OrderBy(m => m.Name).Select(m => Flagged(d, m, r)).ToList();
         Mark("mod flags");
         r.Knowledge = Engine.Knowledge.Look(r);
