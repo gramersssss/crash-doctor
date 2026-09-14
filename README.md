@@ -22,6 +22,9 @@ restored exactly as the game wrote them.
 zips that crash's report and logs into `%APPDATA%\CrashDoctor\crash-logs`, plus the three most recent clean sessions
 to compare against. It only copies, and it can be switched off under Settings.
 
+**New crashes are flagged.** If the game crashed since you last looked, a notice sits at the top of every page until you
+open the crash or dismiss it, and those crashes are marked new in Sessions.
+
 **Appearance:** light, dark, or match Windows, plus two optional skins in the game's own style — Terminal, like the
 computers you jack into, and Neon.
 

@@ -382,6 +382,14 @@ button.mark:hover{filter:brightness(.94)}
 .saved .ok{color:var(--mint);font-weight:600}
 .switch{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
 .switch input{margin-top:3px;width:16px;height:16px;accent-color:var(--trace)}
+.newcrash{border:1px solid var(--signal);border-left:5px solid var(--signal);background:var(--signal-bg);border-radius:var(--radius);padding:12px 16px;margin:0 0 18px;max-width:1120px}
+.newcrash .hd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.newcrash .hd b{font-family:var(--display);font-size:16px;color:var(--ink)}
+.newcrash .it{display:grid;grid-template-columns:200px 1fr auto;gap:12px;align-items:center;padding:8px 0 0;margin-top:8px;border-top:1px solid var(--line);font-size:13px}
+.newcrash .it .when{font-family:var(--mono);font-size:12.5px;color:var(--steel)}
+.newcrash .it .what{color:var(--ink);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.mark.new{background:var(--signal);color:var(--on-fill)}
+@media (max-width:760px){.newcrash .it{grid-template-columns:1fr}}
 /* ---------- theme picker ---------- */
 .themes{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
 .theme{border:1px solid var(--line);background:var(--card);padding:0;text-align:left;cursor:pointer;border-radius:var(--radius);overflow:hidden;color:var(--ink)}
@@ -430,6 +438,7 @@ button.mark:hover{filter:brightness(.94)}
   </nav>
 
   <main class="main">
+    <div id="newcrash"></div>
     <!-- DIAGNOSIS -->
     <section class="view on" id="v-dx">
       <p class="eyebrow">Diagnosis · latest crash</p>
@@ -601,7 +610,7 @@ function load(r){
   var nh=document.getElementById('n-health'); nh.textContent=r.health.length; nh.className='n '+(hi?'sig':med?'amb':'');
   document.getElementById('n-mods').textContent=r.modsList.length;
   document.getElementById('pulse').style.background = hi ? 'var(--signal)' : med ? 'var(--amber)' : 'var(--mint)';
-  renderDx(r); renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
+  renderNewCrashes(r); renderDx(r); renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
 }
 
 function renderDx(r){
@@ -813,7 +822,8 @@ function renderSessions(r){
   var el=document.getElementById('sess-list'); el.innerHTML='';
   r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).forEach(function(s){
     var k=KIND[s.endKind]||KIND.unknown; var d=document.createElement('div'); d.className='sess'; d.tabIndex=0; d.setAttribute('role','button');
-    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+'</div>';
+    var isNew=!window.EXPORTED&&(r.newCrashes||[]).indexOf(s.id)>=0;
+    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+(isNew?'<span class="mark new">new</span> ':'')+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+'</div>';
     d.onclick=function(){ showSession(s.id); }; d.onkeydown=function(e){ if(e.key==='Enter') showSession(s.id); };
     el.appendChild(d);
   });
@@ -1090,6 +1100,29 @@ function renderArchive(r){
     +'<button class="btn" onclick="act(&quot;open:crashlogs&quot;)">Open folder</button></div>';
 }
 function setArchive(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'archive',enabled:!!on}); else toast('Available in the app.',true); }
+
+/* ---------- crashes you have not seen yet ----------
+   A crash that happens while nobody is watching the app is otherwise invisible until someone thinks to look - which
+   is how a crash on 13 Sep went unnoticed for a day. The notice stays on every page until it is dismissed or the
+   crash is opened. A saved report never shows it: "new since you last looked" means nothing to someone else. */
+function renderNewCrashes(r){
+  var host=document.getElementById('newcrash'); if(!host) return;
+  var ids=(!window.EXPORTED&&r.newCrashes)||[];
+  if(!ids.length){ host.innerHTML=''; return; }
+  var list=ids.map(function(id){ return r.sessions.filter(function(x){return x.id===id;})[0]; }).filter(Boolean);
+  var n=list.length;
+  host.innerHTML='<div class="newcrash" role="alert"><div class="hd"><b>'+(n===1?'The game crashed since you last looked':n+' crashes since you last looked')+'</b>'
+    +'<button class="btn" onclick="markSeen()">Dismiss</button></div>'
+    +list.slice(0,3).map(function(x){
+      return '<div class="it"><span class="when">'+esc(fmtDate(x.start))+' \u00b7 '+esc(fmtDur(x.minutes,x.durationKnown))+'</span>'
+        +'<span class="what">'+esc(x.verdict)+'</span>'
+        +'<button class="btn primary" onclick="openNewCrash(&quot;'+esc(x.id)+'&quot;)">See it</button></div>';
+    }).join('')
+    +(n>3?'<div class="it"><span class="when"></span><span class="what muted">and '+(n-3)+' more \u2014 they are marked new in Sessions.</span><button class="btn" onclick="go(&quot;sessions&quot;)">Sessions</button></div>':'')
+    +'</div>';
+}
+function markSeen(){ if(REPORT) REPORT.newCrashes=[]; if(hasHost()) window.chrome.webview.postMessage({cmd:'seen'}); renderNewCrashes(REPORT||{}); if(REPORT) renderSessions(REPORT); }
+function openNewCrash(id){ markSeen(); showSession(id); }
 
 function renderSettings(r){
   renderArchive(r);

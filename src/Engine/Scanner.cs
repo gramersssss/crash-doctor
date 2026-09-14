@@ -25,6 +25,10 @@ public static class Scanner
         Mark("analyze");
         try { r.Archive = CrashArchive.Preserve(d, r.Sessions); } catch { /* keeping logs must never cost the diagnosis */ }
         Mark("crash log archive");
+        var seenUntil = GameLocator.LoadConfig().CrashesSeenUntil;
+        if (seenUntil != null)
+            r.NewCrashes = r.Sessions.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running) && s.Start > seenUntil.Value)
+                                     .OrderByDescending(s => s.Start).Select(s => s.Id).ToList();
         r.ModsList = d.Mods.Mods.OrderBy(m => m.Name).Select(m => Flagged(d, m, r)).ToList();
         Mark("mod flags");
         r.Knowledge = Engine.Knowledge.Look(r);

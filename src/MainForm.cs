@@ -62,6 +62,15 @@ public sealed class MainForm : Form
             case "action": await ActionAsync(doc.RootElement.TryGetProperty("id", out var id) ? id.GetString() ?? "" : ""); break;
             case "theme": ApplyWindowTheme(doc.RootElement); break;
             case "profile": ProfileAction(doc.RootElement); break;
+            case "seen":
+                // the user dismissed the new-crash notice or opened the crash: everything up to the newest crash is seen
+                if (_report != null && NewestCrash(_report) is { } newest)
+                {
+                    var cs = GameLocator.LoadConfig();
+                    if (cs.CrashesSeenUntil == null || newest > cs.CrashesSeenUntil) { cs.CrashesSeenUntil = newest; GameLocator.SaveConfig(cs); }
+                    _report.NewCrashes = new();
+                }
+                break;
             case "archive":
                 // switching crash-log keeping on or off; the next scan starts or stops saving
                 var cfg = GameLocator.LoadConfig();
@@ -72,6 +81,9 @@ public sealed class MainForm : Form
                 break;
         }
     }
+
+    static DateTime? NewestCrash(Report r) =>
+        r.Sessions.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).Select(s => (DateTime?)s.Start).DefaultIfEmpty(null).Max();
 
     // Graphics profiles. Saving, editing and deleting only touch Crash Doctor's own files; applying and undoing write
     // the game's settings file, so those two ask first - the page already told the user what will happen, but a
@@ -156,6 +168,15 @@ public sealed class MainForm : Form
             }
             var g = _game!;
             _report = await Task.Run(() => Scanner.Scan(g));
+            // The first time the window runs there is no "seen" marker yet. Set it to the newest crash on record rather
+            // than greeting someone with every crash they have ever had as "new".
+            var cfgSeen = GameLocator.LoadConfig();
+            if (cfgSeen.CrashesSeenUntil == null)
+            {
+                cfgSeen.CrashesSeenUntil = NewestCrash(_report) ?? DateTime.Now;
+                GameLocator.SaveConfig(cfgSeen);
+                _report.NewCrashes = new();
+            }
             Post(new { cmd = "report", report = _report });
         }
         catch (Exception ex) { Post(new { cmd = "error", text = "The scan failed: " + ex.Message }); }
