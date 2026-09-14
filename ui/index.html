@@ -313,7 +313,7 @@ button.mark:hover{filter:brightness(.94)}
 [data-theme="terminal"] .rail button.on{box-shadow:inset 2px 0 0 var(--trace)}
 [data-theme="terminal"] .eyebrow{color:var(--signal)}
 
-/* Pause menu: the settings and inventory screens. Red display type on dark glass, cyan for values and selection,
+/* Neon: red display type on dark glass. Red display type on dark glass, cyan for values and selection,
    yellow for warnings, corners cut off. */
 [data-theme="pause"]{
   color-scheme:dark;
@@ -1205,7 +1205,7 @@ var THEMES=[
   {id:'instrument',name:'Instrument',desc:'The default. Calm, light, easy to read for long.'},
   {id:'instrument-dark',name:'Instrument dark',desc:'The same layout on a dark ground.'},
   {id:'terminal',name:'Terminal',desc:'The computers you jack into in Night City.'},
-  {id:'pause',name:'Pause menu',desc:'The game\u2019s own menu screens.'}
+  {id:'pause',name:'Neon',desc:'Red and cyan on dark glass, corners cut away.'}
 ];
 function themeChoice(){ try{ return localStorage.getItem('cd.theme')||'system'; }catch(e){ return 'system'; } }
 function resolveTheme(id){ return id==='system' ? (window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'instrument-dark':'instrument') : id; }

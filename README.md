@@ -19,7 +19,7 @@ lists as valid can be edited; resolution and upscaler modes, which depend on you
 restored exactly as the game wrote them.
 
 **Appearance:** light, dark, or match Windows, plus two optional skins in the game's own style — Terminal, like the
-computers you jack into, and Pause menu.
+computers you jack into, and Neon.
 
 Crash Doctor reads by default. It changes something only when you ask: a reviewed fix to a mod file, or applying a
 graphics profile. Both ask for confirmation, back up what they change first, and can be undone in one click. Profiles
