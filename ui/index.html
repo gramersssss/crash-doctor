@@ -6,7 +6,7 @@
 <title>Crash Doctor</title>
 <script>
 /* before first paint: a dark theme must not flash the light one first */
-(function(){ try{ var t=localStorage.getItem('cd.theme')||'system';
+(function(){ try{ var t=localStorage.getItem('cd.theme')||'pause';   // Neon is the default; 'pause' is its stored id
   if(t==='system') t=window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'instrument-dark':'instrument';
   document.documentElement.setAttribute('data-theme',t); }catch(e){} })();
 </script>
@@ -1364,7 +1364,7 @@ var THEMES=[
   {id:'terminal',name:'Terminal',desc:'The computers you jack into in Night City.'},
   {id:'pause',name:'Neon',desc:'Red and cyan on dark glass, corners cut away.'}
 ];
-function themeChoice(){ try{ return localStorage.getItem('cd.theme')||'system'; }catch(e){ return 'system'; } }
+function themeChoice(){ try{ return localStorage.getItem('cd.theme')||'pause'; }catch(e){ return 'pause'; } }   // Neon by default (Gary, 14 Sep); a saved choice wins
 function resolveTheme(id){ return id==='system' ? (window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'instrument-dark':'instrument') : id; }
 function applyTheme(id){
   try{ localStorage.setItem('cd.theme',id); }catch(e){}

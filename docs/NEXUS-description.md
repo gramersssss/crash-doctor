@@ -153,8 +153,8 @@ the three most recent clean sessions to compare against. It only copies, and you
 **New crashes flagged.** If the game crashed since you last looked, a notice sits at the top of every page until you
 open it or dismiss it.
 
-**Light, dark, or Night City.** Match your Windows theme, or pick one of two skins in the game's own style: Terminal,
-like the computers you jack into, and Neon.
+**Night City by default, or light and dark.** It opens in Neon, a skin in the game's own style. Pick Terminal, like
+the computers you jack into, or a plain light or dark look that matches your Windows theme.
 
 **Command line**, for scripts and for pasting into a thread:
 
@@ -229,7 +229,7 @@ Then press [b]Scan now[/b]. If you want video memory recorded while you play, le
 [*][b]Graphics profiles.[/b] Save the game's graphics settings under a name and switch between them in one click: a quality profile for exploring, a lighter one for dense districts or streaming. Edit a profile without launching the game; only values the game's own settings file allows are offered, and resolution and upscaler modes, which depend on your monitor and card, are kept exactly as the game wrote them. Applying backs up your current settings first, refuses while the game is running, and Undo puts them back.
 [*][b]Crash logs, kept.[/b] The game deletes its logs after a few launches, which is how most crashes end up with nothing left to examine. The first time Crash Doctor sees a crash it zips the crash report and that session's logs, and keeps the three most recent clean sessions to compare against. It only copies, and you can switch it off.
 [*][b]New crashes flagged.[/b] If the game crashed since you last looked, a notice sits at the top of every page until you open it or dismiss it.
-[*][b]Light, dark, or Night City.[/b] Match your Windows theme, or pick one of two skins in the game's own style: Terminal, like the computers you jack into, and Neon.
+[*][b]Night City by default, or light and dark.[/b] It opens in Neon, a skin in the game's own style. Pick Terminal, like the computers you jack into, or a plain light or dark look that matches your Windows theme.
 [*][b]Command line[/b], for scripts and for pasting into a thread: [font=Courier New]CrashDoctor.exe --json report.json [--html report.html] [--game "D:\Games\Cyberpunk 2077"] [--no-mods][/font] and [font=Courier New]CrashDoctor.exe --vram-probe[/font]. The second prints one reading of your graphics card's memory and which adapter it picked. If you have an AMD or Intel card, that one line pasted into Posts tells me whether the recording works on it.
 [/list]
 

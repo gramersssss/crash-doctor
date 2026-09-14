@@ -40,8 +40,8 @@ screen shows the same list for right now.
 **New crashes are flagged.** If the game crashed since you last looked, a notice sits at the top of every page until you
 open the crash or dismiss it, and those crashes are marked new in Sessions.
 
-**Appearance:** light, dark, or match Windows, plus two optional skins in the game's own style — Terminal, like the
-computers you jack into, and Neon.
+**Appearance:** Neon by default, a skin in the game's own style. Or pick light, dark, match Windows, or the other
+skin, Terminal, like the computers you jack into.
 
 Crash Doctor reads by default. It changes something only when you ask: a reviewed fix to a mod file, or applying a
 graphics profile. Both ask for confirmation, back up what they change first, and can be undone in one click. Profiles
