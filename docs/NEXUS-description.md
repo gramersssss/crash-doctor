@@ -174,9 +174,6 @@ Everything Crash Doctor reads exists because other people wrote the loaders that
 (Cyber Engine Tweaks), psiberx (ArchiveXL, TweakXL, Codeware) and jac3km4 (redscript). The diagnosis is only as good
 as their logs, and their logs are very good.
 
-It was written with the help of Claude, Anthropic's AI, over a few weeks of real crashes on one stubborn laptop. Every
-rule in it was watched firing on a real crash and watched staying quiet on a healthy install before it went in.
-
 MIT licence. Bug reports and rules for the catalogue are very welcome: if you have a crash it read badly, post the
 saved report.
 
@@ -242,8 +239,6 @@ Then press [b]Scan now[/b]. If you want video memory recorded while you play, le
 [size=4][b]Shout outs[/b][/size]
 
 Everything Crash Doctor reads exists because other people wrote the loaders that log it: WopsS (RED4ext), yamashi (Cyber Engine Tweaks), psiberx (ArchiveXL, TweakXL, Codeware) and jac3km4 (redscript). The diagnosis is only as good as their logs, and their logs are very good.
-
-It was written with the help of Claude, Anthropic's AI, over a few weeks of real crashes on one stubborn laptop. Every rule in it was watched firing on a real crash and watched staying quiet on a healthy install before it went in.
 
 MIT licence. Bug reports and rules for the catalogue are very welcome: if you have a crash it read badly, post the saved report.
 ```
