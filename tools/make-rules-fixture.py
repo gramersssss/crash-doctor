@@ -209,6 +209,21 @@ for day, secs in ((3, 71), (2, 48), (1, 96)):
             "w", encoding="utf-8").write("\n".join(A) + "\n")
 
 # ScriptErrorSpam: one CET mod erroring far more than the ten-per-session threshold, after the newest session began.
+# ---------------------------------------------------------------- VideoMemoryWhilePlaying
+# A recording Crash Doctor's own window would have made during the newest of those sessions (VramMonitor.cs), in the
+# CSV shape the recorder writes: card-wide use climbing from 60 % to 97 % of an 8006 MB card over two and a half
+# minutes. The rule wants at least two minutes of readings, and a peak at 95 % or above is what makes it speak up.
+vstart = (NOW - datetime.timedelta(days=1)).replace(microsecond=0)
+vdir = os.path.join(fx, "AppData", "CrashDoctor", "vram-logs")
+os.makedirs(vdir, exist_ok=True)
+V = ["# Crash Doctor 0.6.0 video memory log", "# started %s" % vstart.strftime("%Y-%m-%d %H:%M:%S"),
+     "# adapter Fixture Graphics 8 GB", "# total_mb 8006", "# interval_s 5", "# game_pid 4120", "time,card_mb,game_mb,shared_mb"]
+for i in range(30):
+    pct = 60 + (97 - 60) * i / 29.0
+    card = int(8006 * pct / 100)
+    V.append("%s,%d,%d,%d" % ((vstart + datetime.timedelta(seconds=5 * i)).strftime("%Y-%m-%d %H:%M:%S"), card, card - 900, 150))
+io.open(os.path.join(vdir, "vram-%s.csv" % vstart.strftime("%Y-%m-%d_%H-%M-%S")), "w", encoding="utf-8").write("\r\n".join(V) + "\r\n")
+
 newest = (NOW - datetime.timedelta(days=1)).replace(microsecond=0)
 cet_mod = os.path.join(game, "bin", "x64", "plugins", "cyber_engine_tweaks", "mods", "TriggerBridge")
 os.makedirs(cet_mod, exist_ok=True)
@@ -279,6 +294,7 @@ print("  vortex manifest: %d files, %d of them missing" % (len(present) + len(ab
 print("  redscript: 1 error, 1 annotation overwrite")
 print("  red4ext: 1 incompatible plugin; archivexl: 2 startup errors")
 print("  cet: 21 identical errors from one mod; scripts: 1 file bundled twice")
+print("  video memory recording: 1 session, 30 readings climbing to 97%")
 print()
 print("Scan it with all three variables set - the third stands in for hardware, which a fixture cannot fake:")
 print("  set CRASHDOCTOR_TEST_ROOT=%s" % fx)

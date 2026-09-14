@@ -45,6 +45,20 @@ static class Program
             Environment.Exit(res.Ok ? 0 : 1);
         }
 
+        // One reading of the graphics card's memory, the way the recorder takes it. This is what to ask someone with an
+        // AMD or Intel card to run and paste: it says which adapter was picked, how big it is, and whether the counters
+        // answered at all, without anyone having to play first.
+        if (args.Contains("--vram-probe"))
+        {
+            foreach (var a in GpuAdapters.List()) Console.WriteLine($"adapter  {a.Name}  {a.DedicatedMB} MB  {a.LuidKey}");
+            int? pid = null; try { pid = System.Diagnostics.Process.GetProcessesByName("Cyberpunk2077").FirstOrDefault()?.Id; } catch { }
+            var s = GpuCounters.Read(pid);
+            if (s == null) { Console.Error.WriteLine("counters: " + GpuCounters.LastProblem); Console.Error.Flush(); Environment.Exit(1); }
+            Console.WriteLine($"reading  {s.Adapter}: {s.CardMB} of {s.TotalMB} MB in use, {s.SharedMB} MB shared" + (pid != null ? $", the game {s.GameMB} MB (pid {pid})" : ", game not running"));
+            Console.Out.Flush();
+            Environment.Exit(0);
+        }
+
         if (args.Any(a => a == "--json" || a == "--html"))
         {
             try

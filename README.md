@@ -22,6 +22,14 @@ restored exactly as the game wrote them.
 zips that crash's report and logs into `%APPDATA%\CrashDoctor\crash-logs`, plus the three most recent clean sessions
 to compare against. It only copies, and it can be switched off under Settings.
 
+**Video memory is recorded while you play.** The game only writes how full the card was into crash reports, so a
+session that did not crash leaves no number at all. While the Crash Doctor window is open (minimised is fine) it reads
+the Windows GPU memory counters every 5 seconds, the same ones Task Manager shows, on NVIDIA, AMD and Intel cards
+alike, and keeps one small file per launch in `%APPDATA%\CrashDoctor\vram-logs`. Each session then shows its peak,
+median and minutes above 90 %, with a curve of the whole session, and Health sums up the recent ones. When the game
+closes, the scan runs again by itself. Nothing runs after the window is closed; it can be switched off under Settings.
+`CrashDoctor.exe --vram-probe` prints one reading and which adapter was picked.
+
 **New crashes are flagged.** If the game crashed since you last looked, a notice sits at the top of every page until you
 open the crash or dismiss it, and those crashes are marked new in Sessions.
 

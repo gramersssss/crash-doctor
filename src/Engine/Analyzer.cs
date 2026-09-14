@@ -12,6 +12,7 @@ public static class Analyzer
     {
         ResolveNames(d);
         var sessions = BuildSessions(d);
+        VramLogs.Attach(d.VramLogs, sessions);
         // Nothing may be ranked until we know what this install does when it is NOT crashing.
         var elimination = Elimination.Build(d, sessions);
         foreach (var s in sessions) Judge(d, s, sessions, elimination);
@@ -20,6 +21,8 @@ public static class Analyzer
         foreach (var g in r.CrashGroups) NoteGroupOnSessions(g, sessions);
         var merged = History.Merge(sessions, History.Load());
         History.Save(merged);
+        // remembered sessions carry whatever recording they had when saved; refresh from the files that still exist
+        VramLogs.Attach(d.VramLogs, merged);
         r.Sessions = merged;
         r.Latest = merged.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).OrderByDescending(s => s.Start).FirstOrDefault();
         r.Health = Health(d, merged, elimination, r);
@@ -202,6 +205,15 @@ public static class Analyzer
         if (activity != null) s.Evidence.Add(Ev(activity, crashAt, false));
         if (power != null) s.Evidence.Add(Ev(power, crashAt, true));
         if (report != null && report.VramKnown) s.Evidence.Add(new Evidence { TMinus = 0, Source = "Crash report · video memory", Text = $"{report.VramUsedMB} MB of the card's {report.VramTotalMB} MB were in use ({Pct(report.VramRatio)})" + (vramOver ? " — over what the card holds; the driver had spilled into system memory" : ""), Hit = vramTight });
+        // Crash Doctor's own recording of the card through the session, when the window was open at the time. The crash
+        // report gives the instant of death; this gives the run-up to it, and whether the card sat near the ceiling all along.
+        if (s.VramLog is { } vl && vl.TotalMB > 0 && vl.Samples > 0)
+        {
+            var gap = Math.Max(0, (int)Math.Round((crashAt - vl.End).TotalSeconds));
+            var lastRatio = (double)vl.LastMB / vl.TotalMB;
+            s.Evidence.Add(new Evidence { TMinus = gap, Source = "Crash Doctor · video memory log", At = vl.End, Hit = lastRatio >= 0.90,
+                Text = $"recorded through the session: peak {Pct(vl.Peak)} of the card, median {Pct(vl.Median)}" + (vl.MinutesAbove90 >= 1 ? $", {Math.Round(vl.MinutesAbove90)} min above 90%" : "") + $"; the last reading was {vl.LastMB} MB ({Pct(lastRatio)})" });
+        }
         if (settingsChanged) s.Evidence.Add(new Evidence { TMinus = Math.Max(0, (int)Math.Round((crashAt - d.SettingsWritten!.Value).TotalSeconds)), Source = "Graphics settings", Text = "the settings were changed during this session (the game rebuilt its render targets)", Hit = false, At = d.SettingsWritten!.Value });
         if (report?.Exception != null) s.Evidence.Add(new Evidence { TMinus = 0, Source = "Crash report · exception", Text = report.Exception + (report.ExceptionDetail != null ? " — " + report.ExceptionDetail : ""), Hit = false });
         s.Evidence = s.Evidence.OrderByDescending(e => e.TMinus).ToList();

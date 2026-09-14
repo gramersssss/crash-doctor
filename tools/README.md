@@ -63,6 +63,12 @@ that they go wrong on other people's machines. What it manufactures:
 - a CET mod log with twenty-one identical errors, and one script bundled byte-for-byte by two mods
 - graphics settings with frame generation, ray tracing and path tracing all on
 - a Vortex deployment manifest listing five files, three of which are not on disk
+- a video memory recording (the CSV `VramMonitor.cs` writes while the game runs) for the newest of the three
+  sessions, climbing to 97 % of an 8006 MB card over two and a half minutes
+
+`CrashDoctor.exe --vram-probe` prints the graphics adapters DXGI reports and one reading of the Windows GPU memory
+counters, the way the recorder takes it. It is the thing to ask someone with an AMD or Intel card to run and paste,
+because it says which adapter was picked and how big it is without anyone having to play first.
 
 The crash reports are copied from the real machine rather than generated, because a minidump is not worth writing
 by hand and because the rest of the report staying real is what makes the fixture honest.

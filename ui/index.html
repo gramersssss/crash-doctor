@@ -382,6 +382,19 @@ button.mark:hover{filter:brightness(.94)}
 .saved .ok{color:var(--mint);font-weight:600}
 .switch{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
 .switch input{margin-top:3px;width:16px;height:16px;accent-color:var(--trace)}
+/* video memory recorded while the game runs (VramMonitor.cs): a live strip while it is running, and a curve on the card */
+.vramlive{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-left:5px solid var(--mint);background:var(--card);border-radius:var(--radius);padding:10px 16px;margin:0 0 18px;max-width:1120px;font-size:13px;color:var(--steel)}
+.vramlive b{font-family:var(--display);color:var(--ink)}
+.vramlive .dot{width:9px;height:9px;border-radius:50%;background:var(--mint);animation:vlpulse 1.6s ease-in-out infinite}
+.vramlive.warn{border-left-color:var(--amber)}.vramlive.warn .dot{background:var(--amber)}
+.vramlive.full{border-left-color:var(--signal)}.vramlive.full .dot{background:var(--signal)}
+.vramlive.off{border-left-color:var(--steel)}
+@keyframes vlpulse{0%,100%{opacity:1}50%{opacity:.35}}
+.spark{display:block;width:100%;height:52px;margin:2px 0 6px}
+.spark .area{fill:var(--mint);opacity:.18}.spark .line{fill:none;stroke:var(--mint);stroke-width:1.5;vector-effect:non-scaling-stroke}
+.spark .guide{stroke:var(--steel);stroke-width:1;stroke-dasharray:3 3;opacity:.6;vector-effect:non-scaling-stroke}
+.vram.warn .spark .area{fill:var(--amber)}.vram.warn .spark .line{stroke:var(--amber)}
+.vram.full .spark .area{fill:var(--signal)}.vram.full .spark .line{stroke:var(--signal)}
 .newcrash{border:1px solid var(--signal);border-left:5px solid var(--signal);background:var(--signal-bg);border-radius:var(--radius);padding:12px 16px;margin:0 0 18px;max-width:1120px}
 .newcrash .hd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .newcrash .hd b{font-family:var(--display);font-size:16px;color:var(--ink)}
@@ -439,6 +452,7 @@ button.mark:hover{filter:brightness(.94)}
 
   <main class="main">
     <div id="newcrash"></div>
+    <div id="vramlive"></div>
     <!-- DIAGNOSIS -->
     <section class="view on" id="v-dx">
       <p class="eyebrow">Diagnosis · latest crash</p>
@@ -450,6 +464,7 @@ button.mark:hover{filter:brightness(.94)}
             <div id="dx-flagnote"></div>
             <p class="sentence" id="dx-sentence"></p>
             <div id="dx-vram"></div>
+            <div id="dx-vramlog"></div>
             <div class="conf"><span>Confidence</span><span class="dots" id="dx-conf"></span><span id="dx-conf-txt"></span></div>
             <div id="dx-saved"></div>
             <div class="evidence">
@@ -537,6 +552,8 @@ button.mark:hover{filter:brightness(.94)}
       <h1>Settings</h1>
       <h2 style="margin-top:6px">Crash logs</h2>
       <div class="card" id="archive-card"></div>
+      <h2>Video memory</h2>
+      <div class="card" id="vramlog-card"></div>
       <h2>Appearance</h2>
       <div class="themes" id="themes"></div>
       <h2>Graphics profiles</h2>
@@ -586,7 +603,7 @@ function scan(){
   if(hasHost()){ window.chrome.webview.postMessage({cmd:'scan'}); }
   else { setTimeout(function(){ load(SAMPLE); }, 700); }
 }
-if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?'Crash logs will be kept from the next scan.':'Crash logs will not be kept. Copies already saved are left where they are.',false); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
+if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?'Crash logs will be kept from the next scan.':'Crash logs will not be kept. Copies already saved are left where they are.',false); } else if(m.cmd==='vram'){ renderVramLive(m.live); } else if(m.cmd==='vramlog'){ if(REPORT){ REPORT.vramLogs=m.vramLogs; renderVramLogCard(REPORT); } toast(m.vramLogs&&m.vramLogs.enabled?'Video memory will be recorded while the game runs and this window is open.':'Video memory will not be recorded. Files already saved are left where they are.',false); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
 function toast(text,isErr){ var t=document.getElementById('toast'); t.textContent=text; t.className='toast on'+(isErr?' err':''); clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; }, isErr?9000:3500); }
 function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent='Scan now'; }
 
@@ -622,7 +639,7 @@ function renderDx(r){
   document.getElementById('dx-when').innerHTML='<span>'+esc(fmtDate(s.start))+'</span><span>'+(s.durationKnown===false?'length unknown':'ran '+esc(fmtDur(s.minutes)))+'</span>'+(s.partial?'<span class="mark grey">crash report only</span>':'')+(s.district?'<span>'+esc(s.district)+'</span>':'')+(s.quest?'<span>'+esc(s.quest)+'</span>':'')+'<span class="mark '+(k[0]==='engine'?'sig':k[0])+'">'+esc(k[1])+'</span>';
   document.getElementById('dx-flagnote').innerHTML='';
   document.getElementById('dx-sentence').textContent=s.verdict;
-  renderVram(s);
+  renderVram(s); renderVramLog(s);
   renderArea(s); renderSaved(r,s);
   var dots=''; for(var i=0;i<3;i++) dots+='<i class="'+(i<s.confidence?'on':'')+'"></i>';
   document.getElementById('dx-conf').innerHTML=dots;
@@ -757,6 +774,8 @@ function noCrashPanel(r){
       (clean.length===ss.length?', every one closed normally':', '+clean.length+' closed normally')+
       (longest?'. The longest ran '+esc(fmtDur(longest.minutes))+'.':'.')+
       ' Nothing here needs diagnosing, which is the right answer rather than a missing one.';
+    var newest=ss.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);})[0];
+    if(newest&&newest.vramLog&&newest.vramLog.totalMB) lead+=' In the latest one the graphics card peaked at '+Math.round(newest.vramLog.peak*100)+'% of its memory'+(newest.vramLog.minutesAbove90>=1?', with '+Math.round(newest.vramLog.minutesAbove90)+' min above 90%':'')+'.';
   }
   var next=[];
   if(missing.length) next.push('<button class="btn primary" onclick=&quot;go(&#39;req&#39;)&quot;>'+missing.length+(missing.length===1?' missing requirement':' missing requirements')+'</button>');
@@ -823,7 +842,7 @@ function renderSessions(r){
   r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).forEach(function(s){
     var k=KIND[s.endKind]||KIND.unknown; var d=document.createElement('div'); d.className='sess'; d.tabIndex=0; d.setAttribute('role','button');
     var isNew=!window.EXPORTED&&(r.newCrashes||[]).indexOf(s.id)>=0;
-    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+(isNew?'<span class="mark new">new</span> ':'')+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+'</div>';
+    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+(isNew?'<span class="mark new">new</span> ':'')+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+(s.vramLog&&s.vramLog.totalMB?'<br><span class="mono">recorded peak '+Math.round(s.vramLog.peak*100)+'%</span>':'')+'</div>';
     d.onclick=function(){ showSession(s.id); }; d.onkeydown=function(e){ if(e.key==='Enter') showSession(s.id); };
     el.appendChild(d);
   });
@@ -1101,6 +1120,53 @@ function renderArchive(r){
 }
 function setArchive(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'archive',enabled:!!on}); else toast('Available in the app.',true); }
 
+/* ---------- video memory recorded while the game runs ----------
+   The engine writes how full the card was only into crash reports, so a session that did not crash leaves no number.
+   While the window is open the app samples the Windows GPU counters every few seconds (VramMonitor.cs); each session
+   gets its curve here, the live strip shows the reading while the game runs, and Settings has the switch. */
+function vlogLine(v){ return 'peak '+Math.round(v.peak*100)+'% ('+v.peakMB+' of '+v.totalMB+' MB), median '+Math.round(v.median*100)+'%'+(v.minutesAbove90>=1?', '+Math.round(v.minutesAbove90)+' min above 90%':'')+', over '+fmtDur(v.minutes); }
+function sparkline(pts,w,h){
+  pts=(pts||[]).slice(); if(pts.length<2) pts=[pts[0]||0,pts[0]||0];
+  var n=pts.length, maxY=Math.max(100,Math.max.apply(null,pts));
+  function X(i){ return (i/(n-1))*w; } function Y(v){ return h-(v/maxY)*h; }
+  var d=pts.map(function(v,i){ return (i?'L':'M')+X(i).toFixed(1)+' '+Y(v).toFixed(1); }).join(' ');
+  return '<svg class="spark" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" aria-hidden="true"><path class="area" d="'+d+' L'+w+' '+h+' L0 '+h+' Z"/><line class="guide" x1="0" x2="'+w+'" y1="'+Y(90).toFixed(1)+'" y2="'+Y(90).toFixed(1)+'"/><path class="line" d="'+d+'"/></svg>';
+}
+function renderVramLog(s){
+  var host=document.getElementById('dx-vramlog'); if(!host) return;
+  var v=s&&s.vramLog; if(!v||!v.totalMB||!v.samples){ host.innerHTML=''; return; }
+  var peak=Math.round(v.peak*100), med=Math.round(v.median*100);
+  var cls=v.peak>=0.95?'full':v.peak>=0.9?'warn':'';
+  var note = v.peak>=1 ? 'It went past what the card holds; the driver spilled into system memory.'
+           : v.peak>=0.95 ? 'It touched the ceiling, which is where texture and mesh allocations start failing.'
+           : v.peak>=0.9 ? 'It came within reach of the ceiling'+(v.minutesAbove90>=1?' for '+Math.round(v.minutesAbove90)+' min':'')+'.'
+           : v.peak>=0.8 ? 'High, with room left the whole time.'
+           : 'Comfortable all session. Video memory was not the constraint.';
+  host.innerHTML='<div class="vram vlog '+cls+'"><div class="lbl"><span>Video memory while you played'+(v.live?' · still recording':'')+'</span><b>peak '+v.peakMB+' / '+v.totalMB+' MB · '+peak+'%</b></div>'
+    +sparkline(v.points,300,48)
+    +'<div class="note">'+esc(note)+' Median '+med+'%, '+v.samples+' readings over '+esc(fmtDur(v.minutes))+(v.gamePeakMB?'; the game itself peaked at '+v.gamePeakMB+' MB':'')+'. The dotted line is 90%.'
+    +(hasHost()&&!window.EXPORTED?' <button class="btn" style="margin-left:6px" onclick="act(&quot;open:vramlog:'+esc(s.id)+'&quot;)">Show file</button>':'')+'</div></div>';
+}
+function renderVramLive(l){
+  var host=document.getElementById('vramlive'); if(!host) return;
+  if(!l||(!l.recording&&!l.problem)){ host.innerHTML=''; return; }
+  if(!l.recording){ host.innerHTML='<div class="vramlive off"><span>Video memory is not being recorded: '+esc(l.problem)+'</span></div>'; return; }
+  var pct=l.totalMB?Math.round(l.cardMB/l.totalMB*100):0, peak=l.totalMB?Math.round(l.peakMB/l.totalMB*100):0;
+  var cls=pct>=95?'full':pct>=90?'warn':'';
+  host.innerHTML='<div class="vramlive '+cls+'"><span class="dot"></span><b>Recording video memory</b><span>the game has been running '+esc(fmtDur(l.minutes))+'</span><span class="mono">'+l.cardMB+' / '+l.totalMB+' MB · '+pct+'% · peak '+peak+'%'+(l.gameMB?' · the game '+l.gameMB+' MB':'')+'</span></div>';
+}
+function renderVramLogCard(r){
+  var host=document.getElementById('vramlog-card'); if(!host) return; var v=r.vramLogs;
+  if(!v){ host.innerHTML='<span class="muted">Not available in a saved report.</span>'; return; }
+  host.innerHTML='<label class="switch"><input type="checkbox"'+(v.enabled?' checked':'')+' onchange="setVramLog(this.checked)">'
+    +'<span><b>Record video memory while the game runs</b><br><span class="muted" style="font-size:13px">The game only writes how full the card was into crash reports, so a session that did not crash leaves no number at all. '
+    +'While this window is open, Crash Doctor reads the same Windows counters Task Manager uses (NVIDIA, AMD and Intel alike) every 5 seconds and keeps one small file per launch, then shows each session’s peak, median and time above 90%. '
+    +'Nothing runs after the window is closed, and the game is never touched. When the game closes, the scan runs again by itself.</span></span></label>'
+    +'<div class="saved"><span>'+(v.recordings?v.recordings+' session'+(v.recordings===1?'':'s')+' recorded, '+fmtBytes(v.bytes)+'.':'Nothing recorded yet — leave this window open while you play.')+'</span>'
+    +'<button class="btn" onclick="act(&quot;open:vramlogs&quot;)">Open folder</button></div>';
+}
+function setVramLog(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'vramlog',enabled:!!on}); else toast('Available in the app.',true); }
+
 /* ---------- crashes you have not seen yet ----------
    A crash that happens while nobody is watching the app is otherwise invisible until someone thinks to look - which
    is how a crash on 13 Sep went unnoticed for a day. The notice stays on every page until it is dismissed or the
@@ -1125,7 +1191,7 @@ function markSeen(){ if(REPORT) REPORT.newCrashes=[]; if(hasHost()) window.chrom
 function openNewCrash(id){ markSeen(); showSession(id); }
 
 function renderSettings(r){
-  renderArchive(r);
+  renderArchive(r); renderVramLogCard(r);
   renderProfiles(r); renderGraphics(r);
   var notes=document.getElementById('settings-notes'); notes.innerHTML='';
   (r.settingsNotes||[]).forEach(function(n){ notes.innerHTML+='<div class="card" style="margin-bottom:10px;border-left:4px solid var(--'+(n.level==='high'?'signal':n.level==='medium'?'amber':'mint')+')"><b>'+esc(n.title)+'</b><div class="muted" style="margin-top:4px">'+esc(n.detail)+'</div></div>'; });
@@ -1144,10 +1210,11 @@ function renderReport(r){
   lines.push('');
   if(s){ lines.push('LATEST CRASH  '+fmtDate(s.start)+' · '+fmtDur(s.minutes,s.durationKnown)+(s.district?' · '+s.district:'')); lines.push('  '+s.verdict+' (confidence '+['low','fair','good','high'][s.confidence]+')');
     if(s.vramUsedMB&&s.vramTotalMB) lines.push('  VIDEO MEMORY  '+s.vramUsedMB+' / '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)'+(s.exception?'   '+s.exception:''));
+    if(s.vramLog&&s.vramLog.totalMB) lines.push('  VIDEO MEMORY RECORDED  '+vlogLine(s.vramLog));
     s.evidence.forEach(function(e){ lines.push('  T-'+e.tMinus+'s  ['+e.source+'] '+e.text); });
     s.suspects.forEach(function(x){ lines.push('  suspect: '+x.mod+' — '+x.why); }); lines.push(''); }
   lines.push('SESSIONS (newest first)');
-  r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).slice(0,12).forEach(function(x){ lines.push('  '+fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown).padEnd(14)+' '+x.endKind.padEnd(8)+' '+x.verdict); });
+  r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).slice(0,12).forEach(function(x){ lines.push('  '+fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown).padEnd(14)+' '+x.endKind.padEnd(8)+' '+x.verdict+(x.vramLog&&x.vramLog.totalMB?'  [VRAM peak '+Math.round(x.vramLog.peak*100)+'%, median '+Math.round(x.vramLog.median*100)+'%]':'')); });
   lines.push(''); lines.push('HEALTH');
   r.health.forEach(function(h){ lines.push('  ['+h.severity+'] '+h.title+(h.mod?' ('+h.mod+')':'')); });
   lines.push(''); lines.push('SETTINGS'); Object.keys(r.settings).forEach(function(k){ lines.push('  '+k+': '+r.settings[k]); });
@@ -1195,6 +1262,7 @@ function buildAiPrompt(r){
     if(s.fault) add('Faulting instruction: '+s.fault+(s.build?' (game build '+s.build+')':''));
     if(s.exception) add('Exception: '+s.exception);
     if(s.vramUsedMB&&s.vramTotalMB) add('Video memory in use at the crash: '+s.vramUsedMB+' of '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)');
+    if(s.vramLog&&s.vramLog.totalMB) add('Video memory recorded by the tool through the whole session: '+vlogLine(s.vramLog));
     if(s.position) add('Player position: '+s.position);
 
     if((s.evidence||[]).length){

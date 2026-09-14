@@ -63,6 +63,7 @@ public sealed class CollectedData
     public List<string> Warnings { get; } = new();          // "could not read X"
     public SystemInfo System { get; set; } = new();
     public ModInventory Mods { get; set; } = new();
+    public List<VramLogView> VramLogs { get; set; } = new();   // video memory recorded by Crash Doctor while the game ran
 }
 
 public static class Collectors
@@ -84,6 +85,7 @@ public static class Collectors
         Safe(d, "UserSettings.json", () => ReadSettings(d));
         Safe(d, "system information", () => d.System = ReadSystem());
         Safe(d, "mod list", () => d.Mods = ModInventory.Read(g));
+        Safe(d, "video memory logs", () => d.VramLogs = Engine.VramLogs.ReadAll());
         return d;
     }
 

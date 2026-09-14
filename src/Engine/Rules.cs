@@ -65,6 +65,7 @@ public static class Rules
         DuplicatedScripts,
         // what the crashes themselves say
         VideoMemoryAtTheCrashes,
+        VideoMemoryWhilePlaying,
         EngineRanOutOfMemory,
         StackOverflowIsRecursion,
         CrashesOnlyAtStartup,
@@ -508,6 +509,34 @@ public static class Rules
             Detail = lead + "  Newest first: " + string.Join(" · ", lines) + $".  Card total {total} MB."
                    + (atCeiling.Count > 0 ? "  Textures and crowd density free the most; ray traced lighting and reflections are next." : ""),
             Action = new UiAction("settings", "See settings"),
+        });
+    }
+
+    // Video memory through whole sessions, recorded by Crash Doctor while its window was open (VramMonitor.cs). The
+    // crash reports only ever say how full the card was at the instant of death; this says how it ran the rest of the
+    // time, which is what decides whether a settings change was safe. Reported even when everything is fine, because
+    // "the card never got near full" is the answer people change their settings to get.
+    static IEnumerable<RuleHit> VideoMemoryWhilePlaying(CollectedData d, Report r)
+    {
+        var recorded = r.Sessions.Where(s => s.EndKind != EndKind.Running && s.VramLog is { TotalMB: > 0, Minutes: >= 2 })
+                                 .OrderByDescending(s => s.Start).Take(12).ToList();
+        if (recorded.Count == 0) return None;
+        var total = recorded[0].VramLog!.TotalMB;
+        var hot = recorded.Where(s => s.VramLog!.Peak >= 0.95 || s.VramLog!.MinutesAbove90 >= 2).ToList();
+        var above = Math.Round(recorded.Sum(s => s.VramLog!.MinutesAbove90));
+        var lines = recorded.Select(s => $"{s.Start:d MMM HH:mm} peak {Analyzer.Pct(s.VramLog!.Peak)}, median {Analyzer.Pct(s.VramLog!.Median)}"
+                                       + (s.VramLog!.MinutesAbove90 >= 1 ? $", {Math.Round(s.VramLog!.MinutesAbove90)} min above 90%" : ""));
+        var n = recorded.Count; var ses = n == 1 ? "session" : "sessions";
+        var lead = hot.Count == 0
+            ? $"In the last {n} recorded {ses} the {total} MB card never sat near its ceiling, so video memory is not the constraint with the current settings."
+            : $"In {hot.Count} of the last {n} recorded {ses} the {total} MB card ran close to full" + (above >= 1 ? $", {above} min above 90 % in all" : ", touching 95 % or more") + ". That is the range where the engine's next texture or mesh allocation can fail, and a failed allocation crashes it with nothing written to any log.";
+        return One(new RuleHit
+        {
+            Severity = hot.Count >= 3 ? "high" : hot.Count > 0 ? "medium" : "info",
+            Title = $"Video memory while you played, last {n} {ses}",
+            Detail = lead + "  Newest first: " + string.Join(" · ", lines) + "."
+                   + (hot.Count > 0 ? "  Textures and crowd density free the most; ray traced lighting and reflections are next." : ""),
+            Action = new UiAction("sessions", "See sessions"),
         });
     }
 

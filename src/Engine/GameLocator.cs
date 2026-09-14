@@ -41,7 +41,7 @@ public sealed class GamePaths
 
 public static class GameLocator
 {
-    public sealed class Config { public string? GamePath { get; set; } public bool? KeepCrashLogs { get; set; } public DateTime? CrashesSeenUntil { get; set; } }
+    public sealed class Config { public string? GamePath { get; set; } public bool? KeepCrashLogs { get; set; } public bool? LogVideoMemory { get; set; } public DateTime? CrashesSeenUntil { get; set; } }
 
     public static Config LoadConfig()
     {

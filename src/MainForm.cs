@@ -13,8 +13,19 @@ public sealed class MainForm : Form
     Report? _report;
     bool _scanning;
 
+    // Video memory is recorded only while this window exists (see VramMonitor.cs): a timer looks for the game every
+    // few seconds, appends a reading while it runs, and when it goes away waits for the crash reporter to finish
+    // writing and then rescans, so the session that just ended is on screen without anyone pressing anything.
+    readonly VramRecorder _vram = new();
+    readonly System.Windows.Forms.Timer _vramTimer = new() { Interval = VramRecorder.IntervalSeconds * 1000 };
+    bool _vramBusy;
+    DateTime? _gameEndedAt;
+    const int RescanDelaySeconds = 25;
+
     public MainForm()
     {
+        _vramTimer.Tick += async (_, _) => await VramTickAsync();
+        _vramTimer.Start();
         Text = "Crash Doctor for Cyberpunk 2077";
         Width = 1280; Height = 820; MinimumSize = new Size(900, 600); StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(0xED, 0xF0, 0xF3);
@@ -79,7 +90,33 @@ public sealed class MainForm : Form
                 if (_report != null) _report.Archive = CrashArchive.Summary();
                 Post(new { cmd = "archive", archive = _report?.Archive ?? CrashArchive.Summary() });
                 break;
+            case "vramlog":
+                // switching video memory recording on or off; the recorder checks the setting on its next tick
+                var vc = GameLocator.LoadConfig();
+                vc.LogVideoMemory = doc.RootElement.TryGetProperty("enabled", out var ven) && ven.ValueKind == JsonValueKind.True;
+                GameLocator.SaveConfig(vc);
+                if (_report != null) _report.VramLogs = VramLogs.Summary();
+                Post(new { cmd = "vramlog", vramLogs = _report?.VramLogs ?? VramLogs.Summary() });
+                break;
         }
+    }
+
+    async Task VramTickAsync()
+    {
+        if (_vramBusy) return; _vramBusy = true;
+        try
+        {
+            var ended = await Task.Run(() => _vram.Tick());
+            Post(new { cmd = "vram", live = _vram.Live });
+            if (ended) _gameEndedAt = DateTime.Now;
+            if (_gameEndedAt != null && (DateTime.Now - _gameEndedAt.Value).TotalSeconds >= RescanDelaySeconds && !_scanning)
+            {
+                _gameEndedAt = null;
+                await ScanAsync();
+            }
+        }
+        catch { /* the recorder must never take the window down */ }
+        finally { _vramBusy = false; }
     }
 
     static DateTime? NewestCrash(Report r) =>
@@ -227,6 +264,13 @@ public sealed class MainForm : Form
         if (id == "open:redscript" && g != null) { OpenUrl(Path.Combine(g.RedscriptLogs, "redscript_rCURRENT.log")); return; }
         if (id == "open:gamefolder" && g != null) { OpenUrl(g.GameDir); return; }
         if (id == "open:crashlogs") { Directory.CreateDirectory(CrashArchive.Folder); OpenUrl(CrashArchive.Folder); return; }
+        if (id == "open:vramlogs") { Directory.CreateDirectory(VramLogs.Folder); OpenUrl(VramLogs.Folder); return; }
+        if (id.StartsWith("open:vramlog:"))
+        {
+            var f = _report?.Sessions.FirstOrDefault(x => x.Id == id["open:vramlog:".Length..])?.VramLog?.File;
+            if (f != null && File.Exists(f)) Run("explorer.exe", "/select,\"" + f + "\""); else OpenUrl(VramLogs.Folder);
+            return;
+        }
         if (id.StartsWith("open:crashlog:"))
         {
             var e = CrashArchive.Index().FirstOrDefault(x => x.SessionId == id["open:crashlog:".Length..]);

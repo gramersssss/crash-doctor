@@ -29,6 +29,7 @@ public sealed class Report
     public List<ProfileSummary> Profiles { get; set; } = new();       // saved graphics profiles
     public DateTime? SettingsBackup { get; set; }                     // newest backup an Undo would restore
     public ArchiveSummary? Archive { get; set; }                      // crash logs kept before the game rotates them
+    public VramLogSummary? VramLogs { get; set; }                     // video memory recorded while the game ran
     public List<string> NewCrashes { get; set; } = new();             // crash session ids the user has not seen yet, newest first
     public List<SettingsNote> SettingsNotes { get; set; } = new();
     public List<string> Warnings { get; set; } = new();   // things the scan could not read
@@ -141,6 +142,9 @@ public sealed class Session
     public List<AreaMod> AreaMods { get; set; } = new();  // mods rewriting the ground the player was on
     public int AreaSectors { get; set; }                  // distinct map sectors that streamed in around them
     public List<RuledOut> RuledOut { get; set; } = new();  // looked suspicious, eliminated by the clean sessions
+    // Video memory recorded by Crash Doctor while this session ran (see VramMonitor.cs). Re-read from its CSV on
+    // every scan rather than trusted from history, so a recording that is still being written keeps updating.
+    public VramLogView? VramLog { get; set; }
     [JsonIgnore] public string? Red4extLog { get; set; }
     [JsonIgnore] public DateTime? CrashTime { get; set; }
     [JsonIgnore] public string? EngineMessage { get; set; }
