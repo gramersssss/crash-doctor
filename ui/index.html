@@ -284,6 +284,7 @@ button.mark:hover{filter:brightness(.94)}
               <div id="dx-evidence"></div>
             </div>
           </div>
+          <div id="dx-knowledge"></div>
           <div id="dx-area"></div>
           <div class="trace-wrap">
             <div class="trace-head">
@@ -376,13 +377,19 @@ button.mark:hover{filter:brightness(.94)}
              they have nowhere to put it. -->
         <p><b>Copy summary</b> is the one to paste for help: plain text, short enough for a mod's Bugs tab, a forum
         post or a Discord message.</p>
+        <p class="sub"><b>Copy for an AI</b> builds the same evidence into a question you can paste into Claude,
+        ChatGPT or any assistant you already use. Crash Doctor gathers things no chatbot can see on its own — the
+        faulting instruction, the video memory at the moment of death, and what the sessions that ended normally
+        have already ruled out — so handing those over is worth far more than describing the crash from memory. It
+        also asks the assistant not to invent mod names. Nothing is sent anywhere by Crash Doctor; it only puts
+        text on your clipboard.</p>
         <p class="sub"><b>Save full report as HTML</b> writes one self-contained file — every session, every crash,
         the whole health list — that opens in any browser. Most help pages will not let you attach a file, so it is
         for somewhere that does, for a Crash Doctor bug report, or as your own before-and-after record when you
         change a setting or switch a mod off.</p>
-        <p class="sub">Neither contains personal data beyond your game path and hardware, and folder paths under
-        your Windows account are replaced before saving.</p>
-        <div class="row"><button class="btn primary" onclick="copyReport()">Copy summary</button><button class="btn" onclick="exportReport()">Save full report as HTML</button><span class="muted" id="report-msg"></span></div>
+        <p class="sub">None of them contains personal data beyond your game path and hardware, and folder paths
+        under your Windows account are replaced first.</p>
+        <div class="row"><button class="btn primary" onclick="copyReport()">Copy summary</button><button class="btn primary" onclick="copyForAi()">Copy for an AI</button><button class="btn" onclick="exportReport()">Save full report as HTML</button><span class="muted" id="report-msg"></span></div>
         <pre class="mono" id="report-pre" style="white-space:pre-wrap;background:#F7F9FB;border:1px solid var(--line);border-radius:6px;padding:14px;margin-top:14px;max-height:50vh;overflow:auto"></pre>
       </div>
     </section>
@@ -423,7 +430,7 @@ function load(r){
   var nh=document.getElementById('n-health'); nh.textContent=r.health.length; nh.className='n '+(hi?'sig':med?'amb':'');
   document.getElementById('n-mods').textContent=r.modsList.length;
   document.getElementById('pulse').style.background = hi ? 'var(--signal)' : med ? 'var(--amber)' : 'var(--mint)';
-  renderDx(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
+  renderDx(r); renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
 }
 
 function renderDx(r){
@@ -491,6 +498,32 @@ function watchTrace(){
 
 // Which mods were rewriting the map sectors streaming in around the player when the game died. Read out of the
 // ArchiveXL log, which names both the sector and every .xl applied to it, so this is measured rather than guessed.
+// What the messages in the evidence are known to mean. These come from knowledge\*.json, not from the analysis, so
+// each one shows the line that brought it up and where the knowledge came from: the reader gets to judge it rather
+// than being asked to take it on trust. An entry explains a message; it never names a mod as the cause.
+function renderKnowledge(r){
+  var host=document.getElementById("dx-knowledge"); if(!host) return;
+  var k=r.knowledge||[];
+  if(!k.length){ host.innerHTML=""; return; }
+  host.innerHTML='<div class="area"><p class="eyebrow">What these messages mean</p>'
+    +'<p class="sub">From Crash Doctor’s knowledge base — explanations of the exact lines your logs contain. '
+    +'Not a diagnosis of your install: the evidence above is what applies to you.</p>'
+    +k.map(function(h){
+      return '<div style="padding:12px 0;border-top:1px solid var(--line)">'
+        +'<div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">'
+        +'<b>'+esc(h.title)+'</b>'
+        +'<span class="mark '+(h.confidence==='established'?'mint':'grey')+'">'+esc(h.confidence)+'</span>'
+        +(h.crashes>1?'<span class="muted" style="font-size:12px">seen in '+h.crashes+' of your crashes</span>':'')
+        +'</div>'
+        +'<p style="margin:6px 0 0">'+esc(h.says)+'</p>'
+        +(h.do?'<p style="margin:6px 0 0"><b>What to do.</b> '+esc(h.do)+'</p>':'')
+        +'<p class="mono muted" style="font-size:11.5px;margin:8px 0 0">matched: '+esc(h.matched)+'</p>'
+        +'<p class="muted" style="font-size:11.5px;margin:2px 0 0">source: '+esc(h.source)+'</p>'
+        +'</div>';
+    }).join('')
+    +'</div>';
+}
+
 // It matters because several mods editing the same ground is a real and common cause of crashes while moving,
 // and because it is otherwise invisible: nothing in the game tells you two mods are fighting over one street.
 function renderArea(s){
@@ -787,7 +820,111 @@ function renderReport(r){
   lines.push(''); lines.push('SETTINGS'); Object.keys(r.settings).forEach(function(k){ lines.push('  '+k+': '+r.settings[k]); });
   document.getElementById('report-pre').textContent=lines.join('\n');
 }
-function copyReport(){ var t=document.getElementById('report-pre').textContent; var m=document.getElementById('report-msg'); if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ m.textContent='Copied.'; setTimeout(function(){m.textContent='';},2000); }); } else { m.textContent='Select the text and copy it.'; } }
+function copyReport(){ copyText(document.getElementById('report-pre').textContent,'Copied.'); }
+function copyForAi(){ copyText(buildAiPrompt(REPORT),'Copied — paste it into Claude, ChatGPT or whatever you use.'); }
+function copyText(t,ok){ var m=document.getElementById('report-msg'); if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ m.textContent=ok; setTimeout(function(){m.textContent='';},4000); },function(){ m.textContent='Could not reach the clipboard. Select the text below and copy it.'; }); } else { m.textContent='Select the text and copy it.'; } }
+
+// Hand the evidence to an assistant the user already has.
+//
+// This is the honest answer to "can the app just know everything". A model shipped inside the app would be large,
+// ignorant of this specific ecosystem, and confident anyway - which is the exact failure the whole tool is built
+// against. What Crash Doctor actually owns is evidence no chatbot can obtain: the faulting instruction, the video
+// memory at the instant of death, and - most valuable of all - what the sessions that ended *normally* have
+// already eliminated. Handing that over is worth more than any amount of knowledge baked into a binary.
+//
+// The instructions at the end are the app's own copy rules, pointed at the model: do not name a mod the evidence
+// does not support, say so when you do not know, and give one testable next step. An assistant told what has been
+// ruled out and why will not spend three replies suggesting it.
+function buildAiPrompt(r){
+  if(!r) return '';
+  var L=[], s=r.latest;
+  function add(x){ L.push(x); }
+  function head(x){ L.push(''); L.push(x); }
+
+  add('You are helping me work out why my heavily modded Cyberpunk 2077 keeps crashing.');
+  add('');
+  add('Everything below was measured by a tool called Crash Doctor, which reads the crash dumps, the mod loaders’');
+  add('logs and the Windows event log on this PC. It is evidence rather than my recollection, so the numbers and');
+  add('timings are accurate and you can reason from them directly.');
+
+  head('## This machine');
+  add('Game: '+r.game.name+' '+(r.game.version||'?')+' ('+r.game.store+'), build '+(r.game.fileVersion||'?'));
+  add('GPU: '+r.system.gpu+', '+r.system.vramGB+' GB, driver '+r.system.driver);
+  add('RAM: '+r.system.ramGB+' GB. OS: '+r.system.os);
+  add('Mods: '+r.mods.enabled+' enabled via '+r.mods.manager);
+  if((r.mods.frameworks||[]).length) add('Frameworks: '+r.mods.frameworks.join(', '));
+
+  if(s){
+    head('## The crash I am asking about');
+    add('When: '+fmtDate(s.start)+', ran '+fmtDur(s.minutes,s.durationKnown)+(s.district?', in '+s.district:'')+(s.quest?', tracked quest '+s.quest:''));
+    add('What the tool concluded: '+s.verdict);
+    add('Its confidence: '+['low','fair','good','high'][s.confidence]+' out of high');
+    if(s.fault) add('Faulting instruction: '+s.fault+(s.build?' (game build '+s.build+')':''));
+    if(s.exception) add('Exception: '+s.exception);
+    if(s.vramUsedMB&&s.vramTotalMB) add('Video memory in use at the crash: '+s.vramUsedMB+' of '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)');
+    if(s.position) add('Player position: '+s.position);
+
+    if((s.evidence||[]).length){
+      head('## What the logs show in the seconds before it');
+      s.evidence.forEach(function(e){ add('T-'+e.tMinus+'s  ['+e.source+'] '+e.text); });
+    }
+    if((s.ruledOut||[]).length){
+      head('## Already ruled out — please do not suggest these');
+      add('Each of these was checked against sessions that ended normally, and does the same thing there:');
+      s.ruledOut.forEach(function(x){ add('- '+x.mod+': '+x.why); });
+    }
+    if((s.suspects||[]).length){
+      head('## What the tool currently suspects');
+      s.suspects.forEach(function(x){ add('- '+x.mod+' ('+x.level+'): '+x.why); });
+    }
+  }
+
+  if((r.crashGroups||[]).length){
+    head('## Distinct faults across all my crashes');
+    add('Crashes at the same instruction are the same bug. These are the groups:');
+    r.crashGroups.slice(0,8).forEach(function(g){
+      add('- '+g.fault+' ×'+g.count+', '+fmtDate(g.firstSeen)+' to '+fmtDate(g.lastSeen)+(g.exception?', '+g.exception:'')+(g.current?' — still happening since my last clean session':' — not seen since my last clean session'));
+    });
+  }
+
+  if((r.knowledge||[]).length){
+    head('## What those log lines are known to mean');
+    add('From the tool’s knowledge base, for context — not a diagnosis of my install:');
+    r.knowledge.forEach(function(h){ add('- '+h.title+' ('+h.confidence+'): '+h.says); });
+  }
+
+  var flagged=(r.modsList||[]).filter(function(m){return (m.flags||[]).length;});
+  if(flagged.length){
+    head('## Mods the tool has flagged');
+    flagged.slice(0,15).forEach(function(m){ add('- '+m.name+' '+(m.version||'')+' — '+m.flags.map(function(f){return f.label;}).join(', ')); });
+    add('(There are '+(r.modsList||[]).length+' mods installed in total. Ask and I can paste the whole list.)');
+  }
+
+  var bad=(r.health||[]).filter(function(h){return h.severity==='high'||h.severity==='medium';});
+  if(bad.length){
+    head('## Standing problems found before any crash');
+    bad.slice(0,12).forEach(function(h){ add('- ['+h.severity+'] '+h.title+(h.mod?' ('+h.mod+')':'')); });
+  }
+
+  head('## How each of my recent sessions ended');
+  r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).slice(0,14)
+    .forEach(function(x){ add(fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown)+'  '+x.endKind); });
+
+  head('## How I would like you to answer');
+  add('- Do not invent mod names, versions or file paths. If you name a mod, it has to be one that appears above.');
+  add('- If the evidence does not support a conclusion, say so plainly. "I do not know, here is what would tell us"');
+  add('  is a useful answer; a confident guess is not.');
+  add('- Correlation is not cause. If something appears in my crashes but also in the sessions that ended normally,');
+  add('  it has been ruled out above and is noise.');
+  add('- Prefer one concrete next test over a list of possibilities, and tell me what result would confirm it and');
+  add('  what result would rule it out.');
+  add('- I can disable mods, change settings and reinstall things. I cannot recompile anything.');
+
+  head('My question: based on this evidence, what is the most likely cause, and what single thing should I test next?');
+
+  // Belt and braces: the Windows account name is often a real name, and nothing here needs it.
+  return L.join('\n').replace(/[A-Za-z]:[\\\/]Users[\\\/][^\\\/\s"']+/g,'%USERPROFILE%');
+}
 function exportReport(){ if(hasHost()) window.chrome.webview.postMessage({cmd:'export'}); else alert('Available in the app.'); }
 function act(id){ if(hasHost()) window.chrome.webview.postMessage({cmd:'action',id:id}); else alert('Action: '+id+' (available in the app)'); }
 

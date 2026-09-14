@@ -20,6 +20,7 @@ public sealed class Report
     public List<Session> Sessions { get; set; } = new();
     public List<HealthItem> Health { get; set; } = new();
     public List<CrashGroup> CrashGroups { get; set; } = new();   // the distinct bugs behind all the crashes
+    public List<KnowledgeHit> Knowledge { get; set; } = new();   // what the messages in the evidence are known to mean
     public BisectView? Bisect { get; set; }                      // the guided hunt, when one is running
     public List<ModRow> ModsList { get; set; } = new();
     public List<Requirement> Requirements { get; set; } = new();

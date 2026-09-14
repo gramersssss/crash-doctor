@@ -25,6 +25,8 @@ public static class Scanner
         Mark("analyze");
         r.ModsList = d.Mods.Mods.OrderBy(m => m.Name).Select(m => Flagged(d, m, r)).ToList();
         Mark("mod flags");
+        r.Knowledge = Engine.Knowledge.Look(r);
+        Mark("knowledge");
         r.Requirements = RequirementsCheck.Check(d);
         Mark("requirements");
         r.Settings = PrettySettings(d.Settings);

@@ -1,0 +1,102 @@
+[
+  {
+    "id": "archivexl-sector-node-mismatch",
+    "title": "A world-editing mod expects a map that the game patch changed",
+    "match": {
+      "log": [
+        "target node #\\d+ has type",
+        "expects \\d+ nodes",
+        "node count.*(mismatch|differs)"
+      ]
+    },
+    "says": "ArchiveXL world patches address map objects by position in a list. A game update, or another mod editing the same sector first, shifts that list, so the patch is aimed at the wrong object and ArchiveXL skips it. The part of the mod that edits the world is simply not applied from then on.",
+    "do": "Check whether the mod has an update for your game patch. If it is the newest version, the sector is being changed by something else first - the area panel on the diagnosis shows which other mods patch the same sector.",
+    "source": "ArchiveXL's own message, and seen repeatedly on the reference install after patch 2.31",
+    "confidence": "established"
+  },
+  {
+    "id": "cet-nil-global",
+    "title": "A Lua mod is calling into its native half, which is not there",
+    "match": {
+      "log": [
+        "attempt to call global '[^']+' \\(a nil value\\)",
+        "attempt to index global '[^']+' \\(a nil value\\)"
+      ]
+    },
+    "says": "A Cyber Engine Tweaks mod is calling a function that does not exist. The usual reason is that the mod ships two halves - a Lua part and a native plugin - and the native half was refused by RED4ext because it was built for a different game patch. The Lua half keeps running and keeps calling functions that never loaded, often every few seconds for the whole session.",
+    "do": "Check the Requirements screen and the Health list for a plugin that refused to load. If one is named, that mod needs an update for your patch; until then the feature is off whatever the Lua side does.",
+    "source": "Lua's own error text; the pairing with a refused native plugin was confirmed on the reference install",
+    "confidence": "established"
+  },
+  {
+    "id": "resource-does-not-exist",
+    "title": "A mod points at a file that is not installed",
+    "match": {
+      "log": [
+        "doesn't exist\\.?\\s*(Skipped)?",
+        "does not exist\\.?\\s*(Skipped)?",
+        "non-existent resource"
+      ]
+    },
+    "says": "The mod refers to a game resource by path and that path is not there. Either part of the mod did not install (a missing requirement, or an archive that downloaded incompletely), or a game patch moved or removed the file. The loader skips that part and carries on, so the mod appears installed while some of it does nothing.",
+    "do": "Check the mod's requirements - a missing dependency is the most common cause - and reinstall it if the Health list also reports an empty or truncated archive.",
+    "source": "ArchiveXL and TweakXL message text",
+    "confidence": "established"
+  },
+  {
+    "id": "nvlddmkm-tdr",
+    "title": "Windows reset the graphics driver",
+    "match": {
+      "log": [
+        "nvlddmkm",
+        "amdkmdap",
+        "display driver .* stopped responding"
+      ]
+    },
+    "says": "Windows decided the graphics card had stopped responding and reset the driver underneath the game. That is a hardware or driver level event, not a mod one - no mod can cause it directly, though running the card at its limit makes it far more likely. The game almost always dies with it.",
+    "do": "Reduce whatever is loading the card hardest, and check the video memory reading on this crash. If it happens with the card comfortable, try the previous driver version and check temperatures.",
+    "source": "Windows event log; nvlddmkm event 153 is the NVIDIA timeout-detection-and-recovery event",
+    "confidence": "established"
+  },
+  {
+    "id": "gpu-crash-unknown-reasons",
+    "title": "The engine's own \"Gpu Crash for unknown reasons\" message",
+    "match": {
+      "log": [
+        "Gpu Crash for unknown reasons",
+        "gpuApiDX12Error"
+      ]
+    },
+    "says": "This is the engine saying a DirectX call failed and that it has nothing useful to add - its own message admits the callstack is probably irrelevant. It means the graphics work the game asked for did not complete. The cause is almost never in this message; it is in what the card was being asked to do.",
+    "do": "Read the video memory figure for this crash first. If the card was near its limit, that is the lead. If it was not, check the Windows driver events on the same timestamp.",
+    "source": "the engine's own text, quoted verbatim in the crash report",
+    "confidence": "established"
+  },
+  {
+    "id": "stack-overflow-recursion",
+    "title": "Stack overflow means something called itself forever",
+    "match": {
+      "exception": [
+        "EXCEPTION_STACK_OVERFLOW",
+        "0xC00000FD"
+      ]
+    },
+    "says": "The stack only runs out when code calls itself without ever returning. It is a logic fault, never hardware and never video memory, and no graphics setting changes it. In this game it is nearly always scripts - most often two mods wrapping the same function so that each ends up calling the other.",
+    "do": "Look at what was installed or updated most recently, and at any redscript warning about an annotation being overwritten: those name the function two mods are both replacing.",
+    "source": "the Windows exception code, and the usual cause in a scripted game",
+    "confidence": "established"
+  },
+  {
+    "id": "access-violation-null",
+    "title": "The game read from an address that was never valid",
+    "match": {
+      "log": [
+        "read inaccessible data at 0x0*[0-9A-F]{1,5}\\b"
+      ]
+    },
+    "says": "The address the game tried to read is very close to zero, which means it was handed nothing where it expected an object. Something asked for a thing that had not been created, or had already been destroyed. Where this follows a mod loading or unloading something, that is the place to look.",
+    "do": "Check what the evidence shows in the seconds before the crash, and whether this fault repeats. A fault that repeats at the same address is one problem and worth a bisect; a one-off usually is not.",
+    "source": "standard interpretation of a low-address access violation",
+    "confidence": "likely"
+  }
+]

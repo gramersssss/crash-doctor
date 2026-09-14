@@ -32,9 +32,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- the interface and the known-fix catalogue ship next to the exe -->
+    <!-- the interface, the known-fix catalogue and the knowledge base all ship next to the exe rather than being
+         compiled in, so any of them can be corrected or added to without a rebuild -->
     <None Include="..\ui\**\*" Link="ui\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="..\fixes\**\*" Link="fixes\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\knowledge\**\*" Link="knowledge\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

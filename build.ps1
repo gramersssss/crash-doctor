@@ -14,6 +14,7 @@ $manual = Join-Path $dist "CrashDoctor-$Version"; New-Item -ItemType Directory -
 Copy-Item (Join-Path $pub 'CrashDoctor.exe') $manual
 Copy-Item (Join-Path $pub 'ui') (Join-Path $manual 'ui') -Recurse
 Copy-Item (Join-Path $pub 'fixes') (Join-Path $manual 'fixes') -Recurse
+Copy-Item (Join-Path $pub 'knowledge') (Join-Path $manual 'knowledge') -Recurse
 Get-ChildItem $pub -Filter '*.dll' | Copy-Item -Destination $manual   # WebView2Loader.dll and friends
 Copy-Item (Join-Path $root 'README.md') (Join-Path $manual 'README.md')
 Compress-Archive -Path "$manual\*" -DestinationPath (Join-Path $dist "CrashDoctor-$Version-manual.zip") -Force
