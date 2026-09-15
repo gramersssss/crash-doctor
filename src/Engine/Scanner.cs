@@ -23,6 +23,9 @@ public static class Scanner
         r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Frameworks = Frameworks(d) };
         Analyzer.Analyze(d, r);
         Mark("analyze");
+        // what a hunt on each fault would demand of a clean run, shown on the pick list before anyone commits to one
+        foreach (var grp in r.CrashGroups) { var (m, note, timed) = Bisect.Threshold(r, grp.Signature); grp.MinutesToBeat = m; grp.ThresholdNote = note; grp.TimedCrashes = timed; }
+        try { r.Update = Updates.Status(); } catch { }   // cache only; a scan never touches the network
         try { r.Archive = CrashArchive.Preserve(d, r.Sessions); } catch { /* keeping logs must never cost the diagnosis */ }
         Mark("crash log archive");
         try { r.VramLogs = VramLogs.Summary(); } catch { }

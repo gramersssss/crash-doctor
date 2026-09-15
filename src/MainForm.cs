@@ -90,6 +90,13 @@ public sealed class MainForm : Form
                 if (_report != null) _report.Archive = CrashArchive.Summary();
                 Post(new { cmd = "archive", archive = _report?.Archive ?? CrashArchive.Summary() });
                 break;
+            case "update":
+                // the opt-in update check: a switch, and a "check now" that ignores the once-a-day pacing
+                var uc = GameLocator.LoadConfig();
+                if (doc.RootElement.TryGetProperty("enabled", out var uen)) { uc.CheckForUpdates = uen.ValueKind == JsonValueKind.True; GameLocator.SaveConfig(uc); }
+                var checkNow = doc.RootElement.TryGetProperty("check", out var ck) && ck.ValueKind == JsonValueKind.True;
+                await UpdateCheckAsync(force: checkNow || (uc.CheckForUpdates == true && Updates.Due()));
+                break;
             case "vramlog":
                 // switching video memory recording on or off; the recorder checks the setting on its next tick
                 var vc = GameLocator.LoadConfig();
@@ -218,6 +225,20 @@ public sealed class MainForm : Form
         }
         catch (Exception ex) { Post(new { cmd = "error", text = "The scan failed: " + ex.Message }); }
         finally { _scanning = false; }
+        // once a day, and only if the user turned it on: ask the version file whether a newer build exists
+        if (Updates.Due()) await UpdateCheckAsync(force: true);
+    }
+
+    async Task UpdateCheckAsync(bool force)
+    {
+        try
+        {
+            var enabled = GameLocator.LoadConfig().CheckForUpdates == true;
+            var info = force && enabled ? await Updates.CheckAsync() : Updates.Status();
+            if (_report != null) _report.Update = info;
+            Post(new { cmd = "update", update = info });
+        }
+        catch { /* a failed check is a line of text on the settings page, never an error */ }
     }
 
     bool PickGameFolder()

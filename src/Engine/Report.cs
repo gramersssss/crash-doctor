@@ -30,6 +30,7 @@ public sealed class Report
     public DateTime? SettingsBackup { get; set; }                     // newest backup an Undo would restore
     public ArchiveSummary? Archive { get; set; }                      // crash logs kept before the game rotates them
     public VramLogSummary? VramLogs { get; set; }                     // video memory recorded while the game ran
+    public UpdateInfo? Update { get; set; }                           // the opt-in update check's last result (Updates.cs)
     public List<Change> RecentChanges { get; set; } = new();          // what changed since the last clean session, up to now
     public DateTime? RecentChangesSince { get; set; }
     public string? RecentChangesNote { get; set; }
@@ -57,6 +58,10 @@ public sealed class CrashGroup
     public string? Injector { get; set; }
     public int InjectorSessions { get; set; }     // how many of Count had it, so the correlation is visible
     public List<string> SessionIds { get; set; } = new();
+    // What a Find it run on this fault would demand of a clean run, shown before anyone commits to one (Bisect.Threshold)
+    public int MinutesToBeat { get; set; }
+    public string? ThresholdNote { get; set; }
+    public int TimedCrashes { get; set; }
 }
 
 // Everything the interface needs to render a bisect run. All the wording is decided in the engine so the reasoning
@@ -69,6 +74,7 @@ public sealed class BisectView
     public string Headline { get; set; } = "";
     public string Detail { get; set; } = "";
     public int MinutesToBeat { get; set; }
+    public string? ThresholdNote { get; set; }   // where MinutesToBeat came from, and whether it was capped
     public int Candidates { get; set; }
     public int Cleared { get; set; }
     public int StepNumber { get; set; }

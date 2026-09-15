@@ -35,6 +35,7 @@ public sealed class BisectPlan
     public DateTime Started { get; set; }
     public string Signature { get; set; } = "";        // the exact fault being hunted
     public int MinutesToBeat { get; set; } = 15;       // a clean run must last at least this long to count
+    public string? ThresholdNote { get; set; }         // where that number came from, in words, so it can be judged
     public List<string> Candidates { get; set; } = new();
     public List<string> Cleared { get; set; } = new();
     public List<BisectStep> Steps { get; set; } = new();
@@ -59,6 +60,30 @@ public static class Bisect
         "native interactions framework", "browserextensionframework",
     };
 
+    // How long a clean run has to last before it says anything: twice this fault's typical time-to-crash, never under
+    // 15 minutes, never over 2 hours. The cap exists because one 2.5-hour crash produced a 5-hour demand on the
+    // reference machine, which nobody will play to, and a threshold nobody meets is the same as no bisect. With fewer
+    // than three timed crashes the number is a guess and the note says so; the page shows the note beside the number.
+    public const int MinThreshold = 15, MaxThreshold = 120, EnoughTimed = 3;
+    public static (int minutes, string note, int timed) Threshold(Report r, string signature)
+    {
+        var timed = r.Sessions.Where(s => s.Signature == signature && s.DurationKnown && s.Minutes > 0).Select(s => s.Minutes).OrderBy(x => x).ToList();
+        if (timed.Count == 0)
+            return (MinThreshold, $"No crash of this fault has a known length (their session logs were gone before they were scanned), so {MinThreshold} minutes is a floor rather than a measurement. Treat a clean run as weak evidence until a timed crash exists.", 0);
+        var median = timed[timed.Count / 2];
+        var raw = (int)Math.Ceiling(median * 2);
+        var minutes = Math.Clamp(raw, MinThreshold, MaxThreshold);
+        var basis = timed.Count >= EnoughTimed
+            ? $"twice the typical {Math.Round(median)} min this fault takes to appear, from {timed.Count} timed crashes"
+            : $"twice the {Math.Round(median)} min {(timed.Count == 1 ? "the only timed crash of this fault" : "the two timed crashes of this fault")} took, so treat it as rough";
+        var note = raw > MaxThreshold
+            ? $"Capped at {MaxThreshold} min. Uncapped it would be {raw} min ({basis}). A fault this slow to appear makes a clean run weaker evidence than usual, so give the step more than one session where you can."
+            : raw < MinThreshold
+                ? $"{MinThreshold} min is the floor; {basis} would give only {raw}."
+                : $"{basis.Substring(0, 1).ToUpperInvariant()}{basis.Substring(1)}.";
+        return (minutes, note, timed.Count);
+    }
+
     public static BisectPlan? Load()
     {
         try { if (File.Exists(PathFile)) return JsonSerializer.Deserialize<BisectPlan>(File.ReadAllText(PathFile), Scanner.Json); } catch { }
@@ -80,10 +105,7 @@ public static class Bisect
     public static BisectPlan Start(CollectedData d, Report r, string signature)
     {
         var group = r.CrashGroups.FirstOrDefault(g => g.Signature == signature);
-        var sessions = r.Sessions.Where(s => s.Signature == signature && s.DurationKnown && s.Minutes > 0).ToList();
-        // How long does this fault usually take to appear? A clean run has to comfortably beat that to mean anything.
-        var median = sessions.Count > 0 ? sessions.Select(s => s.Minutes).OrderBy(x => x).ElementAt(sessions.Count / 2) : 10;
-        var threshold = (int)Math.Max(15, Math.Ceiling(median * 2));
+        var (threshold, thresholdNote, _) = Threshold(r, signature);
 
         // Mods that were ever suspected of this fault go first, so the earliest step tests the best guesses and can
         // clear all of them at once.
@@ -101,6 +123,7 @@ public static class Bisect
             Started = DateTime.Now,
             Signature = signature,
             MinutesToBeat = threshold,
+            ThresholdNote = thresholdNote,
             Candidates = candidates,
             GameBuild = r.Game.FileVersion,
         };
@@ -199,6 +222,7 @@ public static class Bisect
             Signature = p.Signature,
             Status = p.Status,
             MinutesToBeat = p.MinutesToBeat,
+            ThresholdNote = p.ThresholdNote,
             Candidates = p.Candidates.Count,
             Cleared = p.Cleared.Count,
             StepNumber = p.Steps.Count,

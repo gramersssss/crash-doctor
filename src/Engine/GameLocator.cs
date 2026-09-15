@@ -42,7 +42,21 @@ public sealed class GamePaths
 
 public static class GameLocator
 {
-    public sealed class Config { public string? GamePath { get; set; } public bool? KeepCrashLogs { get; set; } public bool? LogVideoMemory { get; set; } public DateTime? CrashesSeenUntil { get; set; } }
+    public sealed class Config
+    {
+        public string? GamePath { get; set; }
+        public bool? KeepCrashLogs { get; set; }
+        public bool? LogVideoMemory { get; set; }
+        public DateTime? CrashesSeenUntil { get; set; }
+        // the opt-in update check (Updates.cs): the switch, and the cached answer so the page never has to ask twice a day
+        public bool? CheckForUpdates { get; set; }
+        public string? UpdateUrl { get; set; }
+        public DateTime? LastUpdateCheck { get; set; }
+        public string? LatestVersion { get; set; }
+        public string? LatestVersionUrl { get; set; }
+        public string? LatestVersionNotes { get; set; }
+        public string? LastUpdateProblem { get; set; }
+    }
 
     public static Config LoadConfig()
     {

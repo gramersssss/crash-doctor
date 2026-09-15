@@ -77,8 +77,9 @@ CrashDoctor.exe --profile-undo
 user's PC) in `dist\CrashDoctor-<version>\`, plus the manual-install and Vortex zips for Nexus.
 
 ## Privacy
-Nothing leaves your PC. A saved report contains your game path, hardware model, mod names and log excerpts; share it
-only if you are comfortable with that.
+Nothing leaves your PC, with one opt-in exception: the update check under Settings, off by default, fetches one small
+version file at most once a day and sends nothing about you or your install. A saved report contains your game path,
+hardware model, mod names and log excerpts; share it only if you are comfortable with that.
 
 ## Licence
 MIT.

@@ -32,6 +32,16 @@ ever be watched firing on a PC that happened to have the wrong card in it. Ignor
 Note that the GUI ignores `--game` and always locates the real install, so a fixture must be scanned through the
 command line.
 
+## Testing the update check
+
+The check (`Updates.cs`) is opt-in and only the window runs it. To watch it work without a release: put a
+`version.json` such as `{"version":"0.7.0","url":"https://...","notes":"..."}` in a folder, serve it with
+`python -m http.server 8765 --bind 127.0.0.1` from there, set `CRASHDOCTOR_UPDATE_URL=http://127.0.0.1:8765/version.json`
+and `CRASHDOCTOR_TEST_ROOT` to a fixture whose `AppData\CrashDoctor\config.json` has `"CheckForUpdates": true`, and
+start the window. Within a minute the fixture's config.json carries `LatestVersion` and the window shows the notice.
+Write that config with Python, not PowerShell's ConvertTo-Json, which turns the dates into `/Date(...)/` strings the
+app cannot read and then rewrites the file without your flag.
+
 ## make-twobuild-fixture.py
 
     python tools/make-twobuild-fixture.py C:\temp\fixtures

@@ -463,6 +463,7 @@ button.mark:hover{filter:brightness(.94)}
   <main class="main">
     <div id="newcrash"></div>
     <div id="vramlive"></div>
+    <div id="update"></div>
     <!-- DIAGNOSIS -->
     <section class="view on" id="v-dx">
       <p class="eyebrow">Diagnosis · latest crash</p>
@@ -565,6 +566,8 @@ button.mark:hover{filter:brightness(.94)}
       <div class="card" id="archive-card"></div>
       <h2>Video memory</h2>
       <div class="card" id="vramlog-card"></div>
+      <h2>Updates</h2>
+      <div class="card" id="update-card"></div>
       <h2>Appearance</h2>
       <div class="themes" id="themes"></div>
       <h2>Graphics profiles</h2>
@@ -614,7 +617,7 @@ function scan(){
   if(hasHost()){ window.chrome.webview.postMessage({cmd:'scan'}); }
   else { setTimeout(function(){ load(SAMPLE); }, 700); }
 }
-if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?'Crash logs will be kept from the next scan.':'Crash logs will not be kept. Copies already saved are left where they are.',false); } else if(m.cmd==='vram'){ renderVramLive(m.live); } else if(m.cmd==='vramlog'){ if(REPORT){ REPORT.vramLogs=m.vramLogs; renderVramLogCard(REPORT); } toast(m.vramLogs&&m.vramLogs.enabled?'Video memory will be recorded while the game runs and this window is open.':'Video memory will not be recorded. Files already saved are left where they are.',false); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
+if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?'Crash logs will be kept from the next scan.':'Crash logs will not be kept. Copies already saved are left where they are.',false); } else if(m.cmd==='vram'){ renderVramLive(m.live); } else if(m.cmd==='update'){ if(REPORT){ REPORT.update=m.update; renderUpdate(REPORT); renderUpdateCard(REPORT); } } else if(m.cmd==='vramlog'){ if(REPORT){ REPORT.vramLogs=m.vramLogs; renderVramLogCard(REPORT); } toast(m.vramLogs&&m.vramLogs.enabled?'Video memory will be recorded while the game runs and this window is open.':'Video memory will not be recorded. Files already saved are left where they are.',false); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
 function toast(text,isErr){ var t=document.getElementById('toast'); t.textContent=text; t.className='toast on'+(isErr?' err':''); clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; }, isErr?9000:3500); }
 function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent='Scan now'; }
 
@@ -638,7 +641,7 @@ function load(r){
   var nh=document.getElementById('n-health'); nh.textContent=r.health.length; nh.className='n '+(hi?'sig':med?'amb':'');
   document.getElementById('n-mods').textContent=r.modsList.length;
   document.getElementById('pulse').style.background = hi ? 'var(--signal)' : med ? 'var(--amber)' : 'var(--mint)';
-  renderNewCrashes(r); renderDx(r); renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
+  renderNewCrashes(r); renderUpdate(r); renderDx(r); renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
 }
 
 function renderDx(r){
@@ -884,7 +887,8 @@ function renderBisect(r){
       '<p class="lead">When the logs name nothing, this always works. Crash Doctor asks you to switch off half the mods, you play, and it watches whether the same fault comes back \u2014 then halves again. It never changes a mod itself: it tells you what to switch off in Vortex and then checks what is actually deployed before it will trust the result.</p>';
     if(!groups.length){ host.innerHTML=intro+'<div class="empty">No fault has happened more than once yet, so there is nothing worth bisecting. Come back if a crash starts repeating \u2014 chasing a one-off costs days and usually proves nothing.</div>'; return; }
     host.innerHTML=intro+'<p class="eyebrow">Pick the fault to hunt</p>'+groups.map(function(g){
-      return '<div class="pick"><div><div class="sig">'+esc(g.signature)+'</div><div class="meta">'+g.count+' crashes \u00b7 '+esc(g.exception)+' \u00b7 '+fmtDate(g.firstSeen)+' to '+fmtDate(g.lastSeen)+(g.current?" \u00b7 still happening":" \u00b7 not seen since your last clean session")+'</div></div>'+
+      return '<div class="pick"><div><div class="sig">'+esc(g.signature)+'</div><div class="meta">'+g.count+' crashes \u00b7 '+esc(g.exception)+' \u00b7 '+fmtDate(g.firstSeen)+' to '+fmtDate(g.lastSeen)+(g.current?" \u00b7 still happening":" \u00b7 not seen since your last clean session")+'</div>'+
+        (g.minutesToBeat?'<div class="meta">A clean run would have to last <b>'+g.minutesToBeat+' min</b> to count. '+esc(g.thresholdNote||'')+'</div>':'')+'</div>'+
         '<button class="btn primary" onclick="act('+esc(JSON.stringify("bisect:start:"+g.signature))+')">Hunt this one</button></div>';
     }).join("");
     return;
@@ -900,7 +904,8 @@ function renderBisect(r){
     '<dt>Cleared so far</dt><dd>'+b.cleared+'</dd>'+
     '<dt>Round</dt><dd>'+b.stepNumber+'</dd>'+
     (b.status==="running"?'<dt>Rounds left, about</dt><dd>'+b.stepsLeft+'</dd><dt>A clean run must beat</dt><dd>'+b.minutesToBeat+' min</dd>':"")+
-    '</dl><div class="row" style="margin-top:12px"><button class="btn" onclick="act(\'bisect:stop\')">'+(b.status==="running"?"Stop":"Clear this run")+'</button></div></div>'+
+    '</dl>'+(b.thresholdNote?'<div class="muted" style="font-size:12px;margin-top:10px;line-height:1.5">'+esc(b.thresholdNote)+'</div>':'')+
+    '<div class="row" style="margin-top:12px"><button class="btn" onclick="act(\'bisect:stop\')">'+(b.status==="running"?"Stop":"Clear this run")+'</button></div></div>'+
     (b.history&&b.history.length?'<div class="bhist"><p class="eyebrow">What has been settled</p>'+b.history.map(function(h){return "<div>"+esc(h)+"</div>";}).join("")+"</div>":"");
 
   var main='<h2>'+esc(b.headline)+'</h2><p class="lead">'+esc(b.detail)+'</p>';
@@ -1190,6 +1195,33 @@ function renderVramLogCard(r){
 }
 function setVramLog(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'vramlog',enabled:!!on}); else toast('Available in the app.',true); }
 
+/* ---------- the opt-in update check (Updates.cs) ----------
+   Off until switched on: "nothing leaves your PC" is a promise the Nexus page makes. When on, it fetches one small
+   version file at most once a day and compares it with this build. It never downloads or installs anything. */
+function renderUpdate(r){
+  var host=document.getElementById('update'); if(!host) return; var u=r&&r.update;
+  if(window.EXPORTED||!u||!u.newer){ host.innerHTML=''; return; }
+  host.innerHTML='<div class="vramlive"><b>Crash Doctor '+esc(u.latest)+' is out</b><span>You have '+esc(u.current)+'.'+(u.notes?' '+esc(u.notes):'')+'</span>'
+    +(u.url?'<a class="btn primary" href="'+esc(u.url)+'" target="_blank" rel="noopener">Open the download page</a>':'')+'</div>';
+}
+function renderUpdateCard(r){
+  var host=document.getElementById('update-card'); if(!host) return; var u=r.update;
+  if(!u||window.EXPORTED){ host.innerHTML='<span class="muted">Not available in a saved report.</span>'; return; }
+  var line = !u.enabled ? 'Off. Crash Doctor sends nothing anywhere while this is off.'
+    : !u.configured ? 'On, but this build has no address to ask yet, so it cannot check.'
+    : u.problem ? 'Last try'+(u.checked?' '+fmtDate(u.checked):'')+': '+u.problem
+    : u.newer ? 'Version '+u.latest+' is available; you have '+u.current+'.'
+    : u.checked ? 'Checked '+fmtDate(u.checked)+': '+u.current+' is the newest version.'
+    : 'Not checked yet.';
+  host.innerHTML='<label class="switch"><input type="checkbox"'+(u.enabled?' checked':'')+' onchange="setUpdateCheck(this.checked)">'
+    +'<span><b>Tell me when a newer version is out</b><br><span class="muted" style="font-size:13px">Off by default, because everything else in Crash Doctor stays on your PC. '
+    +'When it is on, the app fetches one small version file at most once a day and compares it with this build ('+esc(u.current)+'). Nothing about you or your install is sent, and it never downloads or installs anything itself: a newer version is a line at the top of the window and a button that opens the download page.</span></span></label>'
+    +'<div class="saved"><span>'+esc(line)+'</span>'+(u.enabled&&u.configured?'<button class="btn" onclick="checkUpdate()">Check now</button>':'')
+    +(u.newer&&u.url?'<a class="btn primary" href="'+esc(u.url)+'" target="_blank" rel="noopener">Open the download page</a>':'')+'</div>';
+}
+function setUpdateCheck(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'update',enabled:!!on}); else toast('Available in the app.',true); }
+function checkUpdate(){ if(hasHost()){ toast('Checking…',false); window.chrome.webview.postMessage({cmd:'update',check:true}); } else toast('Available in the app.',true); }
+
 /* ---------- crashes you have not seen yet ----------
    A crash that happens while nobody is watching the app is otherwise invisible until someone thinks to look - which
    is how a crash on 13 Sep went unnoticed for a day. The notice stays on every page until it is dismissed or the
@@ -1214,7 +1246,7 @@ function markSeen(){ if(REPORT) REPORT.newCrashes=[]; if(hasHost()) window.chrom
 function openNewCrash(id){ markSeen(); showSession(id); }
 
 function renderSettings(r){
-  renderArchive(r); renderVramLogCard(r);
+  renderArchive(r); renderVramLogCard(r); renderUpdateCard(r);
   renderProfiles(r); renderGraphics(r);
   var notes=document.getElementById('settings-notes'); notes.innerHTML='';
   (r.settingsNotes||[]).forEach(function(n){ notes.innerHTML+='<div class="card" style="margin-bottom:10px;border-left:4px solid var(--'+(n.level==='high'?'signal':n.level==='medium'?'amber':'mint')+')"><b>'+esc(n.title)+'</b><div class="muted" style="margin-top:4px">'+esc(n.detail)+'</div></div>'; });
