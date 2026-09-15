@@ -176,9 +176,12 @@ button.mark:hover{filter:brightness(.94)}
 .checklist li.todo .tick{color:var(--signal)}
 .checklist li.todo{background:var(--todo-bg)}
 .bstat{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px}
-.bstat dl{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin:0;font-size:13px}
-.bstat dt{color:var(--steel)}
-.bstat dd{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--ink);text-align:right}
+/* label column sized to the labels, value column takes the rest and may break: the fault signature has no spaces, and
+   with "1fr auto" it was widening the value column until every label was crushed into a sliver */
+.bstat dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 12px;margin:0;font-size:13px;align-items:baseline}
+.bstat dt{color:var(--steel);white-space:nowrap}
+.bstat dd{margin:0;min-width:0;font-family:var(--mono);font-size:12.5px;color:var(--ink);text-align:right;overflow-wrap:anywhere}
+.bstat dd.wide{grid-column:1/-1;text-align:left;word-break:break-all;padding-bottom:4px;border-bottom:1px solid var(--line);margin-bottom:2px}
 .bhist{margin-top:16px;font-size:12.5px;color:var(--steel);line-height:1.6}
 .bhist div{padding:7px 0;border-top:1px solid var(--line)}
 .pick{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px;margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
@@ -892,7 +895,7 @@ function renderBisect(r){
   var bars=""; for(var i=0;i<total;i++) bars+='<i class="'+(i<done?"done":i===done&&b.status==="running"?"now":"")+'"></i>';
 
   var right='<div class="bstat"><dl>'+
-    '<dt>Fault being hunted</dt><dd>'+esc(b.signature)+'</dd>'+
+    '<dt style="grid-column:1/-1">Fault being hunted</dt><dd class="wide">'+esc(b.signature)+'</dd>'+
     '<dt>Still possible</dt><dd>'+b.candidates+'</dd>'+
     '<dt>Cleared so far</dt><dd>'+b.cleared+'</dd>'+
     '<dt>Round</dt><dd>'+b.stepNumber+'</dd>'+
