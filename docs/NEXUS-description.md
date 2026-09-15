@@ -50,8 +50,8 @@ takes ten seconds; naming the culprit is a bonus, not the promise. Its confidenc
 reliably replaces is a week of switching mods off at random.
 
 **It changes nothing unless you ask.** Scanning only reads. Crash Doctor changes something in exactly two cases, both
-because you clicked and confirmed: applying one of a small catalogue of reviewed fixes to a specific mod file, and
-applying a graphics profile. Either way the original is backed up first and one click puts it back. Profiles touch
+because you clicked and confirmed: applying a reviewed fix to a specific mod file (0.6.0 ships none yet; a fix is
+added only with that mod author's permission), and applying a graphics profile. Either way the original is backed up first and one click puts it back. Profiles touch
 graphics and display settings only, never controls, audio or key bindings. Crash Doctor never enables, disables or
 deletes a mod. Nothing leaves your PC, with one opt-in exception: an update check under Settings, off by default, that fetches one small version file at most once a day and sends nothing about you or your install.
 
@@ -202,7 +202,7 @@ saved report.
 
 [b]What it will not do.[/b] It will not fix every crash, and it does not pretend to. The evidence work is reliable and takes ten seconds; naming the culprit is a bonus, not the promise. Its confidence is allowed to reach zero, and "I don't know yet, here is what is ruled out and here is the next test" is an answer it will give you. What it reliably replaces is a week of switching mods off at random.
 
-[b]It changes nothing unless you ask.[/b] Scanning only reads. Crash Doctor changes something in exactly two cases, both because you clicked and confirmed: applying one of a small catalogue of reviewed fixes to a specific mod file, and applying a graphics profile. Either way the original is backed up first and one click puts it back. Profiles touch graphics and display settings only, never controls, audio or key bindings. Crash Doctor never enables, disables or deletes a mod. Nothing leaves your PC, with one opt-in exception: an update check under Settings, off by default, that fetches one small version file at most once a day and sends nothing about you or your install.
+[b]It changes nothing unless you ask.[/b] Scanning only reads. Crash Doctor changes something in exactly two cases, both because you clicked and confirmed: applying a reviewed fix to a specific mod file (0.6.0 ships none yet; a fix is added only with that mod author's permission), and applying a graphics profile. Either way the original is backed up first and one click puts it back. Profiles touch graphics and display settings only, never controls, audio or key bindings. Crash Doctor never enables, disables or deletes a mod. Nothing leaves your PC, with one opt-in exception: an update check under Settings, off by default, that fetches one small version file at most once a day and sends nothing about you or your install.
 
 [b]What it has never seen:[/b] an AMD or Intel card, a GOG or Epic install, Mod Organizer 2 or a hand-installed setup, REDmod deployment, or a card bigger than 8 GB. The evidence it reads is the same everywhere, so most of it should simply work, but "should" is doing real work in that sentence. If you have one of those, your report is the one I most want to see.
 

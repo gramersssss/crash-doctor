@@ -6,7 +6,8 @@ After a crash, open Crash Doctor and press **Scan now**. It reads the mod loader
 ArchiveXL, redscript), the game's crash reporter, the Windows display-driver events and your graphics settings, then
 gives every play session a verdict: GPU fault, mod/script error, engine error, or closed normally. For a crash it shows the
 evidence in the seconds before it, names the suspect mods, and offers actions: open the mod on Nexus, apply a reviewed
-one-click fix (always backed up, always revertible), or jump to the setting that is over budget.
+one-click fix where one exists (always backed up, always revertible), or jump to the setting that is over budget.
+0.6.0 ships no fixes: a fix contains the mod author's own file, so one is added only with that author's permission.
 
 It also keeps a **Health** list of standing problems it finds before you crash (plugins that refuse to load on your patch,
 world-sector patches that fail every launch, mods pointing at missing files, error spam, settings that do not fit your
