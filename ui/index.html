@@ -464,6 +464,7 @@ button.mark:hover{filter:brightness(.94)}
     <div id="newcrash"></div>
     <div id="vramlive"></div>
     <div id="update"></div>
+    <div id="play"></div>
     <!-- DIAGNOSIS -->
     <section class="view on" id="v-dx">
       <p class="eyebrow">Diagnosis · latest crash</p>
@@ -617,7 +618,7 @@ function scan(){
   if(hasHost()){ window.chrome.webview.postMessage({cmd:'scan'}); }
   else { setTimeout(function(){ load(SAMPLE); }, 700); }
 }
-if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?'Crash logs will be kept from the next scan.':'Crash logs will not be kept. Copies already saved are left where they are.',false); } else if(m.cmd==='vram'){ renderVramLive(m.live); } else if(m.cmd==='update'){ if(REPORT){ REPORT.update=m.update; renderUpdate(REPORT); renderUpdateCard(REPORT); } } else if(m.cmd==='vramlog'){ if(REPORT){ REPORT.vramLogs=m.vramLogs; renderVramLogCard(REPORT); } toast(m.vramLogs&&m.vramLogs.enabled?'Video memory will be recorded while the game runs and this window is open.':'Video memory will not be recorded. Files already saved are left where they are.',false); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
+if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?'Crash logs will be kept from the next scan.':'Crash logs will not be kept. Copies already saved are left where they are.',false); } else if(m.cmd==='vram'){ renderVramLive(m.live); } else if(m.cmd==='update'){ if(REPORT){ REPORT.update=m.update; renderUpdate(REPORT); renderUpdateCard(REPORT); } } else if(m.cmd==='play'){ renderPlay(m.play); } else if(m.cmd==='vramlog'){ if(REPORT){ REPORT.vramLogs=m.vramLogs; renderVramLogCard(REPORT); } toast(m.vramLogs&&m.vramLogs.enabled?'Video memory will be recorded while the game runs and this window is open.':'Video memory will not be recorded. Files already saved are left where they are.',false); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
 function toast(text,isErr){ var t=document.getElementById('toast'); t.textContent=text; t.className='toast on'+(isErr?' err':''); clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; }, isErr?9000:3500); }
 function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent='Scan now'; }
 
@@ -1050,7 +1051,8 @@ function renderProfiles(r){
       +'<div class="phl">'+Object.keys(p.headline||{}).map(function(k){ return '<span>'+esc(k)+'</span><span>'+esc(p.headline[k])+'</span>'; }).join('')+'</div>'
       +(p.notes?'<div class="muted" style="font-size:12.5px">'+esc(p.notes)+'</div>':'')
       +'<div class="acts">'
-      +(p.matchesGame?'':'<button class="btn primary" onclick="profileOp({op:&quot;apply&quot;,name:'+q+'})">Apply to game</button>')
+      +(window.EXPORTED?'':'<button class="btn primary" onclick="profileOp({op:&quot;play&quot;,name:'+q+'})" title="Back up your settings, put this profile in, start the game, and put your settings back when it closes">Play with this</button>')
+      +(p.matchesGame?'':'<button class="btn" onclick="profileOp({op:&quot;apply&quot;,name:'+q+'})">Apply to game</button>')
       +'<button class="btn" onclick="editProfile('+q+')">Edit</button>'
       +'<button class="btn" onclick="profileOp({op:&quot;save&quot;,name:'+q+'})" title="Replace this profile with what the game is set to now">Update from game</button>'
       +'<button class="btn" onclick="profileOp({op:&quot;delete&quot;,name:'+q+'})">Delete</button>'
@@ -1063,7 +1065,7 @@ function renderProfiles(r){
   html+='</div>';
   html+='<div class="profbar">'
     +(r.settingsBackup?'<button class="btn" onclick="profileOp({op:&quot;undo&quot;})">Undo last change</button><span>Your settings from before the last change were backed up '+esc(fmtDate(r.settingsBackup))+'.</span>'
-      :'<span>Applying a profile backs up the game\u2019s current settings first, and Undo puts them back. Only graphics and display settings are touched \u2014 never controls, audio or key bindings.</span>')
+      :'<span>Play with this backs up your settings, puts the profile in, starts the game, and puts your settings back when it closes. Apply leaves the profile in until you change it, and Undo puts the previous settings back. Only graphics and display settings are touched \u2014 never controls, audio or key bindings.</span>')
     +'</div>';
   host.innerHTML=html;
 }
@@ -1220,6 +1222,13 @@ function renderUpdateCard(r){
     +(u.newer&&u.url?'<a class="btn primary" href="'+esc(u.url)+'" target="_blank" rel="noopener">Open the download page</a>':'')+'</div>';
 }
 function setUpdateCheck(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'update',enabled:!!on}); else toast('Available in the app.',true); }
+// A game started by "play with this profile" (Launcher.cs): a line at the top while it is on, so it is obvious the
+// settings in the game are not the usual ones and will go back when it closes.
+function renderPlay(p){
+  var host=document.getElementById('play'); if(!host) return;
+  if(!p){ host.innerHTML=''; return; }
+  host.innerHTML='<div class="vramlive"><span class="dot"></span><b>Playing with “'+esc(p.profile)+'”</b><span>'+(p.running?'The game is running.':'Waiting for the game to start.')+' '+(p.restore?'Your previous settings go back when it closes.':'The game already had these settings, so nothing changes afterwards.')+'</span></div>';
+}
 function checkUpdate(){ if(hasHost()){ toast('Checking…',false); window.chrome.webview.postMessage({cmd:'update',check:true}); } else toast('Available in the app.',true); }
 
 /* ---------- crashes you have not seen yet ----------

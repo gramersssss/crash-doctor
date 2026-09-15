@@ -16,6 +16,27 @@ static class Program
         // Graphics profiles from the command line, so a launcher can switch quality before starting the game:
         //   CrashDoctor.exe --profiles | --profile-save "Name" | --profile-apply "Name" | --profile-undo
         // Applying and undoing refuse while the game is running, back up first, and read the result back.
+        // Start the game with a profile, for a desktop shortcut or a Vortex dashboard button per profile:
+        //   CrashDoctor.exe --play "Streaming"             applies the profile and starts the game; the profile stays
+        //   CrashDoctor.exe --play "Streaming" --restore   also waits for the game to close and puts the old settings back
+        if (Array.IndexOf(args, "--play") is var pi and >= 0 && pi + 1 < args.Length)
+        {
+            var g = GameLocator.Locate();
+            if (g == null) { Console.Error.WriteLine("Cyberpunk 2077 not found."); return 2; }
+            var (res, play) = Launcher.PlayWith(g, args[pi + 1]);
+            (res.Ok ? Console.Out : Console.Error).WriteLine(res.Message); Console.Out.Flush();
+            if (!res.Ok || play == null) Environment.Exit(res.Ok ? 0 : 1);
+            if (args.Contains("--restore") && play.Restore)
+            {
+                Console.WriteLine("Waiting for the game to close so the previous settings can be put back. Leave this window open.");
+                string? done; while ((done = Launcher.Watch(play)) == null) Thread.Sleep(5000);
+                Console.WriteLine(done);
+            }
+            else if (play.Restore) Console.WriteLine("The profile stays in the game afterwards; CrashDoctor.exe --profile-undo puts the previous settings back, or use --restore next time.");
+            Console.Out.Flush();
+            Environment.Exit(0);
+        }
+
         if (args.Any(a => a.StartsWith("--profile")))
         {
             string? Arg(string flag) { for (int i = 0; i < args.Length - 1; i++) if (args[i] == flag) return args[i + 1]; return null; }

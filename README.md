@@ -16,7 +16,9 @@ download.
 **Graphics profiles** save the game's graphics settings under a name — Quality, Performance, Streaming — so you can
 switch between them in one click, and edit them without launching the game. Only options the game's own settings file
 lists as valid can be edited; resolution and upscaler modes, which depend on your monitor and card, are saved and
-restored exactly as the game wrote them.
+restored exactly as the game wrote them. **Play with this** backs up your settings, puts the profile in, starts the
+game (through Steam on a Steam install) and puts your settings back when the game closes, so a one-off lighter
+profile leaves your usual setup untouched. `CrashDoctor.exe --play "Name" --restore` does the same from a shortcut.
 
 **Crash logs are kept.** The game deletes its logs after a few launches. The first time Crash Doctor sees a crash it
 zips that crash's report and logs into `%APPDATA%\CrashDoctor\crash-logs`, plus the three most recent clean sessions

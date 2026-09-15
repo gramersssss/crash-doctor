@@ -20,6 +20,7 @@ public sealed class MainForm : Form
     readonly System.Windows.Forms.Timer _vramTimer = new() { Interval = VramRecorder.IntervalSeconds * 1000 };
     bool _vramBusy;
     DateTime? _gameEndedAt;
+    Launcher.Play? _play;        // a game started by "play with this profile", whose settings go back when it closes
     const int RescanDelaySeconds = 25;
 
     public MainForm()
@@ -116,6 +117,20 @@ public sealed class MainForm : Form
             var ended = await Task.Run(() => _vram.Tick());
             Post(new { cmd = "vram", live = _vram.Live });
             if (ended) _gameEndedAt = DateTime.Now;
+            // a play started from a profile: when the game goes away, put the previous settings back
+            if (_play != null)
+            {
+                var play = _play;
+                var done = await Task.Run(() => Launcher.Watch(play));
+                if (done != null)
+                {
+                    _play = null;
+                    if (_report != null) Scanner.RefreshProfiles(_report);
+                    Post(new { cmd = "toast", text = done });
+                    Post(new { cmd = "profiles", ok = true, message = (string?)null, graphics = _report?.Graphics, profiles = _report?.Profiles, settingsBackup = _report?.SettingsBackup });
+                }
+                Post(new { cmd = "play", play = _play == null ? null : new { profile = _play.Profile, restore = _play.Restore, running = _play.SeenRunning } });
+            }
             if (_gameEndedAt != null && (DateTime.Now - _gameEndedAt.Value).TotalSeconds >= RescanDelaySeconds && !_scanning)
             {
                 _gameEndedAt = null;
@@ -156,6 +171,15 @@ public sealed class MainForm : Form
                 case "undo":
                     if (MessageBox.Show(this, "Put back the game's graphics settings from before the last profile was applied?", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
                     res = GraphicsProfiles.Undo(); break;
+                case "play":
+                    // apply, start the game, and put the previous settings back when it closes (Launcher.cs)
+                    if (_game == null) { res = new ProfileResult { Ok = false, Message = "The game folder is not known yet. Scan first." }; break; }
+                    if (_play != null) { res = new ProfileResult { Ok = false, Message = $"A play with \"{_play.Profile}\" is already in progress." }; break; }
+                    if (MessageBox.Show(this, $"Play with the \"{name}\" settings?\n\nYour current graphics settings are backed up, the profile is put into the game, and the game is started{(_game.Store.Equals("Steam", StringComparison.OrdinalIgnoreCase) ? " through Steam" : "")}. When the game closes, your previous settings are put back automatically. Only graphics and display settings change; controls, audio and key bindings are left alone.", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    var (pr, play) = Launcher.PlayWith(_game, name);
+                    res = pr; _play = play;
+                    Post(new { cmd = "play", play = play == null ? null : new { profile = play.Profile, restore = play.Restore, running = false } });
+                    break;
                 default: return;
             }
         }

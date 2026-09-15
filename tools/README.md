@@ -32,6 +32,17 @@ ever be watched firing on a PC that happened to have the wrong card in it. Ignor
 Note that the GUI ignores `--game` and always locates the real install, so a fixture must be scanned through the
 command line.
 
+## Testing "play with this profile"
+
+`Launcher.cs` starts the real game, so test it against a stand-in: a fixture whose `game\bin\x64\Cyberpunk2077.exe`
+is a copy of `powershell.exe` (it stays open until killed, so the "game" can be seen running and then closed), a
+copy of the real `UserSettings.json` under the fixture's LocalAppData, and `config.json` with `GamePath` set to the
+fixture game folder so the store reads as manual and the exe is started directly. With `CRASHDOCTOR_TEST_ROOT` set:
+`--profile-save "PlayTest"`, `--profile-set "PlayTest" TextureQuality "Low"`, then `--play "PlayTest" --restore`
+in the background; kill the stand-in after a few seconds and the command prints "The game has closed. Your previous
+settings are back." The fixture's settings file should end byte-identical to the real one. Only kill a
+`Cyberpunk2077` process whose path is inside the fixture.
+
 ## Testing the update check
 
 The check (`Updates.cs`) is opt-in and only the window runs it. To watch it work without a release: put a
