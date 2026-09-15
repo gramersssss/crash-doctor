@@ -28,9 +28,11 @@ public sealed class UpdateInfo
 
 public static class Updates
 {
-    // Where the version file lives. Empty until the release page exists; config.json's UpdateUrl overrides it, and so
-    // does CRASHDOCTOR_UPDATE_URL, which is how the check is tested against a local file server.
-    public const string DefaultVersionUrl = "";
+    // Where the version file lives: version.json at the root of the source repository, served raw by GitHub. Bump the
+    // version there when a release goes up on Nexus and every copy with the check on learns of it within a day.
+    // config.json's UpdateUrl overrides it, and so does CRASHDOCTOR_UPDATE_URL, which is how the check is tested
+    // against a local file server.
+    public const string DefaultVersionUrl = "https://raw.githubusercontent.com/gramersssss/crash-doctor/main/version.json";
     public static readonly TimeSpan Every = TimeSpan.FromHours(20);
 
     public static string? VersionUrl()

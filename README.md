@@ -81,5 +81,6 @@ Nothing leaves your PC, with one opt-in exception: the update check under Settin
 version file at most once a day and sends nothing about you or your install. A saved report contains your game path,
 hardware model, mod names and log excerpts; share it only if you are comfortable with that.
 
-## Licence
-MIT.
+## Source and licence
+Source at https://github.com/gramersssss/crash-doctor. MIT. `version.json` at the root of the repository is what the
+opt-in update check reads; bump it when a release goes up on Nexus.

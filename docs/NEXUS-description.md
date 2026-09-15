@@ -210,7 +210,7 @@ saved report.
 
 [b]Vortex.[/b] Install the Vortex file like any mod. It deploys to [font=Courier New]bin\x64\tools\CrashDoctor\[/font] inside the game folder. Add CrashDoctor.exe to Vortex's dashboard as a tool if you want a launch button there.
 
-[b]Windows will warn you the first time.[/b] Crash Doctor is an unsigned executable, so SmartScreen shows "Windows protected your PC" the first time you run it. Click [b]More info[/b] and then [b]Run anyway[/b]. A code-signing certificate costs a few hundred pounds a year, which is not something a free tool is going to carry; the same warning appears for most small Windows utilities on this site. If you would rather check than trust: the file is 63 MB because it carries the whole .NET runtime inside it, so it does not need .NET installed. The source is MIT, and the report the tool saves shows you the commit it was built from.
+[b]Windows will warn you the first time.[/b] Crash Doctor is an unsigned executable, so SmartScreen shows "Windows protected your PC" the first time you run it. Click [b]More info[/b] and then [b]Run anyway[/b]. A code-signing certificate costs a few hundred pounds a year, which is not something a free tool is going to carry; the same warning appears for most small Windows utilities on this site. If you would rather check than trust: the file is 63 MB because it carries the whole .NET runtime inside it, so it does not need .NET installed. The source is MIT at github.com/gramersssss/crash-doctor, and the report the tool saves shows you the commit it was built from.
 
 Then press [b]Scan now[/b]. If you want video memory recorded while you play, leave the window open (minimised is fine) and it does the rest.
 
