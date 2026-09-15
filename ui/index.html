@@ -280,6 +280,8 @@ button.mark:hover{filter:brightness(.94)}
 .progress i{display:block;height:100%;width:30%;background:var(--trace);animation:slide 1.1s infinite linear}
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
 /* drop readouts in reverse order of usefulness rather than truncating all of them */
+/* a 1440p window at 100 % scaling left the right 40 % empty: let the page grow, keeping the main column at a readable width */
+@media (min-width:1700px){.view{max-width:1480px}.dx{grid-template-columns:1fr 340px;gap:24px}.bx{grid-template-columns:1fr 360px}.main{padding:32px 40px 48px}}
 @media (max-width:1180px){.bezel .chip.opt3{display:none}}
 @media (max-width:1020px){.bezel .chip.opt2{display:none}}
 @media (max-width:860px){.bezel .chip.opt1{display:none}}
@@ -665,7 +667,7 @@ function renderDx(r){
   renderRuledOut(s);
   var su=document.getElementById('dx-suspects'); su.innerHTML='';
   if(!s.suspects.length){ su.innerHTML='<div class="muted">No single mod stands out. See Health for standing problems.</div>'; }
-  s.suspects.forEach(function(x){ var d=document.createElement('div'); d.className='suspect'; d.innerHTML='<div class="name"><span>'+esc(x.mod)+'</span><span class="mark '+(x.level==='high'?'sig':x.level==='low'?'grey':'amb')+'">'+esc(x.level)+'</span></div><div class="why">'+esc(x.why)+'</div><div class="acts">'+x.actions.map(function(a){return '<button class="btn" onclick="act('+JSON.stringify(a.id)+')">'+esc(a.label)+'</button>';}).join('')+'</div>'; su.appendChild(d); });
+  s.suspects.forEach(function(x){ var d=document.createElement('div'); d.className='suspect'; d.innerHTML='<div class="name"><span>'+esc(x.mod)+'</span><span class="mark '+(x.level==='high'?'sig':x.level==='low'?'grey':'amb')+'">'+esc(x.level)+'</span></div><div class="why">'+esc(x.why)+'</div><div class="acts">'+x.actions.map(function(a){return '<button class="btn" onclick="act('+esc(JSON.stringify(a.id))+')">'+esc(a.label)+'</button>';}).join('')+'</div>'; su.appendChild(d); });
 }
 
 // Video memory in use at the moment of the crash. The engine writes this only into the crash report folder, so it is
@@ -933,7 +935,7 @@ function renderHealth(r){
   document.getElementById('health-h1').textContent=list.length? (list.length+' things worth knowing') : 'Nothing standing out';
   if(!list.length){ el.innerHTML='<div class="empty" style="border:0">No standing problems found in the logs.</div>'; return; }
   list.forEach(function(h){ var d=document.createElement('div'); d.className='hl'; var m={high:'sig',medium:'amb',low:'grey',info:'trace'}[h.severity];
-    d.innerHTML='<div><span class="mark '+m+'">'+esc(h.severity)+'</span></div><div><div class="title">'+esc(h.title)+'</div><div class="detail">'+esc(h.detail)+'</div>'+(h.mod?'<div class="mono muted" style="margin-top:4px">'+esc(h.mod)+'</div>':'')+'</div><div class="act">'+(h.action?'<button class="btn" onclick="act('+JSON.stringify(h.action.id)+')">'+esc(h.action.label)+'</button>':'')+'</div>'; el.appendChild(d); });
+    d.innerHTML='<div><span class="mark '+m+'">'+esc(h.severity)+'</span></div><div><div class="title">'+esc(h.title)+'</div><div class="detail">'+esc(h.detail)+'</div>'+(h.mod?'<div class="mono muted" style="margin-top:4px">'+esc(h.mod)+'</div>':'')+'</div><div class="act">'+(h.action?'<button class="btn" onclick="act('+esc(JSON.stringify(h.action.id))+')">'+esc(h.action.label)+'</button>':'')+'</div>'; el.appendChild(d); });
 }
 
 var MODS_SORT={key:"name",dir:1}, MODS_STATUS="all", MODS_KIND="all";
@@ -1019,7 +1021,7 @@ function renderReq(r){
   document.getElementById('req-h1').textContent= missing? missing+' missing'+(outdated?', '+outdated+' outdated':'') : outdated? outdated+' outdated' : 'Everything your mods need is installed';
   document.getElementById('req-all').style.display = list.some(function(x){return x.status!=='ok' && x.directInstall;}) ? '' : 'none';
   list.forEach(function(x){ var d=document.createElement('div'); d.className='hl'; var m={ok:'mint',missing:'sig',outdated:'amb',optional:'grey',unknown:'grey'}[x.status]||'grey'; var label={ok:'installed',missing:'missing',outdated:'outdated',optional:'not needed',unknown:'unknown'}[x.status]||x.status;
-    var btn=''; if(x.status!=='ok'){ btn = x.directInstall ? '<button class="btn primary" onclick="act('+JSON.stringify('req:install:'+x.id)+')">Install</button>' : '<button class="btn" onclick="act('+JSON.stringify('req:open:'+x.id)+')">Open download page</button>'; }
+    var btn=''; if(x.status!=='ok'){ btn = x.directInstall ? '<button class="btn primary" onclick="act('+esc(JSON.stringify('req:install:'+x.id))+')">Install</button>' : '<button class="btn" onclick="act('+esc(JSON.stringify('req:open:'+x.id))+')">Open download page</button>'; }
     d.innerHTML='<div><span class="mark '+m+'">'+esc(label)+'</span></div><div><div class="title">'+esc(x.name)+(x.version?' <span class="mono muted">'+esc(x.version)+'</span>':'')+'</div><div class="detail">'+esc(x.detail)+'</div>'+(function(){var n=x.neededByCount||(x.neededBy?x.neededBy.length:0); if(!n) return ''; var names=(x.neededBy&&x.neededBy.length&&n<=4)?': '+esc(x.neededBy.join(', ')):''; return '<div class="muted" style="font-size:12px;margin-top:4px">Needed by '+n+' installed mod'+(n===1?'':'s')+names+'</div>';})()+'</div><div class="act">'+btn+'</div>'; el.appendChild(d); });
 }
 /* ---------- graphics settings and profiles ----------
