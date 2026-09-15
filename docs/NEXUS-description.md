@@ -254,18 +254,27 @@ MIT licence. Bug reports and rules for the catalogue are very welcome: if you ha
 
 ## 4. Screenshots
 
-Rendered from a real scan of a 169-mod install; personal folder paths are scrubbed. Source images are produced
-by `tools/make-screenshots.py`; see `tools/README.md`. Upload in this order - Nexus uses the first as the card
-image, so the video-memory diagnosis leads. All eight predate the themes, profiles, crash-log keeping and video
-memory recording; new shots of the theme picker, a profile, a skin and a recorded session's curve are worth adding.
+All in `docs/screenshots/`, rendered on 14 Sep from a real scan of a 169-mod install in the Neon theme at the sizes
+Nexus asks for: the header at 1300x372, the gallery at 1920x1080. Personal folder paths are scrubbed. Nothing is
+generated imagery: `tools/make-screenshots.py` renders the views with headless Edge, and `tools/make-header.py`
+composes the header from the app icon, a crop of the real diagnosis card, and type in the theme's colours. See
+`tools/README.md`. Upload the gallery in this order - Nexus uses the first as the card image, so the video-memory
+diagnosis leads.
+
+**Header:** `00-header.png`.
 
 | File | Caption |
 |---|---|
 | `01-diagnosis-vram.png` | One sentence, the evidence under it, and the video memory number at the instant of the crash. |
 | `02-diagnosis-gpu.png` | The same fault, twelve times. Video memory was fine here, and it says so. |
 | `03-diagnosis-streaming.png` | A world-sector patch failed sixteen seconds before the crash. Confidence: fair. |
-| `04-sessions.png` | Every launch and how it ended. "Dies every 3 minutes" and "dies after 4 hours" are different problems. |
-| `05-health.png` | Standing problems found before you crash. |
-| `06-mods.png` | Your mod list, flagged - suspect, patch failing, plugin not loading, ruled out, fix applied. |
-| `07-find-it.png` | Guided bisect: pick the fault to hunt, and it drives the disable-play-halve loop. |
-| `08-requirements.png` | Every framework your installed mods actually depend on, and where to get it. |
+| `04-what-changed.png` | What changed between the last clean session and this crash: a mod installed an hour before, read from Vortex's own log. |
+| `05-sessions.png` | Every launch and how it ended. "Dies every 3 minutes" and "dies after 4 hours" are different problems. |
+| `06-health.png` | Standing problems found before you crash. |
+| `07-mods.png` | Your mod list, flagged - suspect, patch failing, plugin not loading, ruled out, fix applied. |
+| `08-find-it.png` | Guided bisect: it tells you which half to switch off, then checks what is actually deployed. |
+| `09-requirements.png` | Every framework your installed mods actually depend on, and where to get it. |
+| `10-settings.png` | Crash logs kept, video memory recorded while you play, five looks, graphics profiles. |
+
+The mod list in `07-mods.png` and `08-find-it.png` is the real one and includes adult mods by name; that is the
+author's own install and their call to publish.

@@ -1362,10 +1362,10 @@ function appVer(v){ if(!v) return '?'; var p=String(v).split('+'); return p.leng
 /* ---------- themes ---------- */
 var THEMES=[
   {id:'system',name:'Match Windows',desc:'Light or dark, following your Windows setting.'},
-  {id:'instrument',name:'Instrument',desc:'The default. Calm, light, easy to read for long.'},
+  {id:'instrument',name:'Instrument',desc:'Calm, light, easy to read for long.'},
   {id:'instrument-dark',name:'Instrument dark',desc:'The same layout on a dark ground.'},
   {id:'terminal',name:'Terminal',desc:'The computers you jack into in Night City.'},
-  {id:'pause',name:'Neon',desc:'Red and cyan on dark glass, corners cut away.'}
+  {id:'pause',name:'Neon',desc:'The default. Red and cyan on dark glass, corners cut away.'}
 ];
 function themeChoice(){ try{ return localStorage.getItem('cd.theme')||'pause'; }catch(e){ return 'pause'; } }   // Neon by default (Gary, 14 Sep); a saved choice wins
 function resolveTheme(id){ return id==='system' ? (window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'instrument-dark':'instrument') : id; }

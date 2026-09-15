@@ -100,10 +100,24 @@ that is the size Explorer and the taskbar actually use.
 The icon was a generated placeholder with no source for the first eleven commits. This file is that source now;
 change the geometry here, never the .ico.
 
+## make-header.py
+
+    python tools/make-header.py docs/screenshots/01-diagnosis-vram.png docs/screenshots/00-header.png
+
+Composes the Nexus page header (1300x372) with PIL: the app icon from `src/app.ico`, "Crash Doctor" and the
+tagline in the Neon theme's colours and the app's own fonts (Bahnschrift, Segoe UI, Consolas), a cut-corner crop
+of the real diagnosis card from the first gallery screenshot, and the icon's vital-signs trace along the foot. No
+generated imagery anywhere in it, at Gary's request. Re-run it after re-rendering the screenshots.
+
 ## make-screenshots.py
 
     CrashDoctor.exe --json out.json --html report.html
-    python tools/make-screenshots.py report.html docs/screenshots
+    python tools/make-screenshots.py report.html docs/screenshots [--size 1920x1080] [--theme pause]
+
+Defaults are what Nexus asks for in a gallery image (1920x1080) in the app's default theme, Neon (stored id
+`pause`). Two flags change that. Ten views are rendered; the what-changed shot scrolls its panel into view.
+`--run-all-compositor-stages-before-draw` is what makes the page's fade-in finish before the capture - without it
+the main panel came out empty - and the script waits for each PNG because Edge returns before writing it.
 
 Renders the Nexus screenshots from a saved report with headless Edge: one image per view, all the same size and
 zoom, reproducible after a UI change. Photographing the window by hand gives eight slightly different pictures and
