@@ -56,9 +56,9 @@ is running, because the game rewrites its settings when it exits.
 - Microsoft WebView2 runtime (already on every up-to-date Windows 11; Crash Doctor offers to install it if missing)
 
 ## Install
-**Manual (recommended):** unzip anywhere, run `CrashDoctor.exe`.
-**Vortex:** install like any mod; the files land in `bin\x64\tools\CrashDoctor\` inside the game folder. Add
-`CrashDoctor.exe` to Vortex's dashboard as a tool if you want a launch button there.
+**Install:** unzip anywhere, run `CrashDoctor.exe`.
+It is not a mod and there is no Vortex package: it does not belong in the game folder. If you want a launch button
+in Vortex, add `CrashDoctor.exe` to its dashboard as a tool.
 
 ## Headless use
 ```
@@ -76,7 +76,7 @@ CrashDoctor.exe --profile-undo
 
 ## Building
 .NET 8 SDK. `build.ps1 -Version x.y.z` produces a single-file, self-contained exe (no .NET needed on the
-user's PC) in `dist\CrashDoctor-<version>\`, plus the manual-install and Vortex zips for Nexus.
+user's PC) in `dist\CrashDoctor-<version>\`, plus the zip for Nexus.
 
 ## Privacy
 Nothing leaves your PC, with one opt-in exception: the update check under Settings, off by default, fetches one small

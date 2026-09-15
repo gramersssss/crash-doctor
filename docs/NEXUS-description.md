@@ -62,17 +62,17 @@ most want to see.
 
 ### Installation instructions
 
-**Manual (recommended).** Unzip anywhere and run `CrashDoctor.exe`. It is not a mod; it does not go in the game
+**Install.** Unzip anywhere and run `CrashDoctor.exe`. It is not a mod; it does not go in the game
 folder unless you want it to.
 
-**Vortex.** Install the Vortex file like any mod. It deploys to `bin\x64\tools\CrashDoctor\` inside the game folder.
-Add `CrashDoctor.exe` to Vortex's dashboard as a tool if you want a launch button there.
+**There is no Vortex package**, on purpose. Crash Doctor is not a mod and does not belong in the game folder. If you
+want a launch button in Vortex, add `CrashDoctor.exe` to its dashboard as a tool.
 
 **Windows will warn you the first time.** Crash Doctor is an unsigned executable, so SmartScreen shows "Windows
 protected your PC" the first time you run it. Click **More info** and then **Run anyway**. A code-signing
 certificate costs a few hundred pounds a year, which is not something a free tool is going to carry; the same warning
 appears for most small Windows utilities on this site. If you would rather check than trust: the file is 63 MB
-because it carries the whole .NET runtime inside it, so it does not need .NET installed. The source is MIT, and the
+because it carries the whole .NET runtime inside it, so it does not need .NET installed. The source is MIT at github.com/gramersssss/crash-doctor, and the
 report the tool saves shows you the commit it was built from.
 
 Then press **Scan now**. If you want video memory recorded while you play, leave the window open (minimised is fine)
@@ -208,9 +208,9 @@ saved report.
 
 [size=4][b]Installation instructions[/b][/size]
 
-[b]Manual (recommended).[/b] Unzip anywhere and run CrashDoctor.exe. It is not a mod; it does not go in the game folder unless you want it to.
+[b]Install.[/b] Unzip anywhere and run CrashDoctor.exe. It is not a mod; it does not go in the game folder unless you want it to.
 
-[b]Vortex.[/b] Install the Vortex file like any mod. It deploys to [font=Courier New]bin\x64\tools\CrashDoctor\[/font] inside the game folder. Add CrashDoctor.exe to Vortex's dashboard as a tool if you want a launch button there.
+[b]There is no Vortex package[/b], on purpose. Crash Doctor is not a mod and does not belong in the game folder. If you want a launch button in Vortex, add CrashDoctor.exe to its dashboard as a tool.
 
 [b]Windows will warn you the first time.[/b] Crash Doctor is an unsigned executable, so SmartScreen shows "Windows protected your PC" the first time you run it. Click [b]More info[/b] and then [b]Run anyway[/b]. A code-signing certificate costs a few hundred pounds a year, which is not something a free tool is going to carry; the same warning appears for most small Windows utilities on this site. If you would rather check than trust: the file is 63 MB because it carries the whole .NET runtime inside it, so it does not need .NET installed. The source is MIT at github.com/gramersssss/crash-doctor, and the report the tool saves shows you the commit it was built from.
 
