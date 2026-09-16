@@ -17,9 +17,13 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
     <InvariantGlobalization>true</InvariantGlobalization>
-    <!-- publish: see build.ps1 (single-file, self-contained win-x64) -->
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <!-- publish: see build.ps1 (single-file, self-contained win-x64).
+         No compression and no self-extracting native libraries. With both on, the exe
+         unpacked itself into a temp folder at start-up, which is how packed malware
+         behaves, and 0.6.0 was quarantined on Nexus with 2/65 generic detections.
+         The native DLLs now ship beside the exe instead; the zip is about the same size. -->
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
     <DebugType>embedded</DebugType>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <NoWarn>$(NoWarn);MSB3277</NoWarn>
