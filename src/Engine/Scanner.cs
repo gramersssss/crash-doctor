@@ -20,7 +20,7 @@ public static class Scanner
         var latestRed = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
         r.Game = new GameInfo { Path = g.GameDir, Store = g.Store, FileVersion = fv, Version = !string.IsNullOrEmpty(latestRed?.ProductVersion) ? latestRed!.ProductVersion : GuessPatch(fv), Running = GameLocator.GameRunning() };
         r.System = d.System;
-        r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Frameworks = Frameworks(d) };
+        r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Counted = d.Mods.Manager == "Vortex" ? "mods" : "pieces", Frameworks = Frameworks(d) };
         Analyzer.Analyze(d, r);
         Mark("analyze");
         // what a hunt on each fault would demand of a clean run, shown on the pick list before anyone commits to one
@@ -29,6 +29,7 @@ public static class Scanner
         try { r.Archive = CrashArchive.Preserve(d, r.Sessions); } catch { /* keeping logs must never cost the diagnosis */ }
         Mark("crash log archive");
         try { r.VramLogs = VramLogs.Summary(); } catch { }
+        try { r.GameLogs = LogCleaner.Summary(g); } catch { }
         var seenUntil = GameLocator.LoadConfig().CrashesSeenUntil;
         if (seenUntil != null)
             r.NewCrashes = r.Sessions.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running) && s.Start > seenUntil.Value)

@@ -115,7 +115,7 @@ public static class Bisect
             .OrderByDescending(m => suspected.Contains(m.Name))
             .ThenByDescending(m => (m.Type ?? "").Contains("ArchiveXL"))
             .ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
-            .Select(m => m.Name).ToList();
+            .Select(m => m.Name).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
         var plan = new BisectPlan
         {
@@ -203,7 +203,10 @@ public static class Bisect
     {
         var step = p.Current;
         if (step == null) return (new(), new());
-        var byName = r.ModsList.ToDictionary(m => m.Name, m => m.Status, StringComparer.OrdinalIgnoreCase);
+        // Two mods can share a name (e.g. an archive and a folder both called "Additional Stuff 01" - Nuttyboy812, 2 Oct):
+        // ToDictionary threw "An item with the same key has already been added" and the whole scan failed.
+        var byName = r.ModsList.GroupBy(m => m.Name, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Any(m => m.Status == "enabled") ? "enabled" : g.First().Status, StringComparer.OrdinalIgnoreCase);
         string? Status(string n) => byName.TryGetValue(n, out var s) ? s : null;
 
         var turnOff = step.Off.Where(n => Status(n) == "enabled").ToList();

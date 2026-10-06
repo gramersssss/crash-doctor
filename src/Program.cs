@@ -80,6 +80,19 @@ static class Program
             Environment.Exit(0);
         }
 
+        // Clear old logs / put them back, the same two actions as the Settings page (LogCleaner.cs):
+        //   CrashDoctor.exe --clear-logs [--game "C:\path"]      CrashDoctor.exe --restore-logs [--game "C:\path"]
+        if (args.Contains("--clear-logs") || args.Contains("--restore-logs"))
+        {
+            string? gp = null; for (int i = 0; i < args.Length - 1; i++) if (args[i] == "--game") gp = args[i + 1];
+            if (gp != null && !GameLocator.IsGameDir(gp)) { Console.Error.WriteLine("--game " + gp + " is not a Cyberpunk 2077 folder."); return 2; }
+            var g = gp != null ? new GamePaths { GameDir = gp, Store = "manual" } : GameLocator.Locate();
+            if (g == null) { Console.Error.WriteLine("Cyberpunk 2077 not found. Use --game <folder>."); return 2; }
+            var res = args.Contains("--clear-logs") ? LogCleaner.Clear(g) : LogCleaner.Restore(g);
+            (res.Ok ? Console.Out : Console.Error).WriteLine(res.Message); Console.Out.Flush(); Console.Error.Flush();
+            Environment.Exit(res.Ok ? 0 : 1);
+        }
+
         if (args.Any(a => a == "--json" || a == "--html"))
         {
             try

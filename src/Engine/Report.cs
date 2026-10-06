@@ -30,6 +30,7 @@ public sealed class Report
     public DateTime? SettingsBackup { get; set; }                     // newest backup an Undo would restore
     public ArchiveSummary? Archive { get; set; }                      // crash logs kept before the game rotates them
     public VramLogSummary? VramLogs { get; set; }                     // video memory recorded while the game ran
+    public LogClearSummary? GameLogs { get; set; }                    // logs in the game folder, and the last clearing (LogCleaner.cs)
     public UpdateInfo? Update { get; set; }                           // the opt-in update check's last result (Updates.cs)
     public List<Change> RecentChanges { get; set; } = new();          // what changed since the last clean session, up to now
     public DateTime? RecentChangesSince { get; set; }
@@ -115,6 +116,12 @@ public sealed class ModsSummary
     public int Installed { get; set; }
     public int Enabled { get; set; }
     public string Manager { get; set; } = "manual";
+    // "mods" when a mod manager told us what is installed. "pieces" when there is none: then every .archive, .xl,
+    // CET folder, plugin folder and script folder is its own row, and one mod is usually several of those. Measured
+    // on a 171-mod Vortex install read as if it had no manager: 373 rows, 2.2 times too many - the same ratio a
+    // user reported (925 shown, 452 in their manager). Grouping by name cannot repair it (best attempt: 295 rows
+    // and seven groups that glued different mods together), so the page says what the number is instead.
+    public string Counted { get; set; } = "mods";
     public List<string> Frameworks { get; set; } = new();
 }
 
@@ -131,6 +138,7 @@ public sealed class Session
     public int Confidence { get; set; }          // 0..3
     public bool Partial { get; set; }            // only a crash report exists; the session log has been rotated away
     public bool DurationKnown { get; set; } = true;
+    public bool EndFromActivity { get; set; }    // no shutdown or crash on record; End = the last line any log wrote (a lower bound)
     public string? District { get; set; }
     public string? Quest { get; set; }
     public List<Evidence> Evidence { get; set; } = new();

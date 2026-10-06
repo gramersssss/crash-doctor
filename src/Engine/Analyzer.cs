@@ -131,6 +131,12 @@ public static class Analyzer
                 var cr = d.CrashReporterTimes.Where(t => t >= x.Start && (next == null || t < next)).OrderBy(t => t).FirstOrDefault();
                 if (cr != default) { s.End = cr; s.CrashTime = cr; s.EndKind = EndKind.Unknown; }
                 else if (i == red.Count - 1 && gameRunning) { s.EndKind = EndKind.Running; }
+                else if (LastActivity(d, x.Start, next) is DateTime seen && seen > x.LastWrite.AddSeconds(30))
+                {
+                    // Closed without a shutdown or a crash. RED4ext stopped writing ~12 s in, which made these read as
+                    // 0.2-minute sessions (28 Sep); the other logs kept going until the game went away.
+                    s.End = seen; s.EndKind = EndKind.Unknown; s.EndFromActivity = true;
+                }
                 else { s.End = x.LastWrite; s.EndKind = EndKind.Unknown; s.DurationKnown = false; }
             }
             var end = s.End ?? DateTime.Now;
@@ -142,6 +148,18 @@ public static class Analyzer
             if (!list.Any(s => s.Start <= t && (s.End ?? DateTime.Now).AddMinutes(1) >= t))
                 list.Add(new Session { Id = "c" + t.ToString("yyyyMMddHHmmss"), Start = t, End = t, CrashTime = t, EndKind = EndKind.Unknown, Minutes = 0, Partial = true, DurationKnown = false });
         return list;
+    }
+
+    // The last sign of the game running in [start, next): a line from CET or ArchiveXL, or the end of Crash Doctor's own
+    // video memory recording for this session. Null when nothing wrote after start-up.
+    static DateTime? LastActivity(CollectedData d, DateTime start, DateTime? next)
+    {
+        DateTime? last = null;
+        foreach (var t in d.ActivitySeconds)
+            if (t >= start && (next == null || t < next) && (last == null || t > last)) last = t;
+        foreach (var v in d.VramLogs)
+            if (!v.Live && v.Start >= start.AddMinutes(-2) && (next == null || v.Start < next) && (last == null || v.End > last)) last = v.End;
+        return last;
     }
 
     // What changed between the last session that ended normally and this crash (Changes.cs). The pool decides which
@@ -175,6 +193,17 @@ public static class Analyzer
 
         if (s.EndKind == EndKind.Clean) { s.Verdict = $"Closed normally after {Dur(s.Minutes)}."; s.Confidence = 3; return; }
         if (s.EndKind == EndKind.Running) { s.Verdict = "Still running."; s.Confidence = 3; return; }
+        // No crash and no shutdown, only the last line some log wrote. Whatever was logged just before that is not
+        // "what was happening when it crashed", so none of the crash analysis below applies.
+        if (s.EndFromActivity && s.End is DateTime lastSeen)
+        {
+            var reset = d.Events.Any(e => e.Kind == "power" && e.At >= lastSeen && e.At <= lastSeen.AddMinutes(20));
+            s.Verdict = reset
+                ? $"The whole PC went down after at least {Dur(s.Minutes)}, not just the game. That is power, overheating or a hard reset, not a mod."
+                : $"The session ended without any record after at least {Dur(s.Minutes)}: no shutdown, no crash report. The last sign of the game running was at {lastSeen:HH:mm}. It was probably closed by force (Task Manager, Alt+F4 during a hang) rather than a crash.";
+            s.Confidence = reset ? 2 : 1;
+            return;
+        }
 
         var crashAt = s.CrashTime ?? s.End ?? s.Start;
         var report = s.CrashTime == null ? null : d.CrashReports.FirstOrDefault(c => Math.Abs((c.At - s.CrashTime.Value).TotalSeconds) <= 90);

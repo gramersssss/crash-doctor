@@ -310,6 +310,16 @@ public sealed class MainForm : Form
         if (id == "open:gamefolder" && g != null) { OpenUrl(g.GameDir); return; }
         if (id == "open:crashlogs") { Directory.CreateDirectory(CrashArchive.Folder); OpenUrl(CrashArchive.Folder); return; }
         if (id == "open:vramlogs") { Directory.CreateDirectory(VramLogs.Folder); OpenUrl(VramLogs.Folder); return; }
+        if (id == "open:clearedlogs") { Directory.CreateDirectory(LogCleaner.Folder); OpenUrl(LogCleaner.Folder); return; }
+        // Clearing moves the logs into Crash Doctor's own folder (nothing is deleted) and the scan runs again, so the
+        // page shows the clean slate straight away. Putting them back is the same in reverse.
+        if ((id == "logs:clear" || id == "logs:restore") && g != null)
+        {
+            var res = await Task.Run(() => id == "logs:clear" ? LogCleaner.Clear(g) : LogCleaner.Restore(g));
+            Post(new { cmd = res.Ok ? "toast" : "error", text = res.Message });
+            if (res.Ok) await ScanAsync();
+            return;
+        }
         if (id.StartsWith("open:vramlog:"))
         {
             var f = _report?.Sessions.FirstOrDefault(x => x.Id == id["open:vramlog:".Length..])?.VramLog?.File;

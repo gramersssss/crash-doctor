@@ -71,6 +71,10 @@ public sealed class CollectedData
     public DateTime? GameExeWritten { get; set; }
     public bool VortexLogRead { get; set; }
     public DateTime Since { get; set; }        // how far back this scan read; comparisons older than this are refused, not faked
+    // Every second in which CET or ArchiveXL wrote a line. RED4ext's log goes quiet about 12 s after start-up and only
+    // writes again at a clean shutdown, so a game that is closed by force has no end time of its own; the last of
+    // these is the last sign it was still running (Analyzer.LastActivity).
+    public HashSet<DateTime> ActivitySeconds { get; } = new();
 }
 
 public static class Collectors
@@ -203,7 +207,7 @@ public static class Collectors
         void Flush() { if (cur is DateTime at && head != null && at >= since && Errorish.IsMatch(head)) d.Events.Add(new LogEvent { At = at, Source = source, Text = head.Length > 220 ? head[..220] + "…" : head, Kind = "error", Mod = mod }); head = null; trace.Clear(); }
         foreach (var raw in lines)
         {
-            if (TryTs(raw, out var at)) { Flush(); cur = at; head = Regex.Replace(raw, @"^\[[^\]]+\]\s*(\[\d+\]\s*)?", "").Trim(); }
+            if (TryTs(raw, out var at)) { Flush(); if (at >= since) d.ActivitySeconds.Add(at); cur = at; head =Regex.Replace(raw, @"^\[[^\]]+\]\s*(\[\d+\]\s*)?", "").Trim(); }
             else if (head != null && raw.StartsWith("\t") || raw.StartsWith("    ")) trace.Add(raw.Trim());
         }
         Flush();
@@ -224,7 +228,8 @@ public static class Collectors
             for (int i = 0; i < lines.Length; i++)
             {
                 var line = lines[i]; if (!TryTs(line, out var at)) continue;
-                var tid = Regex.Match(line, @"\]\s*\[(\d+)\]").Groups[1].Value;
+                if (at >= since) d.ActivitySeconds.Add(at);
+                var tid =Regex.Match(line, @"\]\s*\[(\d+)\]").Groups[1].Value;
                 var body = Regex.Replace(line, @"^\[[^\]]+\]\s*\[\d+\]\s*", "");
                 if (body.Contains("[WorldStreaming]"))
                 {
