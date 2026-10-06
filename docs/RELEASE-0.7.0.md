@@ -1,7 +1,7 @@
 # Crash Doctor 0.7.0 - release texts (DRAFT - nothing posted yet)
 
 Zip: `dist\CrashDoctor-0.7.0-manual.zip` - 58.3 MB
-SHA-256: 7c2db7cf62f36b0278825a2ba126945dad793607110495b9d8a869020c0c3dbc
+SHA-256: e49905e1ee30c5a737184ed55b1017d27f51a73a479e1e35fd018abe4ebeed77
 Checked 6 Oct 2026: Gary's test (steps 1-6 pass; 59 logs put back, the other 41 kept because the game had written
 newer ones - checked file by file); fixtures fresh / healthy / broken give the same findings as 0.6.1, plus the new
 game-logs section; the Release exe scans the broken fixture the same as the Debug build; the zip holds only Crash
@@ -25,7 +25,7 @@ Doctor, its ui / fixes / knowledge folders, the README and the Microsoft runtime
 **Footer:** "Changes nothing unless you press a button that says so." - true for every version so far.
 
 Download: `CrashDoctor-0.7.0-manual.zip` below. Unzip anywhere and run CrashDoctor.exe - no install, no .NET needed.
-SHA-256: 7c2db7cf62f36b0278825a2ba126945dad793607110495b9d8a869020c0c3dbc
+SHA-256: e49905e1ee30c5a737184ed55b1017d27f51a73a479e1e35fd018abe4ebeed77
 
 ## Nexus file (Gary uploads the zip - over 10 MB)
 - Upload as a NEW Main file (not "update" - 0.6.1 stays until 0.7.0 passes Nexus's file scan, then archive 0.6.1)
