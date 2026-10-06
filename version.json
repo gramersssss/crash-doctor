@@ -1,5 +1,5 @@
 {
-  "version": "0.6.1",
+  "version": "0.7.0",
   "url": "https://www.nexusmods.com/cyberpunk2077/mods/33934",
-  "notes": "0.6.1: the exe no longer unpacks itself at start-up, which is what triggered two generic antivirus false positives on 0.6.0. Nothing else changed. Also on GitHub: https://github.com/gramersssss/crash-doctor/releases/tag/v0.6.1"
+  "notes": "0.7.0: Clear old logs (and put them back) in Settings, a mod count, real lengths for sessions closed without a trace, and a fix for mods that share a name. Also on GitHub: https://github.com/gramersssss/crash-doctor/releases/tag/v0.7.0"
 }
