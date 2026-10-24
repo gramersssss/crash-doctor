@@ -389,7 +389,8 @@ public static class Rules
     static IEnumerable<RuleHit> NativePluginsRefusingToLoad(CollectedData d, Report r)
     {
         var latestRed = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
-        if (latestRed == null) return None;
+        // RED4ext itself gone (a purge leaves its logs behind): what it refused then is history, not this install
+        if (latestRed == null || !KnownReleases.Installed(d, "RED4ext")) return None;
         var hits = new List<RuleHit>();
         foreach (var inc in latestRed.Incompatible)
         {
