@@ -40,6 +40,35 @@ the RED4ext logs, so it works with any mod manager), mod files written by hand, 
 facts, and it says so: being new is not evidence of guilt, but it is the shortest list to test first. The no-crash
 screen shows the same list for right now.
 
+**Mod Organizer 2 is read directly.** With MO2 the mods (and, once the game has closed, often the frameworks and
+their logs) are not in the game folder at all, so Crash Doctor finds the MO2 instance that manages the game (global
+instances under `%LOCALAPPDATA%\ModOrganizer`, portable ones it has registered, a running MO2, or the folder you put in
+`Mo2Path` in `%APPDATA%\CrashDoctor\config.json`), reads the selected profile's `modlist.txt` and every mod's folder in
+priority order, Root Builder's `Root` folders included, and reads the logs from MO2's overwrite folder. The mod count,
+the file owners behind every finding, the rules and Find it then work the same as with Vortex. Two MO2-only findings:
+a mod the profile enables whose folder is missing, and script or plugin files one mod hides from another. It never
+edits anything in MO2; you do not need to start Crash Doctor through MO2.
+
+**Advanced Crash Reporter, if you have it.** [Advanced Crash Reporter](https://www.nexusmods.com/cyberpunk2077/mods/34403)
+by Akiway (optional, not included) writes a detailed report for every crash and freeze. Crash Doctor reads those
+reports, defensively, and adds the name of the function the game died in and whose native code was running on that
+thread to the evidence. A mod's own code on the faulting thread is named as a suspect; a freeze the engine's watchdog
+ended is shown as a freeze rather than a crash. ACR's own verdict is shown as its reading, in its own words.
+
+**After a game update.** When the game's build changes, Health says so first, and lists what each framework's own log
+said the first time the game ran on the new build: RED4ext and the plugins it refused, Cyber Engine Tweaks, redscript.
+Frameworks usually need their own update after a game patch; Crash Doctor does not keep a table of which versions
+support which game version, it reports what the logs say.
+
+**Your language.** The window, the diagnosis and the saved report are available in English and the 18 languages the
+game itself ships (Arabic, Chinese simplified and traditional, Czech, French, German, Hungarian, Italian, Japanese,
+Korean, Polish, Portuguese (Brazil), Russian, Spanish (Spain and Mexico), Thai, Turkish, Ukrainian). It starts in your
+Windows display language when it has it, else English. The language button at the top (a globe and the language's own
+name) is always visible; English is first in its list, and **Ctrl+L** switches back to English from anywhere. The
+translations are machine-assisted and use the game's own words for its settings; English is the reference. The
+summary you copy for a forum can be copied in English whatever language the window is in, and a saved report carries
+an English copy when it was saved in another language.
+
 **New crashes are flagged.** If the game crashed since you last looked, a notice sits at the top of every page until you
 open the crash or dismiss it, and those crashes are marked new in Sessions.
 
@@ -55,6 +84,8 @@ is running, because the game rewrites its settings when it exits.
 - Windows 10 / 11, 64-bit
 - Cyberpunk 2077 (Steam, GOG or Epic; or pick the folder by hand)
 - Microsoft WebView2 runtime (already on every up-to-date Windows 11; Crash Doctor offers to install it if missing)
+- Optional: [Advanced Crash Reporter](https://www.nexusmods.com/cyberpunk2077/mods/34403) by Akiway, for function names
+  and freezes in the diagnosis
 
 ## Install
 **Install:** unzip anywhere, run `CrashDoctor.exe`.
@@ -63,8 +94,10 @@ in Vortex, add `CrashDoctor.exe` to its dashboard as a tool.
 
 ## Headless use
 ```
-CrashDoctor.exe --json report.json [--html report.html] [--game "D:\Games\Cyberpunk 2077"] [--no-mods]
+CrashDoctor.exe --json report.json [--html report.html] [--game "D:\Games\Cyberpunk 2077"] [--no-mods] [--lang de]
 ```
+The command line writes English unless `--lang <code>` is given (codes: en, ar, cs, de, es-ES, es-MX, fr, hu, it, ja,
+ko, pl, pt-BR, ru, th, tr, uk, zh-CN, zh-TW).
 
 Graphics profiles, for a launcher script that picks a quality before starting the game:
 ```

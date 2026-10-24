@@ -32,13 +32,13 @@ public static class Launcher
             if (g.Store.Equals("Steam", StringComparison.OrdinalIgnoreCase))
             {
                 Process.Start(new ProcessStartInfo("steam://rungameid/" + SteamAppId) { UseShellExecute = true });
-                return new ProfileResult { Ok = true, Message = "Asked Steam to start Cyberpunk 2077." };
+                return new ProfileResult { Ok = true, Message = L.T("play.askedSteam") };
             }
-            if (!File.Exists(g.Exe)) return new ProfileResult { Ok = false, Message = "The game's exe was not found at " + g.Exe + "." };
+            if (!File.Exists(g.Exe)) return new ProfileResult { Ok = false, Message = L.T("play.noExe", g.Exe) };
             Process.Start(new ProcessStartInfo(g.Exe) { UseShellExecute = true, WorkingDirectory = g.Bin });
-            return new ProfileResult { Ok = true, Message = "Started Cyberpunk 2077." };
+            return new ProfileResult { Ok = true, Message = L.T("play.started") };
         }
-        catch (Exception ex) { return new ProfileResult { Ok = false, Message = "Could not start the game: " + ex.Message }; }
+        catch (Exception ex) { return new ProfileResult { Ok = false, Message = L.T("play.couldNotStart", ex.Message) }; }
     }
 
     /// <summary>
@@ -54,11 +54,11 @@ public static class Launcher
         var started = Start(g);
         if (!started.Ok)
         {
-            if (madeBackup) { var undo = GraphicsProfiles.Undo(); started.Message += " Your settings were put back" + (undo.Ok ? "." : ", or tried to be: " + undo.Message); }
+            if (madeBackup) { var undo = GraphicsProfiles.Undo(); started.Message = L.Cat(started.Message, undo.Ok ? L.T("play.putBack") : L.T("play.triedPutBack", undo.Message)); }
             return (started, null);
         }
         var play = new Play { Profile = profile, LaunchedAt = DateTime.Now, Restore = madeBackup };
-        var msg = $"Playing with \"{profile}\". " + (madeBackup ? "Your previous settings go back when the game closes." : "The game already had these settings, so there is nothing to put back afterwards.");
+        var msg = L.Cat(L.T("play.playing", profile), madeBackup ? L.T("play.goBack") : L.T("play.nothingToPutBack"));
         return (new ProfileResult { Ok = true, Message = msg }, play);
     }
 
@@ -70,15 +70,15 @@ public static class Launcher
         if (!play.SeenRunning)
         {
             if (DateTime.Now - play.LaunchedAt < Play.StartTimeout) return null;
-            return Finish(play, "The game did not start within 5 minutes.");
+            return Finish(play, L.T("play.didNotStart"));
         }
-        return Finish(play, "The game has closed.");
+        return Finish(play, L.T("play.closed"));
     }
 
     static string Finish(Play play, string what)
     {
-        if (!play.Restore) return what + $" The \"{play.Profile}\" settings stay in the game.";
+        if (!play.Restore) return L.Cat(what, L.T("play.settingsStay", play.Profile));
         var undo = GraphicsProfiles.Undo();
-        return what + (undo.Ok ? " Your previous settings are back." : " Your previous settings could not be put back: " + undo.Message + " Undo under Settings will try again.");
+        return L.Cat(what, undo.Ok ? L.T("play.settingsBack") : L.T("play.settingsNotBack", undo.Message));
     }
 }

@@ -12,6 +12,12 @@ public sealed class ModInventory
     public Dictionary<string, string> FileOwner { get; } = new(StringComparer.OrdinalIgnoreCase);
     public int XlFiles, RedsFolders, CetMods, TweakFiles, Red4extPlugins, Archives;
     public long ArchiveBytes;                                    // total size of archive\pc\mod
+    // Mod Organizer 2 only: mods the profile enables whose folder is gone, when MO2 created each mod's folder
+    // (an install, or an update that replaced it), and files two enabled mods both ship (rel, winner, the others).
+    public List<string> Mo2Missing { get; } = new();
+    public List<(string name, DateTime at, string version)> Mo2Installed { get; } = new();
+    public List<(string rel, string winner, List<string> losers)> Mo2Conflicts { get; } = new();
+    public bool AlsoMo2 { get; set; }                            // Vortex was read, but an MO2 instance manages this game too
     readonly List<(string file, long bytes)> _archiveSizes = new();
 
     // The biggest installed .archive files, named by the mod that owns them. Texture weight is what fills a card.
@@ -30,27 +36,68 @@ public sealed class ModInventory
     {
         var inv = new ModInventory();
         CountArtifacts(g, inv);
-        if (File.Exists(g.VortexManifest) && ReadVortex(g, inv)) inv.Manager = "Vortex";
+        // Vortex deploys into the game folder itself, so its manifest there is the strongest statement of what is
+        // installed. MO2 is read when it manages this game and Vortex does not.
+        // An MO2 folder named in config.json is the user saying which manager to believe.
+        var mo2First = g.Mo2 != null && !string.IsNullOrWhiteSpace(GameLocator.LoadConfig().Mo2Path);
+        if (mo2First && ReadMo2(g, inv)) inv.Manager = ModOrganizer.ManagerName;
+        else if (File.Exists(g.VortexManifest) && ReadVortex(g, inv)) inv.Manager = "Vortex";
+        else if (g.Mo2 != null && ReadMo2(g, inv)) inv.Manager = ModOrganizer.ManagerName;
         else ReadManual(g, inv);
+        if (inv.Manager == "Vortex" && g.Mo2 != null) inv.AlsoMo2 = true;
         foreach (var m in inv.Mods) m.Type = Classify(m.Files);
         return inv;
     }
 
     static void CountArtifacts(GamePaths g, ModInventory inv)
     {
-        if (Directory.Exists(g.ArchiveMods))
+        // through GamePaths so a Mod Organizer 2 install is counted as the game sees it, not as the bare game folder
+        inv.XlFiles = g.FilesIn(GamePaths.RelArchiveMods, "*.xl").Count;
+        foreach (var (f, _) in g.FilesIn(GamePaths.RelArchiveMods, "*.archive"))
         {
-            inv.XlFiles = Directory.EnumerateFiles(g.ArchiveMods, "*.xl").Count();
-            foreach (var f in Directory.EnumerateFiles(g.ArchiveMods, "*.archive"))
-            {
-                long len; try { len = new FileInfo(f).Length; } catch { continue; }
-                inv.Archives++; inv.ArchiveBytes += len; inv._archiveSizes.Add((Path.GetFileName(f), len));
-            }
+            long len; try { len = new FileInfo(f).Length; } catch { continue; }
+            inv.Archives++; inv.ArchiveBytes += len; inv._archiveSizes.Add((Path.GetFileName(f), len));
         }
-        if (Directory.Exists(g.Scripts)) inv.RedsFolders = Directory.EnumerateDirectories(g.Scripts).Count();
-        if (Directory.Exists(g.CetMods)) inv.CetMods = Directory.EnumerateDirectories(g.CetMods).Count(d => File.Exists(Path.Combine(d, "init.lua")));
-        if (Directory.Exists(g.Tweaks)) inv.TweakFiles = Directory.EnumerateFiles(g.Tweaks, "*.*", SearchOption.AllDirectories).Count(f => f.EndsWith(".yaml") || f.EndsWith(".yml") || f.EndsWith(".tweak"));
-        if (Directory.Exists(g.Red4extPlugins)) inv.Red4extPlugins = Directory.EnumerateDirectories(g.Red4extPlugins).Count(d => Directory.EnumerateFiles(d, "*.dll").Any());
+        inv.RedsFolders = g.SubDirs(GamePaths.RelScripts).Count;
+        inv.CetMods = g.SubDirs(GamePaths.RelCetMods).Count(kv => kv.Value.Any(d => File.Exists(Path.Combine(d, "init.lua"))));
+        inv.TweakFiles = g.FilesIn(GamePaths.RelTweaks, "*.*", recurse: true).Count(x => x.full.EndsWith(".yaml") || x.full.EndsWith(".yml") || x.full.EndsWith(".tweak"));
+        inv.Red4extPlugins = g.SubDirs(GamePaths.RelRed4extPlugins).Count(kv => kv.Value.Any(d => { try { return Directory.EnumerateFiles(d, "*.dll").Any(); } catch { return false; } }));
+    }
+
+    // Mod Organizer 2: one row per mod in the profile's modlist.txt, enabled or not, with the files its folder gives
+    // the game. Who owns a file follows MO2's priority (a later mod in the list wins a conflict), so a script error
+    // is blamed on the copy the game actually loads.
+    static bool ReadMo2(GamePaths g, ModInventory inv)
+    {
+        var m = g.Mo2!;
+        if (m.Entries.Count == 0) return false;
+        var rows = new List<ModRow>();
+        foreach (var (name, enabled) in m.Entries)
+        {
+            var dir = Path.Combine(m.ModsDir, name);
+            var row = new ModRow { Name = name, Folder = name, Status = enabled ? "enabled" : "disabled" };
+            var (id, ver, written) = ModOrganizer.Meta(dir);
+            row.NexusId = id; row.Version = ver;
+            if (!Directory.Exists(dir)) { if (enabled) inv.Mo2Missing.Add(name); }
+            else row.Files.AddRange(ModOrganizer.FilesOf(dir));
+            // MO2 creates a mod's folder when it installs it, and again when an update replaces it. meta.ini's own time is
+            // no use for this: MO2 rewrites it for notes, categories and endorsements too.
+            if (Directory.Exists(dir)) { try { inv.Mo2Installed.Add((name, Directory.GetCreationTime(dir), ver)); } catch { } }
+            rows.Add(row);
+        }
+        // lowest priority first, so the winner of each conflict is the last one written
+        var claimed = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var row in Enumerable.Reverse(rows).Where(r => r.Status == "enabled"))
+            foreach (var f in row.Files)
+            {
+                inv.FileOwner[f] = row.Name;
+                if (!claimed.TryGetValue(f, out var l)) claimed[f] = l = new();
+                l.Add(row.Name);
+            }
+        foreach (var kv in claimed.Where(kv => kv.Value.Count > 1))
+            inv.Mo2Conflicts.Add((kv.Key, kv.Value[^1], kv.Value.Take(kv.Value.Count - 1).ToList()));
+        inv.Mods.AddRange(rows);
+        return true;
     }
 
     static bool ReadVortex(GamePaths g, ModInventory inv)

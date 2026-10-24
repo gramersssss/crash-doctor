@@ -20,6 +20,7 @@ public sealed class CrashReport
     public string? Position { get; set; }         // last streaming observer position, "[-652, 484, 22]"
     public string? Screenshot { get; set; }       // the frame the game was showing when it died
     public DumpInfo? Dump { get; set; }           // the minidump: which instruction actually faulted
+    public string? GamePatch { get; set; }        // the engine's own "Game/Patch" value, e.g. "2.31"
 
     public double VramRatio => VramTotalMB > 0 ? (double)VramUsedMB / VramTotalMB : 0;
     public bool VramKnown => VramTotalMB > 0 && VramUsedMB > 0;
@@ -79,6 +80,7 @@ public static class CrashReports
         r.Gpu = Str(txt, "Gpu/Device/Name");
         r.EngineOom = string.Equals(Str(txt, "Engine/OOM"), "true", StringComparison.OrdinalIgnoreCase);
         r.Position = Str(txt, "Streaming/LastObserverPosition");
+        r.GamePatch = Str(txt, "Game/Patch");
     }
 
     static string? Str(string txt, string key)

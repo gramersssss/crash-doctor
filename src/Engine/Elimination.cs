@@ -43,9 +43,7 @@ public sealed class Elimination
     {
         if (!IsNoisyMod(mod)) return null;
         var (clean, crashed) = ModCounts(mod!);
-        return $"It logs the same thing in {clean} session{(clean == 1 ? "" : "s")} that ended perfectly normally"
-             + (crashed > 0 ? $", as well as {crashed} that crashed" : "")
-             + ". Something that happens when nothing goes wrong cannot be why something went wrong.";
+        return crashed > 0 ? L.P("elim.ruledOutBoth", clean, crashed) : L.P("elim.ruledOut", clean);
     }
 
     // Numbers vary between occurrences of the same message (line numbers stay, ids and counts do not), so they are

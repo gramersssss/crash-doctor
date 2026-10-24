@@ -181,15 +181,15 @@ public static class GpuCounters
         var q = IntPtr.Zero;
         try
         {
-            if (PdhOpenQueryW(null, IntPtr.Zero, out q) != 0) { LastProblem = "Windows would not open a performance counter query."; return null; }
+            if (PdhOpenQueryW(null, IntPtr.Zero, out q) != 0) { LastProblem = L.T("vram.noQuery"); return null; }
             if (PdhAddEnglishCounterW(q, AdapterDedicated, IntPtr.Zero, out var cDed) != 0 ||
                 PdhAddEnglishCounterW(q, AdapterShared, IntPtr.Zero, out var cSh) != 0 ||
                 PdhAddEnglishCounterW(q, ProcessDedicated, IntPtr.Zero, out var cProc) != 0)
-            { LastProblem = "The GPU memory performance counters are not available on this PC (they need a WDDM 2 display driver)."; return null; }
-            if (PdhCollectQueryData(q) != 0) { LastProblem = "The GPU memory performance counters could not be read."; return null; }
+            { LastProblem = L.T("vram.noCounters"); return null; }
+            if (PdhCollectQueryData(q) != 0) { LastProblem = L.T("vram.cannotRead"); return null; }
 
             var ded = Values(cDed); var shared = Values(cSh); var proc = Values(cProc);
-            if (ded.Count == 0) { LastProblem = "The GPU memory performance counters report no adapter."; return null; }
+            if (ded.Count == 0) { LastProblem = L.T("vram.noAdapter"); return null; }
 
             // which card: the one the game has memory on; failing that, the biggest one DXGI knows; failing that, the busiest
             string? luid = null; long gameBytes = 0;
@@ -202,7 +202,7 @@ public static class GpuCounters
             var adapters = GpuAdapters.List();
             luid ??= adapters.OrderByDescending(a => a.DedicatedBytes).Select(a => a.LuidKey).FirstOrDefault(k => ded.Any(x => LuidOf(x.name) == k));
             luid ??= ded.OrderByDescending(x => x.value).Select(x => LuidOf(x.name)).FirstOrDefault();
-            if (luid == null) { LastProblem = "No graphics adapter could be matched to the counters."; return null; }
+            if (luid == null) { LastProblem = L.T("vram.noMatch"); return null; }
 
             var adapter = adapters.FirstOrDefault(a => a.LuidKey.Equals(luid, StringComparison.OrdinalIgnoreCase));
             var totalMB = adapter?.DedicatedMB ?? 0;
@@ -218,7 +218,7 @@ public static class GpuCounters
                 TotalMB = totalMB,
             };
         }
-        catch (Exception ex) { LastProblem = "Reading the GPU counters failed: " + ex.Message; return null; }
+        catch (Exception ex) { LastProblem = L.T("vram.failed", ex.Message); return null; }
         finally { if (q != IntPtr.Zero) PdhCloseQuery(q); }
     }
 

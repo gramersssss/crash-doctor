@@ -3,6 +3,9 @@ using System.Text.RegularExpressions;
 namespace CrashDoctor.Engine;
 
 // Turns collected facts into sessions, verdicts, suspects and health items.
+//
+// Every sentence is a token (Lang.cs): L.T("key", args) here, the words in ui\lang\<code>.json. Sentences that are
+// added one after another go through L.Cat, which joins them the way the reader's language does.
 public static class Analyzer
 {
     const int EvidenceWindowSeconds = 120;
@@ -17,6 +20,7 @@ public static class Analyzer
         var elimination = Elimination.Build(d, sessions);
         foreach (var s in sessions) Judge(d, s, sessions, elimination);
         foreach (var s in sessions) SayWhenNothingSurvived(s, elimination);
+        foreach (var s in sessions) SayAfterGameUpdate(d, s);
         r.CrashGroups = GroupBySignature(d, sessions);
         foreach (var g in r.CrashGroups) NoteGroupOnSessions(g, sessions);
         var merged = History.Merge(sessions, History.Load());
@@ -57,6 +61,7 @@ public static class Analyzer
                 Build = list[0].Build,
                 Exception = withReport?.Dump?.ExceptionName ?? "",
                 Plain = withReport?.Dump?.Plain ?? "",
+                Symbol = list.Select(x => x.Symbol).FirstOrDefault(x => x != null),
                 Count = list.Count,
                 FirstSeen = list[0].Start,
                 LastSeen = list[^1].Start,
@@ -75,7 +80,7 @@ public static class Analyzer
             foreach (var g in byFault)
             {
                 g.OtherBuilds = builds.Count - 1;
-                g.BuildNote = $"The same offset also appears under {Join(builds.Where(b => b != g.Build).Select(b => b ?? "an unknown build").ToList())}. A game update moves every address, so those are recorded separately: at this offset they are different instructions, not the same bug seen twice.";
+                g.BuildNote = L.T("group.buildNote", L.List(builds.Where(b => b != g.Build).Select(b => b ?? L.T("word.unknownBuild")).ToList()));
             }
         }
         return groups.OrderByDescending(g => g.Count).ThenByDescending(g => g.LastSeen).ToList();
@@ -87,7 +92,13 @@ public static class Analyzer
     {
         if (g.Count < 2) return;
         foreach (var s in sessions.Where(x => g.SessionIds.Contains(x.Id)))
-            s.Verdict += $" This exact fault ({g.Fault}{(g.OtherBuilds > 0 && g.Build != null ? " on game build " + g.Build : "")}) has happened {g.Count} times between {g.FirstSeen:d MMM} and {g.LastSeen:d MMM} - it is one repeating problem, not {g.Count} unrelated crashes.";
+            // Every freeze ends at the same instruction - the engine's watchdog - so the same address says the game
+            // keeps freezing, not that each freeze has one cause. Saying "one repeating problem" there would be wrong.
+            s.Verdict = s.EndKind == EndKind.Hang
+                ? L.Cat(s.Verdict, L.P("verdict.repeatHang", g.Count, L.Date(g.FirstSeen), L.Date(g.LastSeen)))
+                : L.Cat(s.Verdict, g.OtherBuilds > 0 && g.Build != null
+                ? L.P("verdict.repeatFaultBuild", g.Count, g.Fault, g.Build, L.Date(g.FirstSeen), L.Date(g.LastSeen))
+                : L.P("verdict.repeatFault", g.Count, g.Fault, L.Date(g.FirstSeen), L.Date(g.LastSeen)));
     }
 
     // A crash with no surviving suspect is a legitimate outcome, not a hole to paper over. When elimination has
@@ -97,10 +108,21 @@ public static class Analyzer
         if (s.EndKind is EndKind.Clean or EndKind.Running || s.Suspects.Count > 0 || s.Verdict.Length == 0) return;
         if (s.RuledOut.Count > 0)
         {
-            s.Verdict += $" {Join(s.RuledOut.Select(r => r.Mod).Distinct().ToList())} looked like {(s.RuledOut.Count == 1 ? "a lead" : "leads")} and {(s.RuledOut.Count == 1 ? "was" : "were")} ruled out: the same thing happens in sessions that end normally. Nothing else stands out, so there is no named cause for this one yet.";
+            var mods = s.RuledOut.Select(r => r.Mod).Distinct().ToList();
+            s.Verdict = L.Cat(s.Verdict, L.P("verdict.ruledOutAll", mods.Count, L.List(mods)));
             if (s.Confidence > 1) s.Confidence = 1;
         }
-        else if (el.HasBaseline) s.Verdict += " No mod stands out: nothing was logged near the crash that does not also happen in sessions ending normally.";
+        else if (el.HasBaseline) s.Verdict = L.Cat(s.Verdict, L.T("verdict.noModStandsOut"));
+    }
+
+    // A crash after a game update, before every framework has shown it runs on the new build, says so. That is the
+    // likeliest reason of all the night after a patch, and the one a mod-by-mod hunt would never find.
+    static void SayAfterGameUpdate(CollectedData d, Session s)
+    {
+        if (d.GameChange is not { } c || !c.Newer) return;
+        if (s.EndKind is EndKind.Clean or EndKind.Running || s.Start < c.At.AddMinutes(-1)) return;
+        if (d.FrameworkChecks.All(f => f.State == "ran")) return;
+        s.Verdict = L.Cat(s.Verdict, L.T("verdict.afterUpdate", c.To));
     }
 
     // Map raw event owners (CET folder, .xl file, dll) to mod display names once, up front.
@@ -175,7 +197,7 @@ public static class Analyzer
         if (lastClean == null) { s.ChangesNote = ChangeLog.Note(d, s.Changes, null, forCrash: true); return; }
         if (lastClean.End < d.Since)
         {
-            s.ChangesNote = $"The last session that ended normally before this crash was on {lastClean.End:d MMM}, further back than the {Math.Round((DateTime.Now - d.Since).TotalDays)} days of history this scan read, so there is no comparison for it.";
+            s.ChangesNote = L.T("changes.tooOld", L.Date(lastClean.End!.Value), Math.Round((DateTime.Now - d.Since).TotalDays));
             return;
         }
         s.Changes = ChangeLog.Between(d, lastClean.End!.Value, to, ChangeLog.LogOf(d, lastClean), ChangeLog.LogOf(d, s));
@@ -188,19 +210,20 @@ public static class Analyzer
     static void Judge(CollectedData d, Session s, List<Session> all, Elimination el)
     {
         var fg = d.Settings.TryGetValue("FrameGeneration", out var fgv) && fgv != "Off";
-        var rt = SettingOn(d, "RayTracing"); d.Settings.TryGetValue("RayTracedLighting", out var rtl);
+        var rt = SettingOn(d, "RayTracing"); d.Settings.TryGetValue("RayTracedLighting", out var rtlRaw);
+        var rtl = Gfx(rtlRaw);
         var settingsKnown = !(s.CrashTime != null && d.SettingsWritten != null && d.SettingsWritten > s.CrashTime.Value.AddMinutes(1));
 
-        if (s.EndKind == EndKind.Clean) { s.Verdict = $"Closed normally after {Dur(s.Minutes)}."; s.Confidence = 3; return; }
-        if (s.EndKind == EndKind.Running) { s.Verdict = "Still running."; s.Confidence = 3; return; }
+        if (s.EndKind == EndKind.Clean) { s.Verdict = L.T("verdict.cleanExit", L.Dur(s.Minutes)); s.Confidence = 3; return; }
+        if (s.EndKind == EndKind.Running) { s.Verdict = L.T("verdict.running"); s.Confidence = 3; return; }
         // No crash and no shutdown, only the last line some log wrote. Whatever was logged just before that is not
         // "what was happening when it crashed", so none of the crash analysis below applies.
         if (s.EndFromActivity && s.End is DateTime lastSeen)
         {
             var reset = d.Events.Any(e => e.Kind == "power" && e.At >= lastSeen && e.At <= lastSeen.AddMinutes(20));
             s.Verdict = reset
-                ? $"The whole PC went down after at least {Dur(s.Minutes)}, not just the game. That is power, overheating or a hard reset, not a mod."
-                : $"The session ended without any record after at least {Dur(s.Minutes)}: no shutdown, no crash report. The last sign of the game running was at {lastSeen:HH:mm}. It was probably closed by force (Task Manager, Alt+F4 during a hang) rather than a crash.";
+                ? L.T("verdict.pcDownAfter", L.Dur(s.Minutes))
+                : L.T("verdict.noRecordAfter", L.Dur(s.Minutes), L.Date(lastSeen, "t"));
             s.Confidence = reset ? 2 : 1;
             return;
         }
@@ -218,8 +241,16 @@ public static class Analyzer
                 s.Build = dump.ModuleVersion;
                 s.FaultingModule = dump.FaultingModule;
                 s.Injector = MiniDump.InjectorIn(dump.Modules);
-                if (dump.Fault != null) s.Exception = dump.ExceptionName + " at " + dump.Fault;
+                if (dump.Fault != null) s.Exception = dump.ExceptionName + " @ " + dump.Fault;
             }
+        }
+        // Advanced Crash Reporter's report for this crash, when it is installed (AdvancedCrashReporter.cs): the name of the
+        // function that faulted, and whose native code was running on the thread that died.
+        var acr = s.CrashTime == null ? null : AdvancedCrashReporter.For(d, crashAt, report?.Dir, s.Partial ? crashAt.AddMinutes(-30) : s.Start);
+        if (acr != null)
+        {
+            s.AcrFile = acr.File; s.Symbol = acr.Symbol;
+            if (s.Fault == null && acr.Module != null) s.Fault = acr.Module + "+0x" + acr.Offset;
         }
         // The card was full. The engine needs headroom for transient allocations, so failures start well before 100 %:
         // crashes have been observed from about 90 % up. The driver also reports more than the card holds once it has
@@ -261,21 +292,26 @@ public static class Analyzer
         bool Noise(LogEvent e) => el.IsNoise(e) || noisyMods.Contains(e.Mod ?? e.Source.Replace("CET · ", ""));
         foreach (var e in scriptErrs.TakeLast(4)) s.Evidence.Add(Ev(e, crashAt, (crashAt - e.At).TotalSeconds <= 30 && !Noise(e)));
         foreach (var e in xlErrs.TakeLast(2)) s.Evidence.Add(Ev(e, crashAt, false));
-        foreach (var e in noiseErrs.Take(2)) { var ev = Ev(e, crashAt, false); var n = sessionErrors.Count(x => x.Source == e.Source); ev.Text += $"  (repeats all session, {n} times)"; s.Evidence.Add(ev); }
+        foreach (var e in noiseErrs.Take(2)) { var ev = Ev(e, crashAt, false); var n = sessionErrors.Count(x => x.Source == e.Source); ev.Text = ev.Text + "  " + L.P("ev.repeats", n); s.Evidence.Add(ev); }
         if (activity != null) s.Evidence.Add(Ev(activity, crashAt, false));
         if (power != null) s.Evidence.Add(Ev(power, crashAt, true));
-        if (report != null && report.VramKnown) s.Evidence.Add(new Evidence { TMinus = 0, Source = "Crash report · video memory", Text = $"{report.VramUsedMB} MB of the card's {report.VramTotalMB} MB were in use ({Pct(report.VramRatio)})" + (vramOver ? " — over what the card holds; the driver had spilled into system memory" : ""), Hit = vramTight });
+        if (report != null && report.VramKnown) s.Evidence.Add(new Evidence { TMinus = 0, Source = L.T("src.crashVram"), Text = vramOver ? L.T("ev.crashVramOver", report.VramUsedMB, report.VramTotalMB, Pct(report.VramRatio)) : L.T("ev.crashVram", report.VramUsedMB, report.VramTotalMB, Pct(report.VramRatio)), Hit = vramTight });
         // Crash Doctor's own recording of the card through the session, when the window was open at the time. The crash
         // report gives the instant of death; this gives the run-up to it, and whether the card sat near the ceiling all along.
         if (s.VramLog is { } vl && vl.TotalMB > 0 && vl.Samples > 0)
         {
             var gap = Math.Max(0, (int)Math.Round((crashAt - vl.End).TotalSeconds));
             var lastRatio = (double)vl.LastMB / vl.TotalMB;
-            s.Evidence.Add(new Evidence { TMinus = gap, Source = "Crash Doctor · video memory log", At = vl.End, Hit = lastRatio >= 0.90,
-                Text = $"recorded through the session: peak {Pct(vl.Peak)} of the card, median {Pct(vl.Median)}" + (vl.MinutesAbove90 >= 1 ? $", {Math.Round(vl.MinutesAbove90)} min above 90%" : "") + $"; the last reading was {vl.LastMB} MB ({Pct(lastRatio)})" });
+            s.Evidence.Add(new Evidence { TMinus = gap, Source = L.T("src.vramLog"), At = vl.End, Hit = lastRatio >= 0.90,
+                Text = vl.MinutesAbove90 >= 1
+                    ? L.T("ev.vramLogAbove", Pct(vl.Peak), Pct(vl.Median), Math.Round(vl.MinutesAbove90), vl.LastMB, Pct(lastRatio))
+                    : L.T("ev.vramLog", Pct(vl.Peak), Pct(vl.Median), vl.LastMB, Pct(lastRatio)) });
         }
-        if (settingsChanged) s.Evidence.Add(new Evidence { TMinus = Math.Max(0, (int)Math.Round((crashAt - d.SettingsWritten!.Value).TotalSeconds)), Source = "Graphics settings", Text = "the settings were changed during this session (the game rebuilt its render targets)", Hit = false, At = d.SettingsWritten!.Value });
-        if (report?.Exception != null) s.Evidence.Add(new Evidence { TMinus = 0, Source = "Crash report · exception", Text = report.Exception + (report.ExceptionDetail != null ? " — " + report.ExceptionDetail : ""), Hit = false });
+        if (settingsChanged) s.Evidence.Add(new Evidence { TMinus = Math.Max(0, (int)Math.Round((crashAt - d.SettingsWritten!.Value).TotalSeconds)), Source = L.T("src.settings"), Text = L.T("ev.settingsChanged"), Hit = false, At = d.SettingsWritten!.Value });
+        if (report?.Exception != null) s.Evidence.Add(new Evidence { TMinus = 0, Source = L.T("src.exception"), Text = report.Exception + (report.ExceptionDetail != null ? " — " + report.ExceptionDetail : ""), Hit = false });
+        var acrMods = acr == null ? new List<(string name, AcrModule m)>() : acr.Running.Select(m => (name: OwnerOfDll(d, m.Name) ?? m.Name, m)).ToList();
+        var acrModCode = acrMods.Where(x => x.m.Tag.StartsWith("MOD", StringComparison.OrdinalIgnoreCase)).ToList();
+        if (acr != null) AddAcrEvidence(s, acr, acrMods.Select(x => x.name).Distinct().ToList(), crashAt);
         s.Evidence = s.Evidence.OrderByDescending(e => e.TMinus).ToList();
         if (settingsKnown) s.SettingsAtCrash = new Dictionary<string, string>(d.Settings);
         if (d.CrashInfo is { } ci && all.Where(x => x.CrashTime != null).OrderByDescending(x => x.CrashTime).FirstOrDefault() == s)
@@ -283,22 +319,22 @@ public static class Analyzer
             if (ci.TryGetProperty("district", out var dist)) s.District = Pretty(dist.GetString());
             if (ci.TryGetProperty("trackedQuest", out var q) && q.TryGetProperty("name", out var qn)) s.Quest = qn.GetString();
         }
-        var partialNote = s.Partial ? " Only the crash report survives for this session; the game's own log from that time has been rotated away, so the play time is unknown." : "";
+        var partialNote = s.Partial ? L.T("verdict.partialNote") : "";
 
         // ---- rules, in order of certainty ----
         if (s.EndKind == EndKind.Gpu || driver.Count > 0)
         {
             s.EndKind = EndKind.Gpu; s.Confidence = 3;
-            if (!settingsKnown) s.Verdict = "The GPU faulted; the driver reported an error and the engine recorded a GPU crash, not a mod error. The settings file has changed since, so the settings that were running are not known.";
-            else if (fg && rt) s.Verdict = $"The GPU faulted while frame generation and ray tracing ({rtl}) were both on. The engine reported a GPU crash, not a mod error.";
-            else if (fg) s.Verdict = "The GPU faulted while frame generation was on. The engine reported a GPU crash, not a mod error.";
-            else if (rt) s.Verdict = $"The GPU faulted with ray tracing on ({rtl}). The engine reported a GPU crash, not a mod error.";
-            else s.Verdict = "The GPU faulted with frame generation and ray tracing both off. The engine reported a GPU crash, not a mod error; suspect the driver, temperatures or an overclock.";
-            if (vramTight) s.Verdict += $" Video memory was {(vramOver ? "over" : "at")} the card's limit at the time ({report!.VramUsedMB} of {report.VramTotalMB} MB), which is the usual reason a GPU faults in this game.";
-            s.Verdict += partialNote;
-            if (settingsKnown && fg) s.Suspects.Add(new Suspect { Mod = rt ? $"Frame generation + ray traced lighting {rtl}" : "Frame generation", Level = "high", Why = d.System.VramGB > 0 && d.System.VramGB <= 8 ? $"On an {d.System.VramGB} GB card this runs at the VRAM ceiling; the map and dense districts push it over." : "Frame generation adds its own GPU work and memory on top of everything else.", Actions = { new UiAction("settings", "See the settings") } });
-            else if (settingsKnown && !rt) s.Suspects.Add(new Suspect { Mod = "GPU driver / hardware", Level = "medium", Why = "No frame gen or ray tracing was on. Try the previous driver, check temperatures, rule out an overclock.", Actions = { new UiAction("open:driver", "Open Device Manager") } });
-            else if (!settingsKnown) s.Suspects.Add(new Suspect { Mod = "Graphics settings at the time", Level = "medium", Why = "GPU faults in this game are nearly always frame generation and ray tracing exceeding VRAM. Check what was on.", Actions = { new UiAction("settings", "See the settings") } });
+            if (!settingsKnown) s.Verdict = L.T("verdict.gpuSettingsUnknown");
+            else if (fg && rt) s.Verdict = L.T("verdict.gpuFgRt", rtl);
+            else if (fg) s.Verdict = L.T("verdict.gpuFg");
+            else if (rt) s.Verdict = L.T("verdict.gpuRt", rtl);
+            else s.Verdict = L.T("verdict.gpuNone");
+            if (vramTight) s.Verdict = L.Cat(s.Verdict, L.T(vramOver ? "verdict.gpuVramOver" : "verdict.gpuVramAt", report!.VramUsedMB, report.VramTotalMB));
+            s.Verdict = L.Cat(s.Verdict, partialNote);
+            if (settingsKnown && fg) s.Suspects.Add(new Suspect { Mod = rt ? L.T("suspect.fgRt.name", rtl) : L.T("suspect.fg.name"), Level = "high", Why = d.System.VramGB > 0 && d.System.VramGB <= 8 ? L.T("suspect.fg.small", d.System.VramGB) : L.T("suspect.fg.why"), Actions = { new UiAction("settings", L.T("act.seeSettings")) } });
+            else if (settingsKnown && !rt) s.Suspects.Add(new Suspect { Mod = L.T("suspect.gpuHw.name"), Level = "medium", Why = L.T("suspect.gpuHw.why"), Actions = { new UiAction("open:driver", L.T("act.deviceManager")) } });
+            else if (!settingsKnown) s.Suspects.Add(new Suspect { Mod = L.T("suspect.settingsThen.name"), Level = "medium", Why = L.T("suspect.settingsThen.why"), Actions = { new UiAction("settings", L.T("act.seeSettings")) } });
             return;
         }
         if (s.EndKind == EndKind.Engine && s.EngineMessage != null)
@@ -306,21 +342,47 @@ public static class Analyzer
             s.Confidence = 2;
             if (s.EngineMessage.Contains("scripts", StringComparison.OrdinalIgnoreCase))
             {
-                s.Verdict = "The engine stopped because the script files could not be loaded. That is a redscript problem: a broken script mod or a compiler that does not match the game patch.";
+                s.Verdict = L.T("verdict.scriptsNotLoaded");
                 foreach (var w in d.RedscriptErrors.Take(3)) s.Evidence.Add(new Evidence { TMinus = 0, Source = "redscript", Text = w, Hit = true });
-                s.Suspects.Add(new Suspect { Mod = "redscript / script mods", Level = "high", Why = "The redscript log names the file it choked on.", Actions = { new UiAction("open:redscript", "Open redscript log") } });
+                s.Suspects.Add(new Suspect { Mod = L.T("suspect.redscript.name"), Level = "high", Why = L.T("suspect.redscript.why"), Actions = { new UiAction("open:redscript", L.T("act.openRedscriptLog")) } });
             }
-            else s.Verdict = $"The engine stopped itself with: \"{s.EngineMessage}\"" + (s.CrashFile != null ? $" (in {Path.GetFileName(s.CrashFile)})." : ".");
+            else s.Verdict = s.CrashFile != null ? L.T("verdict.engineStoppedIn", s.EngineMessage, Path.GetFileName(s.CrashFile)) : L.T("verdict.engineStopped", s.EngineMessage);
+            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
+            return;
+        }
+        // A frozen game the engine's watchdog put down. Not a crash in the usual sense: nothing faulted, a thread stopped
+        // moving and the engine ended the process after about two minutes. Only ACR can tell these apart from crashes.
+        if (acr != null && (acr.Watchdog || acr.Kind == "hang"))
+        {
+            s.EndKind = EndKind.Hang; s.Confidence = acrMods.Count > 0 ? 2 : 1;
+            var stalled = AdvancedCrashReporter.HangsBefore(d, acr).Select(h => h.StalledSeconds).Where(x => x != null).DefaultIfEmpty(acr.StalledSeconds).Max();
+            s.Verdict = L.Cat(stalled is double sec ? L.T("verdict.hang", Math.Round(sec)) : L.T("verdict.hangNoTime"),
+                              acrMods.Count > 0 ? L.T("verdict.hangRunning", L.List(acrMods.Select(x => x.name).Distinct().ToList())) : L.T("verdict.hangNoMod"),
+                              partialNote);
+            foreach (var (name, m) in acrMods.GroupBy(x => x.name).Select(g => g.First()))
+                if (!s.Suspects.Any(x => x.Mod == name))
+                    s.Suspects.Add(SuspectFor(d, name, m.Tag.StartsWith("OVERLAY", StringComparison.OrdinalIgnoreCase) ? "low" : "medium", m.Tag.StartsWith("OVERLAY", StringComparison.OrdinalIgnoreCase) ? L.T("suspect.acrOverlay") : L.T("suspect.acrHang")));
+            AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
+            return;
+        }
+        // ACR saw a mod's own native code executing on the thread that faulted. That is the strongest evidence a crash
+        // can leave - a direct observation, not a correlation - so it outranks everything below except the GPU.
+        if (acr != null && acr.Kind == "crash" && acrModCode.Count > 0 && !vramOver)
+        {
+            var (name, _) = acrModCode[0];
+            s.EndKind = EndKind.Script; s.Confidence = acr.KilledGame ? 3 : 2;
+            s.Verdict = L.Cat(L.T("verdict.acrModCode", name, acr.Where ?? ""), partialNote);
+            s.Suspects.Add(SuspectFor(d, name, "high", L.T("suspect.acrRunning", acr.Where ?? "")));
             AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
         if (appcrash != null)
         {
             s.Confidence = 2; var mod = appcrash.Mod ?? "";
-            var raw = Regex.Match(appcrash.Text, @"faulted in (\S+)").Groups[1].Value;
-            if (Regex.IsMatch(raw, @"^(nvwgf2um|nvlddmkm|nvgpucomp|amdxc64|amdxx64|atidxx|igd)", RegexOptions.IgnoreCase)) { s.EndKind = EndKind.Gpu; s.Confidence = 3; s.Verdict = $"Windows recorded the fault inside the graphics driver ({raw}).{partialNote}"; s.Suspects.Add(new Suspect { Mod = "GPU driver", Level = "high", Why = "The faulting module is the display driver. A clean install of the previous driver version is the usual fix.", Actions = { new UiAction("open:driver", "Open Device Manager") } }); return; }
-            if (mod != raw && d.Mods.Find(mod) != null) { s.EndKind = EndKind.Script; s.Confidence = 3; s.Verdict = $"Windows recorded the fault inside {raw}, which belongs to the mod {mod}.{partialNote}"; s.Suspects.Add(SuspectFor(d, mod, "high", "Its native code is where the crash happened.")); return; }
-            s.Verdict = $"Windows recorded the fault in {raw}." + (raw.StartsWith("Cyberpunk2077", StringComparison.OrdinalIgnoreCase) ? " That is the game itself, which usually means bad data handed to it by a mod (a broken mesh, appearance or sector patch)." : "") + partialNote;
+            var raw = appcrash.Module ?? "";
+            if (Regex.IsMatch(raw, @"^(nvwgf2um|nvlddmkm|nvgpucomp|amdxc64|amdxx64|atidxx|igd)", RegexOptions.IgnoreCase)) { s.EndKind = EndKind.Gpu; s.Confidence = 3; s.Verdict = L.Cat(L.T("verdict.winDriver", raw), partialNote); s.Suspects.Add(new Suspect { Mod = L.T("suspect.gpuDriver.name"), Level = "high", Why = L.T("suspect.gpuDriver.why"), Actions = { new UiAction("open:driver", L.T("act.deviceManager")) } }); return; }
+            if (mod != raw && d.Mods.Find(mod) != null) { s.EndKind = EndKind.Script; s.Confidence = 3; s.Verdict = L.Cat(L.T("verdict.winModDll", raw, mod), partialNote); s.Suspects.Add(SuspectFor(d, mod, "high", L.T("suspect.nativeCode"))); return; }
+            s.Verdict = L.Cat(L.T("verdict.winModule", raw), raw.StartsWith("Cyberpunk2077", StringComparison.OrdinalIgnoreCase) ? L.T("verdict.winGameItself") : "", partialNote);
             AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
@@ -330,23 +392,22 @@ public static class Analyzer
         {
             s.EndKind = EndKind.Vram;
             s.Confidence = vramOver ? 3 : report.VramRatio >= 0.95 ? 2 : 1;
-            s.Verdict = $"Ran out of video memory. {report.VramUsedMB} MB of the card's {report.VramTotalMB} MB were in use when it died ({Pct(report.VramRatio)})"
-                + (vramOver ? ", i.e. past what the card physically holds, so the driver had already spilled into system memory. " : ". ")
-                + (badRead ? "The engine then failed to get memory for something and crashed reading a resource that was never created (" + report.Exception + "). " : "")
-                + "No driver fault and no mod error was recorded, which is exactly how this looks: the game simply asks for more than the card can hold and falls over."
-                + (settingsChanged ? " The graphics settings were also changed during this session, minutes before the crash — rebuilding the render targets is the biggest memory spike a session ever sees, and on an already-full card that alone can end it. Judge the new settings by the next few sessions, not by this one." : "")
-                + partialNote;
+            s.Verdict = L.Cat(
+                L.T(vramOver ? "verdict.vramOver" : "verdict.vram", report.VramUsedMB, report.VramTotalMB, Pct(report.VramRatio)),
+                badRead ? L.T("verdict.vramBadRead", report.Exception) : "",
+                L.T("verdict.vramNoError"),
+                settingsChanged ? L.T("verdict.vramSettingsChanged") : "",
+                partialNote);
             var levers = HeavySettings(d);
             s.Suspects.Add(new Suspect
             {
-                Mod = "Video memory ceiling",
+                Mod = L.T("suspect.vramCeiling.name"),
                 Level = "high",
-                Why = (levers.Count > 0 ? "The expensive settings right now are " + Join(levers) + ". Turning any one of them down frees more than any single mod would. " : "")
-                    + "Textures and crowd density are the two biggest levers; ray traced lighting and reflections are next.",
-                Actions = { new UiAction("settings", "See the settings") }
+                Why = L.Cat(levers.Count > 0 ? L.T("suspect.vramCeiling.levers", L.List(levers)) : "", L.T("suspect.vramCeiling.why")),
+                Actions = { new UiAction("settings", L.T("act.seeSettings")) }
             });
             var heavy = HeaviestTextureMods(d);
-            if (heavy.Count > 0) s.Suspects.Add(new Suspect { Mod = "Installed texture weight", Level = "low", Why = $"{Mb(d.Mods.ArchiveBytes)} of mod archives are installed. The heaviest are {Join(heavy)}. Nothing here is broken — it is simply more texture than a {Math.Round(report.VramTotalMB / 1024.0)} GB card can keep resident in a dense district.", Actions = { new UiAction("mods", "See the mod list") } });
+            if (heavy.Count > 0) s.Suspects.Add(new Suspect { Mod = L.T("suspect.texWeight.name"), Level = "low", Why = L.T("suspect.texWeight.why", Mb(d.Mods.ArchiveBytes), L.List(heavy), Math.Round(report.VramTotalMB / 1024.0)), Actions = { new UiAction("mods", L.T("act.seeModList")) } });
             AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
@@ -355,36 +416,52 @@ public static class Analyzer
             var last = scriptErrs.Last(); var secs = (int)Math.Round((crashAt - last.At).TotalSeconds);
             s.EndKind = EndKind.Script; s.Confidence = secs <= 15 ? 2 : 1;
             var name = last.Mod ?? last.Source.Replace("CET · ", "");
-            s.Verdict = $"Script error in {name} {secs} s before the crash: {Short(last.Text)} Not a GPU fault; the engine recorded no error of its own.{partialNote}";
+            s.Verdict = L.Cat(L.T("verdict.scriptError", name, secs, Short(last.Text)), partialNote);
             AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
-        if (xlErrs.Count > 0 && activity != null && activity.Text.Contains("world streaming"))
+        if (xlErrs.Count > 0 && activity != null && activity.Tag == "world")
         {
             var last = xlErrs.Last(); var secs = (int)Math.Round((crashAt - last.At).TotalSeconds);
             s.EndKind = EndKind.Script; s.Confidence = failingHere.Count > 0 ? 2 : 1;
             var shared = s.AreaMods.Count;
-            s.Verdict = $"Crashed during world streaming, {secs} s after ArchiveXL reported a failed sector patch from {last.Mod ?? "a mod"}."
-                + (shared > 1 ? $" {shared} mods were rewriting the map sectors loading around you at the time" + (failingHere.Count > 0 ? $", and {Join(failingHere.Select(a => a.Mod).Distinct().ToList())} " + (failingHere.Count == 1 ? "is the one that " : "are the ones that ") + "no longer fits the sector it edits." : ".") : " A world-editing mod is the likely cause.")
-                + partialNote;
+            var failingMods = failingHere.Select(a => a.Mod).Distinct().ToList();
+            s.Verdict = L.Cat(
+                L.T("verdict.streaming", secs, last.Mod ?? L.T("word.aMod")),
+                shared > 1 ? (failingMods.Count > 0 ? L.P("verdict.streamingFailing", failingMods.Count, shared, L.List(failingMods)) : L.T("verdict.streamingShared", shared)) : L.T("verdict.streamingOne"),
+                partialNote);
             AddAreaSuspects(d, s, el);
             AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
         // nothing specific
         s.Confidence = activity != null ? 1 : 0;
-        if (s.Partial) { s.Verdict = "A crash was reported at this time. The session log from then has been rotated away, so there is nothing more to go on."; s.Confidence = 0; }
-        else if (activity != null && activity.Text.Contains("NPC loading")) { s.EndKind = EndKind.Script; s.Verdict = "Crashed while an NPC was loading, with no engine or GPU error recorded. That pattern points at an appearance or body mod for that NPC, or a mod that edits the location."; }
-        else if (activity != null && activity.Text.Contains("world streaming")) { s.EndKind = EndKind.Script; s.Verdict = "Crashed while a world sector patch was being applied during streaming. That points at a mod that edits the map in that area."; }
-        else if (power != null) { s.Verdict = "The whole PC went down, not just the game. That is power, overheating or a hard reset, not a mod."; s.Confidence = 2; }
-        else if (s.CrashTime == null) { s.Verdict = "The session ended without any record: no shutdown, no crash report. The game was probably closed by force (Task Manager, Alt+F4 during a hang) or the PC was restarted."; }
-        else s.Verdict = "Crashed with nothing logged in the two minutes before. The engine could not describe it, no mod reported an error, and the driver did not fault.";
+        if (s.Partial) { s.Verdict = L.T("verdict.partialOnly"); s.Confidence = 0; }
+        else if (activity != null && activity.Tag == "npc") { s.EndKind = EndKind.Script; s.Verdict = L.T("verdict.npcLoading"); }
+        else if (activity != null && activity.Tag == "world") { s.EndKind = EndKind.Script; s.Verdict = L.T("verdict.sectorPatch"); }
+        else if (power != null) { s.Verdict = L.T("verdict.pcDown"); s.Confidence = 2; }
+        else if (s.CrashTime == null) { s.Verdict = L.T("verdict.noRecord"); }
+        else s.Verdict = L.T("verdict.nothingLogged");
         var cluster = all.Count(x => x != s && x.District != null && x.District == s.District && x.EndKind != EndKind.Clean);
-        if (s.District != null && cluster >= 2) s.Verdict += $" This is the {Ordinal(cluster + 1)} crash in {s.District}; something specific to that area is likely.";
+        if (s.District != null && cluster >= 2) s.Verdict = L.Cat(s.Verdict, L.T("verdict.districtCluster", cluster + 1, s.District));
         AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
         AddAreaSuspects(d, s, el);
-        if (s.AreaMods.Count == 0 && activity != null && activity.Text.Contains("world streaming")) foreach (var m in WorldPatchMods(d).Take(3)) if (!s.Suspects.Any(x => x.Mod == m)) s.Suspects.Add(SuspectFor(d, m, "medium", "Edits world sectors; failed or overlapping sector patches crash during streaming."));
+        if (s.AreaMods.Count == 0 && activity != null && activity.Tag == "world") foreach (var m in WorldPatchMods(d).Take(3)) if (!s.Suspects.Any(x => x.Mod == m)) s.Suspects.Add(SuspectFor(d, m, "medium", L.T("suspect.worldPatch")));
         AddLocationSuspects(d, s);
+    }
+
+    // What Advanced Crash Reporter adds to the evidence list: where it faulted, by name; whose code was running; and its
+    // own reading, quoted as its reading.
+    static void AddAcrEvidence(Session s, AcrReport acr, List<string> running, DateTime crashAt)
+    {
+        var t = Math.Max(0, (int)Math.Round((crashAt - acr.At).TotalSeconds));
+        const string src = "Advanced Crash Reporter";
+        if (acr.Where != null) s.Evidence.Add(new Evidence { TMinus = t, At = acr.At, Source = src, Text = L.T("ev.acrWhere", acr.Title, acr.Where), Hit = false });
+        else s.Evidence.Add(new Evidence { TMinus = t, At = acr.At, Source = src, Text = acr.Title, Hit = false });
+        if (acr.StuckState != null) s.Evidence.Add(new Evidence { TMinus = t, At = acr.At, Source = src, Text = L.T("ev.acrStuck", acr.StuckState), Hit = false });
+        s.Evidence.Add(new Evidence { TMinus = t, At = acr.At, Source = src, Text = running.Count > 0 ? L.T("ev.acrRunning", L.List(running)) : L.T("ev.acrNoMod"), Hit = running.Count > 0 });
+        var reading = acr.Verdict ?? acr.Summary;
+        if (!string.IsNullOrWhiteSpace(reading)) s.Evidence.Add(new Evidence { TMinus = t, At = acr.At, Source = src, Text = L.T("ev.acrReading", reading.Length > 240 ? reading[..240] + "…" : reading), Hit = false });
     }
 
     // Which mods were rewriting the map sectors that streamed in around the player in the last minute of the session.
@@ -410,8 +487,8 @@ public static class Analyzer
             rows.Add(new AreaMod { Mod = d.Mods.OwnerOfXl(xl) ?? Path.GetFileNameWithoutExtension(xl), File = xl, Sectors = mine.Count, SharedWith = others, Failing = failing.Contains(xl) });
         }
         foreach (var r in rows)
-            r.Note = r.Failing ? "ArchiveXL reported this mod's patch did not fit the sector it was applied to during this session."
-                   : r.SharedWith >= 3 ? "Shares these sectors with several other mods."
+            r.Note = r.Failing ? L.T("area.failing")
+                   : r.SharedWith >= 3 ? L.T("area.shared")
                    : null;
         return rows.OrderByDescending(r => r.Failing).ThenByDescending(r => r.Sectors).Take(12).ToList();
     }
@@ -432,17 +509,18 @@ public static class Analyzer
             int n = 0;
             foreach (var rel in m.Files.Where(f => f.EndsWith(".xl", StringComparison.OrdinalIgnoreCase)))
             {
-                string txt; try { txt = Files.ReadAllTextShared(Path.Combine(d.Paths.GameDir, rel)); } catch { continue; }
+                var path = d.Paths.Find(rel); if (path == null) continue;
+                string txt; try { txt = Files.ReadAllTextShared(path); } catch { continue; }
                 foreach (var t in tokens) n += Regex.Matches(txt, Regex.Escape(t), RegexOptions.IgnoreCase).Count;
             }
             if (n > 0) hits.Add((m.Name, n));
         }
-        var where = s.Quest != null && s.District != null ? $"{s.District} during {s.Quest}" : s.District ?? s.Quest ?? "this location";
+        var where = s.Quest != null && s.District != null ? L.T("loc.districtQuest", s.District, s.Quest) : s.District ?? s.Quest ?? L.T("loc.here");
         foreach (var (mod, n) in hits.OrderByDescending(h => h.n).Take(4))
         {
             if (s.Suspects.Any(x => x.Mod == mod)) continue;
             var row = d.Mods.Find(mod); var wip = row != null && (Regex.IsMatch(row.Version, @"^0\.[01](\.|$)") || Regex.IsMatch(mod, @"\b(WIP|alpha|beta|test)\b", RegexOptions.IgnoreCase));
-            s.Suspects.Add(SuspectFor(d, mod, wip ? "high" : n >= 20 ? "medium" : "low", $"Its patches rewrite {where} ({n} references){(wip ? "; it is an unfinished early version" : "")}. With several mods editing one place, one of them is the usual cause of a crash while NPCs or the area load."));
+            s.Suspects.Add(SuspectFor(d, mod, wip ? "high" : n >= 20 ? "medium" : "low", L.T(wip ? "suspect.locationWip" : "suspect.location", where, n)));
         }
     }
 
@@ -463,20 +541,21 @@ public static class Analyzer
         return set;
     }
 
-    internal static string Pct(double r) => Math.Round(r * 100) + "%";
-    static string Mb(long bytes) => bytes >= 1073741824L ? $"{bytes / 1073741824.0:0.#} GB" : $"{bytes / 1048576L} MB";
-    static string Join(List<string> x) => x.Count == 1 ? x[0] : string.Join(", ", x.Take(x.Count - 1)) + " and " + x[^1];
+    internal static string Pct(double r) => L.Pct(r);
+    static string Mb(long bytes) => bytes >= 1073741824L ? $"{bytes / 1073741824.0:0.#} GB".Replace(',', '.') : $"{bytes / 1048576L} MB";
+    /// <summary>A value from the game's settings file, in the reader's words when the language file has them ("High", "Ultra", "On").</summary>
+    internal static string Gfx(string? v) => string.IsNullOrEmpty(v) ? "" : L.TF("gfxv." + v.Replace("UI-Settings-Video-QualitySetting-", ""), v.Replace("UI-Settings-Video-QualitySetting-", ""));
 
     // The graphics settings that cost the most video memory, named only when they are actually turned up.
     static List<string> HeavySettings(CollectedData d)
     {
         var l = new List<string>();
-        if (d.Settings.TryGetValue("TextureQuality", out var t) && t is "High" or "Ultra") l.Add($"textures {t}");
-        if (d.Settings.TryGetValue("CrowdDensity", out var c) && c is "High" or "Ultra") l.Add($"crowd density {c}");
-        if (d.Settings.TryGetValue("RayTracedLighting", out var rl) && rl is "High" or "Ultra" or "Psycho") l.Add($"ray traced lighting {rl}");
-        if (SettingOn(d, "RayTracedReflections")) l.Add("ray traced reflections on");
-        if (d.Settings.TryGetValue("ScreenSpaceReflectionsQuality", out var ssr) && ssr is "Ultra" or "Psycho") l.Add($"screen space reflections {ssr}");
-        if (SettingOn(d, "RayTracedPathTracing")) l.Add("path tracing on");
+        if (d.Settings.TryGetValue("TextureQuality", out var t) && t is "High" or "Ultra") l.Add(L.T("heavy.textures", Gfx(t)));
+        if (d.Settings.TryGetValue("CrowdDensity", out var c) && c is "High" or "Ultra") l.Add(L.T("heavy.crowd", Gfx(c)));
+        if (d.Settings.TryGetValue("RayTracedLighting", out var rl) && rl is "High" or "Ultra" or "Psycho") l.Add(L.T("heavy.rtLighting", Gfx(rl)));
+        if (SettingOn(d, "RayTracedReflections")) l.Add(L.T("heavy.rtReflections"));
+        if (d.Settings.TryGetValue("ScreenSpaceReflectionsQuality", out var ssr) && ssr is "Ultra" or "Psycho") l.Add(L.T("heavy.ssr", Gfx(ssr)));
+        if (SettingOn(d, "RayTracedPathTracing")) l.Add(L.T("heavy.pathTracing"));
         return l;
     }
 
@@ -494,8 +573,8 @@ public static class Analyzer
             var cleared = el.WhyRuledOut(a.Mod);
             if (cleared != null) { if (!s.RuledOut.Any(x => x.Mod == a.Mod)) s.RuledOut.Add(new RuledOut { Mod = a.Mod, Why = cleared }); continue; }
             var why = a.Failing
-                ? $"It rewrites {a.Sectors} of the map sectors that were loading around you, and ArchiveXL had to skip part of its patch this session because the sector no longer matches what the mod expects. {a.SharedWith} other mod{(a.SharedWith == 1 ? "" : "s")} edit the same ground."
-                : $"It rewrites {a.Sectors} of the map sectors that were loading around you, shared with {a.SharedWith} other mods. Overlapping sector edits are a common cause of crashes while moving through an area.";
+                ? L.P("suspect.areaFailing", a.SharedWith, a.Sectors)
+                : L.P("suspect.areaShared", a.SharedWith, a.Sectors);
             s.Suspects.Add(SuspectFor(d, a.Mod, a.Failing ? "high" : "low", why));
         }
     }
@@ -512,7 +591,7 @@ public static class Analyzer
             if (s.RuledOut.Any(x => x.Mod == name)) return true;
             var why = el.WhyRuledOut(name);
             if (why == null && brokenPlugin.Contains(name))
-                why = "It errors constantly because its native plugin will not load on this game patch. That is a standing fault, not something that happened at the crash.";
+                why = L.T("ruled.brokenPlugin");
             if (why == null) return false;
             s.RuledOut.Add(new RuledOut { Mod = name, Why = why });
             return true;
@@ -525,8 +604,8 @@ public static class Analyzer
             var secs = (int)Math.Round((crashAt - grp.Max(e => e.At)).TotalSeconds);
             // Without a clean baseline nothing has been checked against anything, so no suspect may be called high.
             var level = !el.HasBaseline ? "medium" : secs <= 15 ? "high" : "medium";
-            var why = $"Its script errored {secs} s before the crash: {Short(grp.Last().Text)}"
-                    + (el.HasBaseline ? $" It does not do this in any of the {el.CleanSessions} sessions that ended cleanly." : NoBaselineNote(el));
+            var why = L.Cat(L.T("suspect.scriptErr", secs, Short(grp.Last().Text)),
+                            el.HasBaseline ? L.P("suspect.notInClean", el.CleanSessions) : NoBaselineNote(el));
             s.Suspects.Add(SuspectFor(d, name, level, why));
         }
         foreach (var grp in xlErrs.Where(e => e.Mod != null).GroupBy(e => e.Mod!))
@@ -534,27 +613,24 @@ public static class Analyzer
             var name = grp.Key;
             if (s.Suspects.Any(x => x.Mod == name) || Eliminated(name)) continue;
             var secs = (int)Math.Round((crashAt - grp.Max(e => e.At)).TotalSeconds);
-            s.Suspects.Add(SuspectFor(d, name, "medium", $"ArchiveXL reported a problem with its patch {secs} s before the crash: {Short(grp.Last().Text)}"
-                    + (el.HasBaseline ? "" : NoBaselineNote(el))));
+            s.Suspects.Add(SuspectFor(d, name, "medium", L.Cat(L.T("suspect.xlErr", secs, Short(grp.Last().Text)), el.HasBaseline ? "" : NoBaselineNote(el))));
         }
     }
 
     // Said out loud rather than hidden: with nothing to compare against, a lead is a guess.
     static string NoBaselineNote(Elimination el) =>
-        el.CleanSessions == 0
-            ? " No session on record has ended cleanly, so there is nothing to compare this against — treat it as a lead, not a finding."
-            : $" Only {el.CleanSessions} session on record ended cleanly, which is too few to rule anything out — treat this as a lead, not a finding.";
+        el.CleanSessions == 0 ? L.T("suspect.noBaseline0") : L.P("suspect.noBaselineFew", el.CleanSessions);
 
     static Suspect SuspectFor(CollectedData d, string modName, string level, string why)
     {
         var s = new Suspect { Mod = modName, Level = level, Why = why };
         var row = d.Mods.Find(modName);
-        if (row?.NexusId != null) s.Actions.Add(new UiAction("nexus:" + row.NexusId, "Open on Nexus"));
-        var fix = Fixes.FindFor(modName); if (fix != null) { var st = fix.State(d.Paths); if (st == "applied") s.Actions.Add(new UiAction("fix:" + fix.Id, "Fix applied · revert")); else if (st == "applicable") s.Actions.Add(new UiAction("fix:" + fix.Id, "Apply known fix: " + fix.Title)); }
+        if (row?.NexusId != null) s.Actions.Add(new UiAction("nexus:" + row.NexusId, L.T("act.openNexus")));
+        var fix = Fixes.FindFor(modName); if (fix != null) { var st = fix.State(d.Paths); if (st == "applied") s.Actions.Add(new UiAction("fix:" + fix.Id, L.T("act.fixRevert"))); else if (st == "applicable") s.Actions.Add(new UiAction("fix:" + fix.Id, L.T("act.applyFix", fix.Title))); }
         return s;
     }
 
-    static string? OwnerOfDll(CollectedData d, string dll)
+    internal static string? OwnerOfDll(CollectedData d, string dll)
     {
         if (string.IsNullOrEmpty(dll)) return null;
         var kv = d.Mods.FileOwner.FirstOrDefault(k => k.Key.EndsWith("\\" + dll, StringComparison.OrdinalIgnoreCase));
@@ -566,32 +642,33 @@ public static class Analyzer
     static bool XlEditsWorld(CollectedData d, string rel)
     {
         if (XlCache.TryGetValue(rel, out var b)) return b;
-        try { var t = Files.ReadAllTextShared(Path.Combine(d.Paths.GameDir, rel)); b = t.Contains("streaming") || t.Contains("nodeRef") || t.Contains("sectors"); } catch { b = false; }
+        try { var path = d.Paths.Find(rel); var t = path == null ? "" : Files.ReadAllTextShared(path); b = t.Contains("streaming") || t.Contains("nodeRef") || t.Contains("sectors"); } catch { b = false; }
         XlCache[rel] = b; return b;
     }
 
     static Evidence Ev(LogEvent e, DateTime crashAt, bool hit) => new() { TMinus = Math.Max(0, (int)Math.Round((crashAt - e.At).TotalSeconds)), Source = e.Source, Text = e.Text, Hit = hit, At = e.At, Mod = e.Mod };
     internal static bool SettingOn(CollectedData d, string key) => d.Settings.TryGetValue(key, out var v) && (v == "true" || v == "True");
-    static string Dur(double m) => m < 1 ? "under a minute" : m < 60 ? $"{Math.Round(m)} min" : $"{(int)(m / 60)} h {Math.Round(m % 60)} min";
-    internal static string Short(string t) => t.Length > 110 ? t[..110] + "…" : t;
-    static string Ordinal(int n) => n switch { 1 => "first", 2 => "second", 3 => "third", 4 => "fourth", 5 => "fifth", _ => n + "th" };
+    /// <summary>Cuts a raw log line for a sentence. Tokens are never cut: they are not text yet.</summary>
+    internal static string Short(string t) => L.IsToken(t) ? t : t.Length > 110 ? t[..110] + "…" : t;
     static string? Pretty(string? district) => district == null ? null : Regex.Replace(district.Replace("_", " · "), "(?<=[a-z])(?=[A-Z])", " ");
 
     // ---------- health ----------
     static List<HealthItem> Health(CollectedData d, List<Session> sessions, Elimination el, Report r)
     {
         var h = new List<HealthItem>();
+        // A game update comes first: the night after a patch it explains more crashes than everything below together.
+        if (d.GameChange is { } change && GameUpdate.Health(change, d.FrameworkChecks) is { } upd) h.Add(upd);
         // How much of a clean baseline exists decides how much anything else here can be trusted. Say it first -
         // but only when there is actually a crash to reason about. On an install that has never crashed, warning
         // that suspects cannot be confirmed is both meaningless and mildly alarming.
         var anyCrash = sessions.Any(s => s.EndKind is not (EndKind.Clean or EndKind.Running));
         if (!anyCrash) { /* nothing to eliminate against, and nothing to eliminate */ }
         else if (!el.HasBaseline)
-            h.Add(new HealthItem { Severity = "medium", Title = el.CleanSessions == 0 ? "No session has ended cleanly yet" : "Only one session has ended cleanly",
-                Detail = $"Crash Doctor rules a mod out by checking whether it misbehaves in sessions that end normally too. With {(el.CleanSessions == 0 ? "no clean sessions" : "one clean session")} on record there is nothing to compare against, so every suspect below is a lead rather than a finding. Play until you quit the game normally a couple of times and scan again — the diagnosis gets sharper, not vaguer, the more you play." });
+            h.Add(new HealthItem { Severity = "medium", Title = L.T(el.CleanSessions == 0 ? "health.noClean.title" : "health.oneClean.title"),
+                Detail = L.T(el.CleanSessions == 0 ? "health.noClean.detail" : "health.oneClean.detail") });
         else
-            h.Add(new HealthItem { Severity = "info", Title = $"{el.CleanSessions} clean sessions are being used to rule things out",
-                Detail = $"Anything that also happens in a session you quit normally cannot be why another one crashed. Of the {el.CleanSessions + el.CrashedSessions} sessions whose logs the game still keeps, {el.CleanSessions} ended cleanly and {el.CrashedSessions} crashed — that comparison is what lets the diagnosis discard background noise instead of blaming it. Older sessions are remembered but their logs have been rotated away, so they cannot be compared." });
+            h.Add(new HealthItem { Severity = "info", Title = L.P("health.baseline.title", el.CleanSessions),
+                Detail = L.T("health.baseline.detail", el.CleanSessions + el.CrashedSessions, el.CleanSessions, el.CrashedSessions) });
         var week = sessions.Where(s => s.Start > DateTime.Now.AddDays(-7)).ToList();
         var full = week.Where(s => !s.Partial && s.EndKind != EndKind.Running).ToList();
         var partial = week.Count(s => s.Partial);
@@ -601,11 +678,14 @@ public static class Analyzer
             var crashesFull = full.Where(s => s.EndKind != EndKind.Clean).ToList();
             var med = crashesFull.Count > 0 ? crashesFull.Select(s => s.Minutes).OrderBy(x => x).ElementAt(crashesFull.Count / 2) : 0;
             var sev = full.Count > 0 && wc >= 3 && wc >= full.Count / 2.0 ? "high" : (wc + partial) > 0 ? "medium" : "info";
-            var detail = full.Count > 0 ? $"{wc} of {full.Count} logged sessions crashed" + (wc > 0 ? $"; typical time to crash {Dur(med)}" : "") + $". {crashesFull.Count(s => s.EndKind == EndKind.Gpu)} GPU faults, {crashesFull.Count(s => s.EndKind == EndKind.Vram)} out of video memory, {crashesFull.Count(s => s.EndKind == EndKind.Script)} mod/script, {crashesFull.Count(s => s.EndKind is EndKind.Unknown or EndKind.Engine)} other." : "";
-            if (partial > 0) detail += $" Plus {partial} crash report{(partial == 1 ? "" : "s")} from sessions whose logs have been rotated away.";
-            h.Add(new HealthItem { Severity = sev, Title = $"{wc + partial} crash{(wc + partial == 1 ? "" : "es")} in the last 7 days", Detail = detail.Trim() });
+            var detail = full.Count > 0
+                ? L.Cat(L.P("health.week.crashed", full.Count, wc),
+                        wc > 0 ? L.T("health.week.typical", L.Dur(med)) : "",
+                        L.T("health.week.kinds", crashesFull.Count(s => s.EndKind == EndKind.Gpu), crashesFull.Count(s => s.EndKind == EndKind.Vram), crashesFull.Count(s => s.EndKind == EndKind.Script), crashesFull.Count(s => s.EndKind == EndKind.Hang), crashesFull.Count(s => s.EndKind is EndKind.Unknown or EndKind.Engine)))
+                : "";
+            if (partial > 0) detail = L.Cat(detail, L.P("health.week.partial", partial));
+            h.Add(new HealthItem { Severity = sev, Title = L.P("health.week.title", wc + partial), Detail = detail });
         }
-        var crashes = sessions.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).ToList();
 
         // The distinct-problems count, read straight off the minidumps. This reframes everything below it.
         var groups = GroupBySignature(d, sessions);
@@ -614,14 +694,15 @@ public static class Analyzer
             var repeat = groups.Where(g => g.Count >= 2).ToList();
             var live = groups.Where(g => g.Current).ToList();
             var total = groups.Sum(g => g.Count);
-            var detail = $"{total} crashes with a readable dump fall into {groups.Count} distinct fault{(groups.Count == 1 ? "" : "s")} - crashes at the same machine instruction are the same bug. "
-                + (repeat.Count > 0 ? $"{repeat.Count} of them repeat: " + Join(repeat.Take(3).Select(g => $"{g.Fault} ({g.Count}x, {g.FirstSeen:d MMM}-{g.LastSeen:d MMM})").ToList()) + ". " : "")
-                + (live.Count == 0 ? "None of them has happened since your last clean session, so nothing is currently recurring." : $"{live.Count} {(live.Count == 1 ? "is" : "are")} still happening since the last clean session.");
+            var detail = L.Cat(
+                L.P("health.groups.detail", groups.Count, L.P("health.groups.crashes", total)),
+                repeat.Count > 0 ? L.P("health.groups.repeat", repeat.Count, L.List(repeat.Take(3).Select(g => L.T("health.groups.item", g.Fault, g.Count, L.Date(g.FirstSeen), L.Date(g.LastSeen))).ToList())) : "",
+                live.Count == 0 ? L.T("health.groups.noneLive") : L.P("health.groups.live", live.Count));
             // "3 separate problems, not 3 random ones" was the wording when nothing repeated, which says nothing at
             // all. Nothing repeating is its own finding, and the opposite of the usual one.
-            var title = groups.Count == 1 ? "All your crashes are one repeating fault"
-                      : groups.Count == total ? $"Your {total} crashes are {total} different faults, none of them repeating"
-                      : $"Your crashes are {groups.Count} separate problems, not {total} random ones";
+            var title = groups.Count == 1 ? L.T("health.groups.titleOne")
+                      : groups.Count == total ? L.P("health.groups.titleAllDifferent", total)
+                      : L.T("health.groups.title", groups.Count, total);
             h.Add(new HealthItem { Severity = live.Count > 0 ? "medium" : "info", Title = title, Detail = detail });
 
             // An injected trainer or cheat tool is worth stating, with the count, and without a conclusion attached.
@@ -629,8 +710,8 @@ public static class Analyzer
             if (inj.Count > 0)
             {
                 var withInj = inj.Sum(g => g.InjectorSessions);
-                h.Add(new HealthItem { Severity = "low", Title = $"{inj[0].Injector} was running inside the game in {withInj} of these crashes",
-                    Detail = $"Tools like this patch game code at fixed addresses, so one built for a different game version writes into the wrong place. That makes it worth knowing about - but {withInj} of {total} is a correlation, not a cause, and it can only be settled by playing without it. Close it before launching if you want to test that." });
+                h.Add(new HealthItem { Severity = "low", Title = L.T("health.injector.title", inj[0].Injector, withInj),
+                    Detail = L.T("health.injector.detail", withInj, total) });
             }
         }
 
@@ -640,8 +721,8 @@ public static class Analyzer
         // own. What is left in this method is the part that is not a rule: what the clean sessions allow us to
         // conclude, how much crashed this week, and how many distinct faults that really is.
         var latestRed = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
-        if (latestRed != null && latestRed.Incompatible.Count == 0 && d.RedscriptErrors.Count == 0) h.Add(new HealthItem { Severity = "info", Title = "Frameworks loaded cleanly", Detail = $"RED4ext {latestRed.Red4extVersion} and {latestRed.PluginsLoaded.Count} native plugins loaded without warnings; scripts compiled." });
-        if (d.Warnings.Count > 0) h.Add(new HealthItem { Severity = "info", Title = "Some sources could not be read", Detail = string.Join(" ", d.Warnings) });
+        if (latestRed != null && latestRed.Incompatible.Count == 0 && d.RedscriptErrors.Count == 0) h.Add(new HealthItem { Severity = "info", Title = L.T("health.frameworksClean.title"), Detail = L.P("health.frameworksClean.detail", latestRed.PluginsLoaded.Count, latestRed.Red4extVersion) });
+        if (d.Warnings.Count > 0) h.Add(new HealthItem { Severity = "info", Title = L.T("health.unread.title"), Detail = L.Cat(d.Warnings.ToArray()) });
         // The rule catalogue: recognisable causes that need no crash signature at all. See Rules.cs.
         foreach (var hit in Rules.Run(d, r)) h.Add(new HealthItem { Severity = hit.Severity, Title = hit.Title, Detail = hit.Detail, Mod = hit.Mod, Flag = hit.Flag, Action = hit.Action });
         return h;
@@ -650,7 +731,7 @@ public static class Analyzer
     // Many mods ship a Config.reds / Utils.reds inside their own folder; that is a naming coincidence, not a conflict.
     internal static bool GenericScriptName(string name) => Regex.IsMatch(name, @"^(config|utils|util|helpers|helper|classes|main|module|callback|callbacks|events|settings|init|types|globals|data|core)\.reds$", RegexOptions.IgnoreCase);
 
-    internal static UiAction? NexusAction(CollectedData d, string? modName) { var row = modName == null ? null : d.Mods.Find(modName); return row?.NexusId != null ? new UiAction("nexus:" + row.NexusId, "Open on Nexus") : null; }
+    internal static UiAction? NexusAction(CollectedData d, string? modName) { var row = modName == null ? null : d.Mods.Find(modName); return row?.NexusId != null ? new UiAction("nexus:" + row.NexusId, L.T("act.openNexus")) : null; }
     internal static string? GuessOwnerFromText(CollectedData d, string text)
     {
         var m = Regex.Match(text, @"r6\\scripts\\([^\\]+)\\"); if (m.Success) { var f = d.Mods.FileOwner.FirstOrDefault(kv => kv.Key.StartsWith(@"r6\scripts\" + m.Groups[1].Value + @"\", StringComparison.OrdinalIgnoreCase)); if (f.Value != null) return f.Value; return m.Groups[1].Value; }
@@ -664,9 +745,9 @@ public static class Analyzer
         var n = new List<SettingsNote>();
         var fg = d.Settings.TryGetValue("FrameGeneration", out var fgv) && fgv != "Off"; var rt = SettingOn(d, "RayTracing");
         var longestClean = sessions.Where(s => s.EndKind == EndKind.Clean && d.SettingsWritten != null && s.Start >= d.SettingsWritten).OrderByDescending(s => s.Minutes).FirstOrDefault();
-        if (fg && rt && d.System.VramGB > 0 && d.System.VramGB <= 8) n.Add(new SettingsNote { Level = "high", Title = "Frame generation and ray tracing together", Detail = $"On {d.System.VramGB} GB this is the combination behind GPU faults. Drop ray traced lighting to Medium or turn frame gen off." });
-        else if (longestClean != null && longestClean.Minutes >= 60) n.Add(new SettingsNote { Level = "low", Title = "These settings have held up", Detail = $"The longest clean session since this settings file was written ran {Dur(longestClean.Minutes)}." });
-        if (d.SettingsWritten != null) n.Add(new SettingsNote { Level = "low", Title = "Settings file last written", Detail = d.SettingsWritten.Value.ToString("f") + ". Verdicts only quote settings for crashes that happened after this time." });
+        if (fg && rt && d.System.VramGB > 0 && d.System.VramGB <= 8) n.Add(new SettingsNote { Level = "high", Title = L.T("settings.fgRt.title"), Detail = L.T("settings.fgRt.detail", d.System.VramGB) });
+        else if (longestClean != null && longestClean.Minutes >= 60) n.Add(new SettingsNote { Level = "low", Title = L.T("settings.heldUp.title"), Detail = L.T("settings.heldUp.detail", L.Dur(longestClean.Minutes)) });
+        if (d.SettingsWritten != null) n.Add(new SettingsNote { Level = "low", Title = L.T("settings.written.title"), Detail = L.T("settings.written.detail", L.Date(d.SettingsWritten.Value, "full")) });
         return n;
     }
 }

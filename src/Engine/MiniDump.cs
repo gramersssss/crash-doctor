@@ -50,12 +50,12 @@ public sealed class DumpInfo
     /// <summary>One plain sentence about what the processor was doing. The mechanism, not the blame.</summary>
     public string Plain => ExceptionCode switch
     {
-        0xC0000005 when AccessKind == "read" => "The game tried to read memory that was not there any more, typically a resource that failed to load or was freed while still in use.",
-        0xC0000005 when AccessKind == "write" => "The game tried to write to memory it did not own.",
-        0xC0000005 => "The game touched memory that was not valid.",
-        0x80000003 => "The engine stopped itself deliberately: it hit a condition it treats as fatal rather than carrying on.",
-        0xC00000FD => "The stack ran out of room, usually endless recursion in a script or a mod calling itself.",
-        0xC0000006 => "A page of memory could not be read from disk. Suspect the drive or a damaged game file.",
+        0xC0000005 when AccessKind == "read" => L.T("dump.read"),
+        0xC0000005 when AccessKind == "write" => L.T("dump.write"),
+        0xC0000005 => L.T("dump.invalid"),
+        0x80000003 => L.T("dump.breakpoint"),
+        0xC00000FD => L.T("dump.stack"),
+        0xC0000006 => L.T("dump.page"),
         _ => ""
     };
 }
@@ -167,17 +167,17 @@ public static class MiniDump
     // observation with counts, never as a verdict - see DESIGN.md.
     static readonly Dictionary<string, string> Injectors = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["TrSpeedHack_x64.dll"] = "a FLiNG trainer",
-        ["TrSpeedHack.dll"] = "a FLiNG trainer",
-        ["TrMonoServer.dll"] = "a FLiNG trainer",
-        ["CheatEngine.dll"] = "Cheat Engine",
-        ["vehdebug-x86_64.dll"] = "Cheat Engine",
-        ["WeMod.dll"] = "WeMod",
+        ["TrSpeedHack_x64.dll"] = "inj.fling",
+        ["TrSpeedHack.dll"] = "inj.fling",
+        ["TrMonoServer.dll"] = "inj.fling",
+        ["CheatEngine.dll"] = "inj.cheatEngine",
+        ["vehdebug-x86_64.dll"] = "inj.cheatEngine",
+        ["WeMod.dll"] = "inj.wemod",
     };
 
     public static string? InjectorIn(IEnumerable<string> modules)
     {
-        foreach (var m in modules) if (Injectors.TryGetValue(m, out var who)) return who;
+        foreach (var m in modules) if (Injectors.TryGetValue(m, out var who)) return L.T(who);
         return null;
     }
 }

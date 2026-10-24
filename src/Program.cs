@@ -8,6 +8,10 @@ static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        // The command line speaks English unless asked otherwise (--lang de), so scripts and the fixture checks read the
+        // same words on every PC. The window starts in the saved choice, else the Windows display language (MainForm).
+        var langArg = Array.IndexOf(args, "--lang") is var li and >= 0 && li + 1 < args.Length ? args[li + 1] : null;
+        L.Use(L.Normalise(langArg) ?? "en");
         // Headless mode for testing and scripting:
         //   CrashDoctor.exe --json report.json [--html report.html] [--game "C:\path"] [--no-mods]   (any order)
         // --no-mods leaves the mod list out of the saved HTML, the same choice the window offers when saving.
@@ -24,13 +28,13 @@ static class Program
             var g = GameLocator.Locate();
             if (g == null) { Console.Error.WriteLine("Cyberpunk 2077 not found."); return 2; }
             var (res, play) = Launcher.PlayWith(g, args[pi + 1]);
-            (res.Ok ? Console.Out : Console.Error).WriteLine(res.Message); Console.Out.Flush();
+            (res.Ok ? Console.Out : Console.Error).WriteLine(L.R(res.Message)); Console.Out.Flush();
             if (!res.Ok || play == null) Environment.Exit(res.Ok ? 0 : 1);
             if (args.Contains("--restore") && play.Restore)
             {
                 Console.WriteLine("Waiting for the game to close so the previous settings can be put back. Leave this window open.");
                 string? done; while ((done = Launcher.Watch(play)) == null) Thread.Sleep(5000);
-                Console.WriteLine(done);
+                Console.WriteLine(L.R(done));
             }
             else if (play.Restore) Console.WriteLine("The profile stays in the game afterwards; CrashDoctor.exe --profile-undo puts the previous settings back, or use --restore next time.");
             Console.Out.Flush();
@@ -45,7 +49,7 @@ static class Program
             {
                 var cur = GraphicsProfiles.Current();
                 foreach (var p in GraphicsProfiles.Summaries(cur))
-                    Console.WriteLine($"{p.Name}{(p.MatchesGame ? "  (active)" : "")}  -  " + string.Join(", ", p.Headline.Select(kv => $"{kv.Key} {kv.Value}")));
+                    Console.WriteLine($"{p.Name}{(p.MatchesGame ? "  (active)" : "")}  -  " + string.Join(", ", p.Headline.Select(kv => $"{L.R(kv.Key)} {L.R(kv.Value)}")));
                 Console.WriteLine($"{cur.Count} graphics options in the game's settings file, {cur.Count(o => o.Editable)} editable.");
                 Environment.Exit(0);
             }
@@ -61,7 +65,7 @@ static class Program
                 res = GraphicsProfiles.Update(args[si + 1], new() { [key] = val });
             }
             if (res == null) { Console.Error.WriteLine("Use --profiles, --profile-save \"Name\", --profile-set \"Name\" Setting Value, --profile-apply \"Name\" or --profile-undo."); return 2; }
-            (res.Ok ? Console.Out : Console.Error).WriteLine(res.Message);
+            (res.Ok ? Console.Out : Console.Error).WriteLine(L.R(res.Message));
             Console.Out.Flush();
             Environment.Exit(res.Ok ? 0 : 1);
         }
@@ -74,7 +78,7 @@ static class Program
             foreach (var a in GpuAdapters.List()) Console.WriteLine($"adapter  {a.Name}  {a.DedicatedMB} MB  {a.LuidKey}");
             int? pid = null; try { pid = System.Diagnostics.Process.GetProcessesByName("Cyberpunk2077").FirstOrDefault()?.Id; } catch { }
             var s = GpuCounters.Read(pid);
-            if (s == null) { Console.Error.WriteLine("counters: " + GpuCounters.LastProblem); Console.Error.Flush(); Environment.Exit(1); }
+            if (s == null) { Console.Error.WriteLine("counters: " + L.R(GpuCounters.LastProblem)); Console.Error.Flush(); Environment.Exit(1); }
             Console.WriteLine($"reading  {s.Adapter}: {s.CardMB} of {s.TotalMB} MB in use, {s.SharedMB} MB shared" + (pid != null ? $", the game {s.GameMB} MB (pid {pid})" : ", game not running"));
             Console.Out.Flush();
             Environment.Exit(0);
@@ -88,8 +92,9 @@ static class Program
             if (gp != null && !GameLocator.IsGameDir(gp)) { Console.Error.WriteLine("--game " + gp + " is not a Cyberpunk 2077 folder."); return 2; }
             var g = gp != null ? new GamePaths { GameDir = gp, Store = "manual" } : GameLocator.Locate();
             if (g == null) { Console.Error.WriteLine("Cyberpunk 2077 not found. Use --game <folder>."); return 2; }
+            ModOrganizer.Attach(g);   // with MO2, its overwrite folder holds the logs too
             var res = args.Contains("--clear-logs") ? LogCleaner.Clear(g) : LogCleaner.Restore(g);
-            (res.Ok ? Console.Out : Console.Error).WriteLine(res.Message); Console.Out.Flush(); Console.Error.Flush();
+            (res.Ok ? Console.Out : Console.Error).WriteLine(L.R(res.Message)); Console.Out.Flush(); Console.Error.Flush();
             Environment.Exit(res.Ok ? 0 : 1);
         }
 
@@ -109,10 +114,10 @@ static class Program
                 Say("scan returned");
                 for (int i = 0; i < args.Length - 1; i++)
                 {
-                    if (args[i] == "--json") { Say("serialising"); var json = System.Text.Json.JsonSerializer.Serialize(r, new System.Text.Json.JsonSerializerOptions(Scanner.Json) { WriteIndented = true }); Say($"serialised {json.Length} chars, writing"); File.WriteAllText(args[i + 1], json); Say("written"); }
+                    if (args[i] == "--json") { Say("serialising"); var json = L.Json(r, L.Current, new System.Text.Json.JsonSerializerOptions(Scanner.Json) { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }); Say($"serialised {json.Length} chars, writing"); File.WriteAllText(args[i + 1], json); Say("written"); }
                     if (args[i] == "--html") { Say("exporting html"); HtmlExporter.Save(r, args[i + 1], !args.Contains("--no-mods")); Say("html written"); }
                 }
-                Console.WriteLine($"Scanned {g.GameDir}: {r.Sessions.Count} sessions, latest verdict: {r.Latest?.Verdict ?? "(no crash)"}");
+                Console.WriteLine($"Scanned {g.GameDir}: {r.Sessions.Count} sessions, latest verdict: {(r.Latest != null ? L.R(r.Latest.Verdict) : "(no crash)")}");
                 Console.Out.Flush();
                 // A command-line run has finished the moment its output is written. Returning normally waits on
                 // whatever non-background threads the WMI and event-log readers left behind, which can idle for

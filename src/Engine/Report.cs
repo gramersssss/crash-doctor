@@ -52,6 +52,7 @@ public sealed class CrashGroup
     public string? BuildNote { get; set; }
     public string Exception { get; set; } = "";
     public string Plain { get; set; } = "";
+    public string? Symbol { get; set; }           // the faulting function by name, when Advanced Crash Reporter saw it
     public int Count { get; set; }
     public DateTime FirstSeen { get; set; }
     public DateTime LastSeen { get; set; }
@@ -93,6 +94,8 @@ public sealed class GameInfo
 {
     public string Name { get; set; } = "Cyberpunk 2077";
     public string Version { get; set; } = "";
+    public string? PreviousVersion { get; set; }   // set when the game changed build recently (GameUpdate.cs)
+    public DateTime? UpdatedAt { get; set; }
     public string Store { get; set; } = "";
     public string Path { get; set; } = "";
     public string FileVersion { get; set; } = "";
@@ -123,9 +126,11 @@ public sealed class ModsSummary
     // and seven groups that glued different mods together), so the page says what the number is instead.
     public string Counted { get; set; } = "mods";
     public List<string> Frameworks { get; set; } = new();
+    public string? Mo2Instance { get; set; }      // the Mod Organizer 2 instance read, and its profile
+    public string? Mo2Profile { get; set; }
 }
 
-public enum EndKind { Clean, Gpu, Vram, Script, Engine, Unknown, Running }
+public enum EndKind { Clean, Gpu, Vram, Script, Engine, Unknown, Running, Hang }
 
 public sealed class Session
 {
@@ -133,7 +138,7 @@ public sealed class Session
     public DateTime Start { get; set; }
     public DateTime? End { get; set; }
     public double Minutes { get; set; }
-    public EndKind EndKind { get; set; }   // serialized camelCase by Scanner.Json: clean | gpu | vram | script | engine | unknown | running
+    public EndKind EndKind { get; set; }   // serialized camelCase by Scanner.Json: clean | gpu | vram | script | engine | unknown | running | hang
     public string Verdict { get; set; } = "";
     public int Confidence { get; set; }          // 0..3
     public bool Partial { get; set; }            // only a crash report exists; the session log has been rotated away
@@ -153,6 +158,8 @@ public sealed class Session
     public string? Fault { get; set; }            // the readable half: "Cyberpunk2077.exe+0x2A41E06"
     public string? Build { get; set; }            // build of the faulting module the offset was measured in
     public string? FaultingModule { get; set; }
+    public string? Symbol { get; set; }           // the faulting function by name, from Advanced Crash Reporter
+    public string? AcrFile { get; set; }          // ACR's report for this crash, when it wrote one
     public string? Injector { get; set; }         // a trainer / cheat tool found inside the game process
     public string? Position { get; set; }         // where the player was standing
     public string? Screenshot { get; set; }       // the frame the game was showing when it died

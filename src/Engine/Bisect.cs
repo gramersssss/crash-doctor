@@ -69,18 +69,18 @@ public static class Bisect
     {
         var timed = r.Sessions.Where(s => s.Signature == signature && s.DurationKnown && s.Minutes > 0).Select(s => s.Minutes).OrderBy(x => x).ToList();
         if (timed.Count == 0)
-            return (MinThreshold, $"No crash of this fault has a known length (their session logs were gone before they were scanned), so {MinThreshold} minutes is a floor rather than a measurement. Treat a clean run as weak evidence until a timed crash exists.", 0);
+            return (MinThreshold, L.T("bisect.noTimed", MinThreshold), 0);
         var median = timed[timed.Count / 2];
         var raw = (int)Math.Ceiling(median * 2);
         var minutes = Math.Clamp(raw, MinThreshold, MaxThreshold);
         var basis = timed.Count >= EnoughTimed
-            ? $"twice the typical {Math.Round(median)} min this fault takes to appear, from {timed.Count} timed crashes"
-            : $"twice the {Math.Round(median)} min {(timed.Count == 1 ? "the only timed crash of this fault" : "the two timed crashes of this fault")} took, so treat it as rough";
+            ? L.P("bisect.basis", timed.Count, Math.Round(median))
+            : L.P("bisect.basisRough", timed.Count, Math.Round(median));
         var note = raw > MaxThreshold
-            ? $"Capped at {MaxThreshold} min. Uncapped it would be {raw} min ({basis}). A fault this slow to appear makes a clean run weaker evidence than usual, so give the step more than one session where you can."
+            ? L.T("bisect.capped", MaxThreshold, raw, basis)
             : raw < MinThreshold
-                ? $"{MinThreshold} min is the floor; {basis} would give only {raw}."
-                : $"{basis.Substring(0, 1).ToUpperInvariant()}{basis.Substring(1)}.";
+                ? L.T("bisect.floor", MinThreshold, basis, raw)
+                : L.T("bisect.basisSentence", basis);
         return (minutes, note, timed.Count);
     }
 
@@ -179,7 +179,7 @@ public static class Bisect
         {
             // The fault came back with those mods off, so none of them causes it.
             step.Outcome = "recurred";
-            step.Note = $"The same fault happened again on {recurred.Start:d MMM HH:mm} with those {step.Off.Count} mods off, so none of them is the cause.";
+            step.Note = L.P("bisect.recurred", step.Off.Count, L.Date(recurred.Start, "dmt"));
             p.Cleared.AddRange(step.Off);
             p.Candidates = p.Candidates.Where(c => !step.Off.Contains(c)).ToList();
         }
@@ -187,7 +187,7 @@ public static class Bisect
         {
             // A run long enough to be meaningful, with those mods off. The cause is very likely among them.
             step.Outcome = "survived";
-            step.Note = $"You played {Math.Round(survived.Minutes)} minutes cleanly on {survived.Start:d MMM HH:mm} with those mods off - longer than this fault normally takes. It is most likely one of them.";
+            step.Note = L.P("bisect.survived", Math.Round(survived.Minutes), L.Date(survived.Start, "dmt"));
             p.Cleared.AddRange(p.Candidates.Where(c => !step.Off.Contains(c)));
             p.Candidates = step.Off.ToList();
         }
@@ -231,30 +231,30 @@ public static class Bisect
             StepNumber = p.Steps.Count,
             StepsLeft = p.Candidates.Count > 1 ? (int)Math.Ceiling(Math.Log2(p.Candidates.Count)) : 0,
             Culprit = p.Culprit,
-            History = p.Steps.Where(s => s.Outcome != "pending").Select(s => $"Step {s.Index}: {s.Off.Count} mods off → {s.Note}").ToList(),
+            History = p.Steps.Where(s => s.Outcome != "pending").Select(s => L.P("bisect.history", s.Off.Count, s.Index, s.Note)).ToList(),
         };
+        var mgr = Manager(r);
 
         if (p.Status == "found")
         {
-            v.Headline = $"It is {p.Culprit}.";
-            v.Detail = $"Narrowed from {p.Cleared.Count + 1} mods in {p.Steps.Count(s => s.Outcome != "pending")} tests, by watching whether {p.Signature} came back each time. "
-                     + $"Now turn all the other mods back on in Vortex and leave only {p.Culprit} off - if the fault stays away with everything else running, that is your answer. If it comes back, the cause was a combination rather than one mod, and the run has to start again with that one excluded.";
+            v.Headline = L.T("bisect.found", p.Culprit);
+            v.Detail = L.Cat(L.P("bisect.foundHow", p.Steps.Count(s => s.Outcome != "pending"), p.Cleared.Count + 1, p.Signature),
+                             L.T("bisect.foundNext", mgr, p.Culprit));
             return v;
         }
         if (p.Status == "exhausted")
         {
-            v.Headline = "The cause is not among the mods that were tested.";
-            v.Detail = "Every candidate was cleared, so this fault comes from something else: the game itself, a driver, hardware, or a tool running alongside the game. Check the Health page for anything injected into the process. Turn your mods back on in Vortex - none of them was responsible.";
+            v.Headline = L.T("bisect.exhausted");
+            v.Detail = L.T("bisect.exhaustedDetail", mgr);
             return v;
         }
         if (p.Status == "stale")
         {
-            v.Headline = "The game updated, so this hunt cannot continue.";
-            v.Detail = $"Every round so far was measured against game build {p.GameBuild}, and an update moves every address - the fault being hunted ({p.Signature.Split('@')[0]}) cannot happen at that address any more. "
-                     + $"Nothing learned in {p.Steps.Count(x => x.Outcome != "pending")} round(s) is wrong, but it cannot be carried forward. Turn your mods back on, play until the crash reappears, then start a new hunt against whatever fault the new build reports.";
+            v.Headline = L.T("bisect.stale");
+            v.Detail = L.Cat(L.T("bisect.staleWhy", p.GameBuild, p.Signature.Split('@')[0]), L.P("bisect.staleNext", p.Steps.Count(x => x.Outcome != "pending")));
             return v;
         }
-        if (p.Status == "stopped") { v.Headline = "Bisect stopped."; return v; }
+        if (p.Status == "stopped") { v.Headline = L.T("bisect.stopped"); return v; }
 
         var step = p.Current;
         if (step == null) return v;
@@ -266,21 +266,24 @@ public static class Bisect
 
         if (!v.Ready)
         {
-            v.Headline = $"Step {step.Index}: turn off {step.Off.Count} of the {step.CandidatesBefore} mods still in the running.";
-            v.Detail = (turnOff.Count > 0 ? $"{turnOff.Count} still need turning off. " : "")
-                     + (turnOn.Count > 0 ? $"{turnOn.Count} that must stay in the test are currently disabled and need turning back on. " : "")
-                     + "Do it in Vortex, deploy, then scan again - Crash Doctor checks what is actually deployed rather than taking your word for it.";
+            v.Headline = L.P("bisect.setUp", step.CandidatesBefore, step.Index, step.Off.Count);
+            v.Detail = L.Cat(turnOff.Count > 0 ? L.P("bisect.stillOn", turnOff.Count) : "",
+                             turnOn.Count > 0 ? L.P("bisect.stillOff", turnOn.Count) : "",
+                             r.Mods.Manager == ModOrganizer.ManagerName ? L.T("bisect.doItMo2") : L.T("bisect.doIt", mgr));
         }
         else if (!v.Playing)
         {
-            v.Headline = $"Step {step.Index} is set up correctly. Go and play.";
-            v.Detail = $"Play the way you normally do, in the place this fault usually happens. Either it comes back - which clears all {step.Off.Count} of these - or you get a clean run of at least {p.MinutesToBeat} minutes, which points at them. Then scan again; the result is read from your logs automatically.";
+            v.Headline = L.T("bisect.ready", step.Index);
+            v.Detail = L.P("bisect.readyDetail", step.Off.Count, p.MinutesToBeat);
         }
         else
         {
-            v.Headline = $"Step {step.Index} is running. Play, then scan.";
-            v.Detail = $"Nothing decisive yet. A crash with {p.Signature} clears these {step.Off.Count} mods; a clean run of {p.MinutesToBeat}+ minutes points at them. Anything shorter is not conclusive either way, so keep playing.";
+            v.Headline = L.T("bisect.running", step.Index);
+            v.Detail = L.P("bisect.runningDetail", step.Off.Count, p.Signature, p.MinutesToBeat);
         }
         return v;
     }
+
+    /// <summary>The mod manager by name, for "turn these off in ..." - or the reader's words for "your mod manager".</summary>
+    public static string Manager(Report r) => r.Mods.Manager switch { "Vortex" => "Vortex", ModOrganizer.ManagerName => ModOrganizer.ManagerName, _ => L.T("mgr.manual") };
 }

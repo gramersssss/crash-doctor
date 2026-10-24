@@ -13,14 +13,30 @@ public static class Scanner
         var timing = Environment.GetEnvironmentVariable("CRASHDOCTOR_TIMING") == "1";
         var sw = System.Diagnostics.Stopwatch.StartNew();
         void Mark(string what) { if (timing) { Console.Error.WriteLine($"  [timing] {sw.ElapsedMilliseconds,7} ms  {what}"); sw.Restart(); } }
+        // a Mod Organizer 2 instance managing this game decides where everything below is read from (ModOrganizer.cs)
+        ModOrganizer.Attach(g);
         var d = Collectors.CollectAll(g, since);
         Mark("(collect total)");
         var r = new Report();
         var (fv, pv) = GameLocator.ExeVersion(g);
         var latestRed = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
-        r.Game = new GameInfo { Path = g.GameDir, Store = g.Store, FileVersion = fv, Version = !string.IsNullOrEmpty(latestRed?.ProductVersion) ? latestRed!.ProductVersion : GuessPatch(fv), Running = GameLocator.GameRunning() };
+        r.Game = new GameInfo { Path = g.GameDir, Store = g.Store, FileVersion = fv, Version = GameUpdate.Version(d, fv, pv), Running = GameLocator.GameRunning() };
+        // a game update since the last scan, and what each framework's own log says about the new build (GameUpdate.cs)
+        try
+        {
+            d.GameChange = GameUpdate.Detect(d, r.Game, remember: true);
+            if (d.GameChange != null)
+            {
+                d.FrameworkChecks = GameUpdate.Frameworks(d, d.GameChange);
+                r.Game.PreviousVersion = d.GameChange.From; r.Game.UpdatedAt = d.GameChange.At;
+                if (string.IsNullOrEmpty(r.Game.Version)) r.Game.Version = d.GameChange.To ?? "";
+            }
+        }
+        catch { /* never worth the diagnosis */ }
         r.System = d.System;
-        r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Counted = d.Mods.Manager == "Vortex" ? "mods" : "pieces", Frameworks = Frameworks(d) };
+        r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Counted = d.Mods.Manager is "Vortex" or ModOrganizer.ManagerName ? "mods" : "pieces", Frameworks = Frameworks(d),
+            Mo2Instance = g.Mo2?.BaseDir, Mo2Profile = g.Mo2?.Profile };
+        if (d.Mods.AlsoMo2) d.Warnings.Add(L.T("warn.vortexAndMo2", g.Mo2!.BaseDir));
         Analyzer.Analyze(d, r);
         Mark("analyze");
         // what a hunt on each fault would demand of a clean run, shown on the pick list before anyone commits to one
@@ -62,8 +78,6 @@ public static class Scanner
         return r;
     }
 
-    static string GuessPatch(string fileVersion) => fileVersion switch { var v when v.StartsWith("3.0.80.51928") => "2.31", var v when v.StartsWith("3.0.80.") => "2.3x", _ => fileVersion };
-
     static List<string> Frameworks(CollectedData d)
     {
         var l = new List<string>(); var red = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
@@ -76,36 +90,37 @@ public static class Scanner
     static ModRow Flagged(CollectedData d, ModRow m, Report r)
     {
         foreach (var h in r.Health.Where(h => h.Mod != null && (h.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) || h.Mod.Contains(m.Name, StringComparison.OrdinalIgnoreCase)) && h.Severity != "info"))
-            m.Flags.Add(new ModFlag { Label = h.Flag ?? (h.Title.Length > 40 ? h.Title[..40] + "…" : h.Title), Level = h.Severity, Detail = h.Detail });
+            m.Flags.Add(new ModFlag { Label = h.Flag ?? (L.IsToken(h.Title) || h.Title.Length <= 40 ? h.Title : h.Title[..40] + "…"), Level = h.Severity, Detail = h.Detail });
         // Elimination outranks suspicion. If the clean sessions cleared this mod, that is the whole story: showing
         // "suspect" and "ruled out" side by side would just reproduce the confusion the elimination layer exists to end.
         var newestFirst = r.Sessions.OrderByDescending(x => x.Start).ToList();
         var cleared = newestFirst.SelectMany(x => x.RuledOut.Select(ro => (session: x, ro)))
                                  .FirstOrDefault(t => t.ro.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase));
         if (cleared.ro != null)
-            m.Flags.Add(new ModFlag { Label = "ruled out", Level = "cleared", Detail = cleared.ro.Why, SessionId = cleared.session.Id, When = cleared.session.Start.ToString("d MMM HH:mm") });
+            m.Flags.Add(new ModFlag { Label = L.T("flag.ruledOut"), Level = "cleared", Detail = cleared.ro.Why, SessionId = cleared.session.Id, When = L.Date(cleared.session.Start, "dmt") });
         else
             foreach (var s in newestFirst)
                 foreach (var su in s.Suspects)
-                    if (su.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) && !m.Flags.Any(f => f.Label == "suspect in a crash"))
-                        m.Flags.Add(new ModFlag { Label = "suspect in a crash", Level = su.Level, Detail = su.Why, SessionId = s.Id, When = s.Start.ToString("d MMM HH:mm") });
-        var fix = Fixes.FindFor(m.Name); if (fix != null) { var st = fix.State(d.Paths); if (st == "applied") m.Flags.Add(new ModFlag { Label = "fix applied", Level = "low", Detail = fix.Title }); else if (st == "applicable") m.Flags.Add(new ModFlag { Label = "known fix available", Level = "medium", Detail = fix.Title }); }
+                    if (su.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) && !m.Flags.Any(f => f.Label == L.T("flag.suspect")))
+                        m.Flags.Add(new ModFlag { Label = L.T("flag.suspect"), Level = su.Level, Detail = su.Why, SessionId = s.Id, When = L.Date(s.Start, "dmt") });
+        var fix = Fixes.FindFor(m.Name); if (fix != null) { var st = fix.State(d.Paths); if (st == "applied") m.Flags.Add(new ModFlag { Label = L.T("flag.fixApplied"), Level = "low", Detail = fix.Title }); else if (st == "applicable") m.Flags.Add(new ModFlag { Label = L.T("flag.fixAvailable"), Level = "medium", Detail = fix.Title }); }
         return m;
     }
 
-    static readonly Dictionary<string, string> Labels = new() { ["FrameGeneration"] = "Frame generation", ["ResolutionScaling"] = "Upscaler", ["DLSS"] = "DLSS mode", ["DLSS_BackendPreset"] = "DLSS model", ["FSR3"] = "FSR mode", ["XESS"] = "XeSS mode", ["RayTracing"] = "Ray tracing", ["RayTracedLighting"] = "Ray traced lighting", ["RayTracedReflections"] = "Ray traced reflections", ["RayTracedSunShadows"] = "Ray traced sun shadows", ["RayTracedLocalShadows"] = "Ray traced local shadows", ["RayTracedPathTracing"] = "Path tracing", ["TextureQuality"] = "Textures", ["Resolution"] = "Resolution", ["WindowMode"] = "Window mode", ["VSync"] = "VSync", ["ReflexMode"] = "NVIDIA Reflex", ["CrowdDensity"] = "Crowd density", ["ScreenSpaceReflectionsQuality"] = "Screen space reflections", ["VolumetricFogResolution"] = "Volumetric fog", ["CascadedShadowsResolution"] = "Cascaded shadows", ["DistantShadowsResolution"] = "Distant shadows", ["MirrorQuality"] = "Mirror quality", ["ColorPrecision"] = "Color precision", ["AmbientOcclusion"] = "Ambient occlusion", ["MaxDynamicDecals"] = "Max dynamic decals", ["HDRModes"] = "HDR" };
+    // the settings quoted on the Settings page and in the copied summary, in the order they are listed
+    static readonly string[] Shown = { "FrameGeneration", "ResolutionScaling", "DLSS", "DLSS_BackendPreset", "FSR3", "XESS", "RayTracing", "RayTracedLighting", "RayTracedReflections", "RayTracedSunShadows", "RayTracedLocalShadows", "RayTracedPathTracing", "TextureQuality", "Resolution", "WindowMode", "VSync", "ReflexMode", "CrowdDensity", "ScreenSpaceReflectionsQuality", "VolumetricFogResolution", "CascadedShadowsResolution", "DistantShadowsResolution", "MirrorQuality", "ColorPrecision", "AmbientOcclusion", "MaxDynamicDecals", "HDRModes" };
     static Dictionary<string, string> PrettySettings(Dictionary<string, string> s)
     {
         var o = new Dictionary<string, string>();
-        foreach (var kv in Labels)
-            if (s.TryGetValue(kv.Key, out var v))
+        foreach (var key in Shown)
+            if (s.TryGetValue(key, out var v))
             {
                 v = v.Replace("UI-Settings-Video-QualitySetting-", "");
                 // The settings file writes booleans both ways depending on the key, so "Ray tracing: True" sat in a
                 // column of Off / Medium / Ultra until this stopped being case-sensitive.
                 if (v.Equals("true", StringComparison.OrdinalIgnoreCase)) v = "On";
                 else if (v.Equals("false", StringComparison.OrdinalIgnoreCase)) v = "Off";
-                o[kv.Value] = v;
+                o[GraphicsProfiles.LabelToken(key)] = Analyzer.Gfx(v);
             }
         return o;
     }

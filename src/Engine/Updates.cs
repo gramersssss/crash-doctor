@@ -74,7 +74,7 @@ public static class Updates
         var c = GameLocator.LoadConfig();
         var url = VersionUrl();
         c.LastUpdateCheck = DateTime.Now;
-        if (url == null) { c.LastUpdateProblem = "There is no address to ask yet."; GameLocator.SaveConfig(c); return Status(); }
+        if (url == null) { c.LastUpdateProblem = L.T("upd.noAddress"); GameLocator.SaveConfig(c); return Status(); }
         try
         {
             using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
@@ -91,7 +91,7 @@ public static class Updates
         }
         catch (Exception ex)
         {
-            c.LastUpdateProblem = "The check did not get an answer: " + ex.Message;
+            c.LastUpdateProblem = L.T("upd.noAnswer", ex.Message);
         }
         GameLocator.SaveConfig(c);
         return Status();

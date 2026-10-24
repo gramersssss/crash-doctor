@@ -21,9 +21,14 @@ public static class HtmlExporter
     public static void Save(Report r, string path, bool includeModList = true)
     {
         var safe = Sanitise(r, includeModList);
-        var json = Scanner.ToJson(safe).Replace("</script", "<" + @"\" + "/script");
-        json = ScrubPaths(json);
-        var inject = "<script>window.EXPORTED=" + json + ";</script>\n</body>";
+        // The report travels in the language the window shows, with its words for the page around it, and - when that
+        // is not English - in English as well, so whoever it is posted to can switch it to English with one click.
+        string Rendered(Lang l) => ScrubPaths(L.Json(safe, l, Scanner.Json)).Replace("</script", "<" + @"\" + "/script");
+        string Dict(Lang l) => l.Raw.ToJsonString().Replace("</script", "<" + @"\" + "/script");
+        var lang = L.Current;
+        var inject = "<script>window.EXPORTED=" + Rendered(lang) + ";window.EXPORTED_LANG=" + Dict(lang) + ";window.EXPORTED_CODE=\"" + lang.Code + "\";"
+            + (lang.Code != "en" ? "window.EXPORTED_EN=" + Rendered(L.En) + ";window.EXPORTED_LANG_EN=" + Dict(L.En) + ";" : "")
+            + "</script>\n</body>";
         var html = File.ReadAllText(Path.Combine(UiDir, "index.html")).Replace("</body>", inject);
         File.WriteAllText(path, html);
     }
@@ -36,7 +41,7 @@ public static class HtmlExporter
 
         var shots = clone.Sessions.Count(s => s.Screenshot != null);
         foreach (var s in clone.Sessions) s.Screenshot = null;
-        if (shots > 0) removed.Add($"{shots} crash screenshot path{(shots == 1 ? "" : "s")}");
+        if (shots > 0) removed.Add(L.P("privacy.screenshots", shots));
 
         if (!includeModList)
         {
@@ -47,13 +52,12 @@ public static class HtmlExporter
             clone.ModsList = new List<ModRow>();
             foreach (var q in clone.Requirements) q.NeededBy = new List<string>();
             foreach (var s2 in clone.Sessions) s2.AreaMods = new List<AreaMod>();
-            if (n > 0) removed.Add($"the list of {n} mod names, and mod names from the requirements and area panels");
+            if (n > 0) removed.Add(L.P("privacy.mods", n));
         }
 
         clone.Privacy = removed.Count > 0
-            ? "Saved copy. Removed before saving: " + string.Join("; ", removed) + ". Personal folder paths are replaced with %USERPROFILE%."
-                + (includeModList ? "" : " Mods named in the diagnosis itself are still shown - naming them is the diagnosis.")
-            : "Saved copy. Personal folder paths are replaced with %USERPROFILE%.";
+            ? L.Cat(L.T("privacy.removed", string.Join("; ", removed)), includeModList ? "" : L.T("privacy.namedStill"))
+            : L.T("privacy.plain");
         return clone;
     }
 

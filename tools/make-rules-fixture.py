@@ -121,7 +121,15 @@ def set_engine_oom(crash_dir):
 # Three real crash reports, each doctored for one rule. Copied rather than generated because a minidump is not a
 # thing worth writing by hand, and because the rest of the report staying real is what makes the fixture honest.
 have = []
-for name in sorted(os.listdir(SRC)):
+# Newest first, and only reports the scan's 30-day window still covers: picking the oldest (as this did until
+# Oct 2026) quietly dropped two of the three doctored reports once the PC's crashes from mid-September aged out,
+# and the out-of-memory and overlay rules stopped firing here without anything saying why.
+def _when(n):
+    m = re.match(r"Cyberpunk2077-(\d{8})-(\d{6})-", n)
+    return datetime.datetime.strptime(m.group(1) + m.group(2), "%Y%m%d%H%M%S") if m else None
+for name in sorted(os.listdir(SRC), reverse=True):
+    if _when(name) is None or _when(name) < NOW - datetime.timedelta(days=25):
+        continue
     src_dir = os.path.join(SRC, name)
     p = os.path.join(src_dir, "Cyberpunk2077.dmp")
     if not os.path.isdir(src_dir) or not os.path.exists(p) or io.open(p, "rb").read(4) != b"MDMP":

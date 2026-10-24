@@ -101,13 +101,17 @@ public static class Knowledge
                 if (matched == null && e.Match.Exception.Count > 0 && s.Exception != null && e.Match.Exception.Any(x => s.Exception.Contains(x, StringComparison.OrdinalIgnoreCase)))
                     matched = s.Exception;
                 if (matched == null && regexes.Count > 0)
-                    matched = s.Evidence.Select(ev => ev.Text).FirstOrDefault(t => regexes.Any(rx => rx.IsMatch(t)));
+                    // evidence text can be a token (Lang.cs); the patterns are written against the English words
+                    matched = s.Evidence.Select(ev => L.REn(ev.Text)).FirstOrDefault(t => regexes.Any(rx => rx.IsMatch(t)));
                 if (matched == null) continue;
 
                 if (hits.TryGetValue(e.Id, out var h)) h.Crashes++;
                 else hits[e.Id] = new KnowledgeHit
                 {
-                    Id = e.Id, Title = e.Title, Says = e.Says, Do = e.Do, Source = e.Source,
+                    // the words come from the language file (kb.<id>.title ...) when it has them, else from the
+                    // knowledge file itself, which stays the English source
+                    Id = e.Id, Title = L.TF($"kb.{e.Id}.title", e.Title), Says = L.TF($"kb.{e.Id}.says", e.Says),
+                    Do = e.Do == null ? null : L.TF($"kb.{e.Id}.do", e.Do), Source = L.TF($"kb.{e.Id}.source", e.Source),
                     Confidence = e.Confidence is "established" ? "established" : "likely",
                     Matched = matched.Length > 160 ? matched[..160] + "…" : matched,
                     Crashes = 1,

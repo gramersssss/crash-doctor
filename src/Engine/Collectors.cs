@@ -23,6 +23,7 @@ public sealed class Red4extSession
     public string Red4extVersion { get; set; } = "";
     public List<(string name, string version)> PluginsLoaded { get; set; } = new();
     public List<string> Incompatible { get; set; } = new();  // raw warning lines
+    public List<string> Errors { get; set; } = new();        // RED4ext's own [error]/[critical] lines, e.g. a game version it cannot run on
 }
 
 // ArchiveXL logs every world sector it patches as it streams in, and names each .xl file applied to it. That makes it
@@ -43,6 +44,8 @@ public sealed class LogEvent
     public string Text { get; set; } = "";
     public string Kind { get; set; } = "";     // error | warning | activity | driver | appcrash | power
     public string? Mod { get; set; }           // mod folder / xl name if known
+    public string? Module { get; set; }        // appcrash: the faulting module, as Windows named it
+    public string? Tag { get; set; }           // activity: "npc" | "world" - what ArchiveXL was doing at the end
 }
 
 public sealed class CollectedData
@@ -58,6 +61,12 @@ public sealed class CollectedData
     public JsonElement? CrashInfo { get; set; }
     public string CetVersion { get; set; } = "";
     public string CetGameVersion { get; set; } = "";
+    public string? CetLog { get; set; }                     // where cyber_engine_tweaks.log was found (game folder or MO2)
+    public List<(DateTime at, string line)> CetRefused { get; } = new();   // where CET said it does not support the game version
+    public List<(DateTime at, string gameVersion)> CetStarts { get; } = new();   // every launch CET logged, with the game build it saw
+    public string? RedscriptLog { get; set; }
+    public List<AcrReport> AcrReports { get; set; } = new();   // Advanced Crash Reporter's reports (AdvancedCrashReporter.cs)
+    public string? AcrDir { get; set; }                        // where ACR is installed, when it is
     public List<string> RedscriptWarnings { get; } = new();
     public List<string> RedscriptErrors { get; } = new();
     public List<string> Warnings { get; } = new();          // "could not read X"
@@ -75,6 +84,9 @@ public sealed class CollectedData
     // writes again at a clean shutdown, so a game that is closed by force has no end time of its own; the last of
     // these is the last sign it was still running (Analyzer.LastActivity).
     public HashSet<DateTime> ActivitySeconds { get; } = new();
+    // a change of game build, and what each framework's log says about the new one (GameUpdate.cs)
+    public GameVersionChange? GameChange { get; set; }
+    public List<FrameworkCheck> FrameworkChecks { get; set; } = new();
 }
 
 public static class Collectors
@@ -85,20 +97,21 @@ public static class Collectors
     public static CollectedData CollectAll(GamePaths g, DateTime since)
     {
         var d = new CollectedData { Paths = g, Since = since };
-        Safe(d, "RED4ext logs", () => ReadRed4ext(d, since));
-        Safe(d, "crash reporter log", () => ReadCrashReporter(d, since));
-        Safe(d, "crash reports", () => ReadCrashReports(d, since));
-        Safe(d, "CrashInfo.json", () => ReadCrashInfo(d));
-        Safe(d, "Cyber Engine Tweaks logs", () => ReadCet(d, since));
-        Safe(d, "ArchiveXL logs", () => ReadArchiveXL(d, since));
-        Safe(d, "redscript log", () => ReadRedscript(d));
-        Safe(d, "Windows event log", () => ReadEventLogs(d, since));
-        Safe(d, "UserSettings.json", () => ReadSettings(d));
-        Safe(d, "system information", () => d.System = ReadSystem());
-        Safe(d, "mod list", () => d.Mods = ModInventory.Read(g));
-        Safe(d, "video memory logs", () => d.VramLogs = Engine.VramLogs.ReadAll());
-        Safe(d, "Vortex install history", () => ChangeLog.ReadVortexLog(d, since));
-        Safe(d, "mod folder file times", () => ChangeLog.ReadFileTimes(d, since));
+        Safe(d, "red4ext", () => ReadRed4ext(d, since));
+        Safe(d, "crashReporterLog", () => ReadCrashReporter(d, since));
+        Safe(d, "crashReports", () => ReadCrashReports(d, since));
+        Safe(d, "crashInfo", () => ReadCrashInfo(d));
+        Safe(d, "cet", () => ReadCet(d, since));
+        Safe(d, "archiveXl", () => ReadArchiveXL(d, since));
+        Safe(d, "redscript", () => ReadRedscript(d));
+        Safe(d, "acr", () => { d.AcrDir = AdvancedCrashReporter.InstalledDir(g); d.AcrReports = AdvancedCrashReporter.Read(g, since); });
+        Safe(d, "eventLog", () => ReadEventLogs(d, since));
+        Safe(d, "userSettings", () => ReadSettings(d));
+        Safe(d, "system", () => d.System = ReadSystem());
+        Safe(d, "modList", () => d.Mods = ModInventory.Read(g));
+        Safe(d, "vramLogs", () => d.VramLogs = Engine.VramLogs.ReadAll());
+        Safe(d, "vortexHistory", () => ChangeLog.ReadVortexLog(d, since));
+        Safe(d, "fileTimes", () => ChangeLog.ReadFileTimes(d, since));
         return d;
     }
 
@@ -109,7 +122,7 @@ public static class Collectors
     {
         var sw = Timing ? System.Diagnostics.Stopwatch.StartNew() : null;
         try { a(); }
-        catch (Exception ex) { d.Warnings.Add($"Could not read {what}: {ex.Message}"); }
+        catch (Exception ex) { d.Warnings.Add(L.T("warn.couldNotRead", L.T("what." + what), ex.Message)); }
         finally { if (sw != null) Console.Error.WriteLine($"  [timing] {sw.ElapsedMilliseconds,7} ms  {what}"); }
     }
 
@@ -122,8 +135,8 @@ public static class Collectors
     // ---------------- RED4ext ----------------
     static void ReadRed4ext(CollectedData d, DateTime since)
     {
-        if (!Directory.Exists(d.Paths.Red4extLogs)) return;
-        foreach (var f in Directory.EnumerateFiles(d.Paths.Red4extLogs, "red4ext-*.log").OrderBy(x => x))
+        // through GamePaths: under Mod Organizer 2 these logs are in its overwrite folder, not the game's
+        foreach (var (f, _) in d.Paths.FilesIn(GamePaths.RelRed4extLogs, "red4ext-*.log", newestWins: true).OrderBy(x => Path.GetFileName(x.full), StringComparer.OrdinalIgnoreCase))
         {
             var fi = new FileInfo(f); if (fi.LastWriteTime < since) continue;
             var s = new Red4extSession { File = f, LastWrite = fi.LastWriteTime };
@@ -142,6 +155,7 @@ public static class Collectors
                 else if (line.Contains("[RED4ext] Crash report")) { inCrash = true; s.CrashAt = at; }
                 else if (inCrash && line.Contains("File:")) s.CrashFile = line[(line.IndexOf("File:") + 5)..].Trim();
                 else if (inCrash && line.Contains("Message:")) { s.CrashMessage = line[(line.IndexOf("Message:") + 8)..].Trim(); inCrash = false; }
+                else if (!inCrash && s.CrashAt == null && (line.Contains("[error") || line.Contains("[critical")) && s.Errors.Count < 8) s.Errors.Add(Regex.Replace(line, @"^\[[^\]]+\]\s*\[[^\]]+\]\s*\[\s*\d+\]\s*", "").Trim());
             }
             if (s.Start != default) d.Red4ext.Add(s);
         }
@@ -182,22 +196,23 @@ public static class Collectors
     static readonly Regex Errorish = new(@"\[error\]|\berror\b|attempt to (call|index|compare|perform)|nil value|stack traceback|must be '|Function '.*' context|bad argument|not found|failed", RegexOptions.IgnoreCase | RegexOptions.Compiled);
     static void ReadCet(CollectedData d, DateTime since)
     {
-        var main = Path.Combine(d.Paths.Cet, "cyber_engine_tweaks.log");
-        if (File.Exists(main))
+        var main = d.Paths.FilesIn(GamePaths.RelCet, "cyber_engine_tweaks.log", newestWins: true).Select(x => x.full).FirstOrDefault();
+        d.CetLog = main;
+        if (main != null)
             foreach (var line in SafeLines(main))
             {
+                TryTs(line, out var at);
                 if (line.Contains("CET version")) { var m = Regex.Match(line, @"CET version v?([\w.\-\[\] ]+)"); if (m.Success) d.CetVersion = m.Groups[1].Value.Trim(); }
-                else if (line.Contains("Game version")) { var m = Regex.Match(line, @"Game version ([\d.]+)"); if (m.Success) d.CetGameVersion = m.Groups[1].Value; }
+                else if (line.Contains("Game version")) { var m = Regex.Match(line, @"Game version ([\d.]+)"); if (m.Success) { d.CetGameVersion = m.Groups[1].Value; d.CetStarts.Add((at, m.Groups[1].Value)); } }
+                // CET says so when it does not support the game it was started in; the exact words have changed between
+                // releases, so this looks for the shape rather than one sentence (GameUpdate.cs reports it)
+                if (Regex.IsMatch(line, @"(unsupported|not supported|incompatible|unknown)\s+(game\s+)?(version|patch|build)|version\s+(is\s+)?not\s+supported", RegexOptions.IgnoreCase)) d.CetRefused.Add((at, line.Length > 240 ? line[..240] : line));
             }
-        var scripting = Path.Combine(d.Paths.Cet, "scripting.log");
-        if (File.Exists(scripting)) { try { AddCetLog(d, scripting, "CET · scripting", null, since); } catch (Exception ex) { d.Warnings.Add("CET scripting.log: " + ex.Message); } }
-        if (Directory.Exists(d.Paths.CetMods))
-            foreach (var dir in Directory.EnumerateDirectories(d.Paths.CetMods))
-            {
-                var mod = Path.GetFileName(dir);
-                foreach (var f in Directory.EnumerateFiles(dir, "*.log", SearchOption.TopDirectoryOnly))
-                    if (new FileInfo(f).LastWriteTime >= since) { try { AddCetLog(d, f, "CET · " + mod, mod, since); } catch { } }
-            }
+        var scripting = d.Paths.FilesIn(GamePaths.RelCet, "scripting.log", newestWins: true).Select(x => x.full).FirstOrDefault();
+        if (scripting != null) { try { AddCetLog(d, scripting, "CET · scripting", null, since); } catch (Exception ex) { d.Warnings.Add(L.T("warn.cetScripting", ex.Message)); } }
+        foreach (var (mod, dirs) in d.Paths.SubDirs(GamePaths.RelCetMods))
+            foreach (var (f, _) in d.Paths.FilesIn(Path.Combine(GamePaths.RelCetMods, mod), "*.log", newestWins: true))
+                if (new FileInfo(f).LastWriteTime >= since) { try { AddCetLog(d, f, "CET · " + mod, mod, since); } catch { } }
     }
     static IEnumerable<string> SafeLines(string f) { try { return Files.ReadAllLinesShared(f); } catch { return Array.Empty<string>(); } }
     static void AddCetLog(CollectedData d, string file, string source, string? mod, DateTime since)
@@ -216,8 +231,7 @@ public static class Collectors
     // ---------------- ArchiveXL ----------------
     static void ReadArchiveXL(CollectedData d, DateTime since)
     {
-        var dir = Path.Combine(d.Paths.Red4extPlugins, "ArchiveXL"); if (!Directory.Exists(dir)) return;
-        foreach (var f in Directory.EnumerateFiles(dir, "ArchiveXL-*.log"))
+        foreach (var (f, _) in d.Paths.FilesIn(Path.Combine(GamePaths.RelRed4extPlugins, "ArchiveXL"), "ArchiveXL-*.log", newestWins: true))
         {
             if (new FileInfo(f).LastWriteTime < since) continue;
             string[] lines; try { lines = Files.ReadAllLinesShared(f); } catch { continue; }
@@ -258,8 +272,9 @@ public static class Collectors
                 {
                     // last lines of each session log = what ArchiveXL was doing when the session ended
                     var text = body[6..].Trim();
-                    var summary = text.Contains("h1_base_color_patch") ? "NPC loading (hair appearance patch applied)" : text.Contains("WorldStreaming") ? Regex.Replace(text, @"^\[WorldStreaming\]\s*", "world streaming: ") : text.Length > 160 ? text[..160] + "…" : text;
-                    if (i == lines.Length - 1) d.Events.Add(new LogEvent { At = at, Source = "ArchiveXL", Text = summary, Kind = "activity" });
+                    var npc = text.Contains("h1_base_color_patch"); var world = !npc && text.Contains("WorldStreaming");
+                    var summary = npc ? L.T("ev.npcLoading") : world ? L.T("ev.worldStreaming", Regex.Replace(text, @"^\[WorldStreaming\]\s*", "")) : text.Length > 160 ? text[..160] + "…" : text;
+                    if (i == lines.Length - 1) d.Events.Add(new LogEvent { At = at, Source = "ArchiveXL", Text = summary, Kind = "activity", Tag = npc ? "npc" : world ? "world" : null });
                 }
             }
             if (patches.Count > 0)
@@ -278,7 +293,8 @@ public static class Collectors
     // ---------------- redscript ----------------
     static void ReadRedscript(CollectedData d)
     {
-        var f = Path.Combine(d.Paths.RedscriptLogs, "redscript_rCURRENT.log"); if (!File.Exists(f)) return;
+        var f = d.Paths.FilesIn(GamePaths.RelRedscriptLogs, "redscript_rCURRENT.log", newestWins: true).Select(x => x.full).FirstOrDefault(); if (f == null) return;
+        d.RedscriptLog = f;
         var lines = Files.ReadAllLinesShared(f);
         for (int i = 0; i < lines.Length; i++)
         {
@@ -295,16 +311,17 @@ public static class Collectors
     static void ReadEventLogs(CollectedData d, DateTime since)
     {
         var sinceUtc = since.ToUniversalTime().ToString("o");
-        Query(d, "System", $"*[System[Provider[@Name='nvlddmkm'] and TimeCreated[@SystemTime>='{sinceUtc}']]]", e => new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = "Windows · NVIDIA driver", Text = $"nvlddmkm event {e.Id}: the display driver reported a GPU error", Kind = "driver" });
-        Query(d, "System", $"*[System[Provider[@Name='amdkmdag' or @Name='amdkmdap'] and TimeCreated[@SystemTime>='{sinceUtc}']]]", e => new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = "Windows · AMD driver", Text = $"AMD display driver event {e.Id}", Kind = "driver" });
-        Query(d, "System", $"*[System[(EventID=4101) and TimeCreated[@SystemTime>='{sinceUtc}']]]", e => new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = "Windows · display", Text = "Display driver stopped responding and was reset (TDR)", Kind = "driver" });
-        Query(d, "System", $"*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and (EventID=41) and TimeCreated[@SystemTime>='{sinceUtc}']]]", e => new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = "Windows · power", Text = "The PC restarted without shutting down cleanly (power loss, overheat, or hard reset)", Kind = "power" });
+        Query(d, "System", $"*[System[Provider[@Name='nvlddmkm'] and TimeCreated[@SystemTime>='{sinceUtc}']]]", e => new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = L.T("src.winNvidia"), Text = L.T("ev.nvEvent", e.Id), Kind = "driver" });
+        Query(d, "System", $"*[System[Provider[@Name='amdkmdag' or @Name='amdkmdap'] and TimeCreated[@SystemTime>='{sinceUtc}']]]", e => new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = L.T("src.winAmd"), Text = L.T("ev.amdEvent", e.Id), Kind = "driver" });
+        Query(d, "System", $"*[System[(EventID=4101) and TimeCreated[@SystemTime>='{sinceUtc}']]]", e => new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = L.T("src.winDisplay"), Text = L.T("ev.tdr"), Kind = "driver" });
+        Query(d, "System", $"*[System[Provider[@Name='Microsoft-Windows-Kernel-Power'] and (EventID=41) and TimeCreated[@SystemTime>='{sinceUtc}']]]", e => new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = L.T("src.winPower"), Text = L.T("ev.power"), Kind = "power" });
         Query(d, "Application", $"*[System[Provider[@Name='Application Error'] and (EventID=1000) and TimeCreated[@SystemTime>='{sinceUtc}']]]", e =>
         {
             string msg = ""; try { msg = e.FormatDescription() ?? ""; } catch { }
             if (!msg.Contains("Cyberpunk2077", StringComparison.OrdinalIgnoreCase)) return null;
             var mod = Regex.Match(msg, @"Faulting module name:\s*([^,\r\n]+)"); var code = Regex.Match(msg, @"Exception code:\s*(0x[0-9a-fA-F]+)");
-            return new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = "Windows · application error", Text = $"Cyberpunk2077.exe faulted in {(mod.Success ? mod.Groups[1].Value.Trim() : "unknown module")}{(code.Success ? " (" + code.Groups[1].Value + ")" : "")}", Kind = "appcrash", Mod = mod.Success ? mod.Groups[1].Value.Trim() : null };
+            var module = mod.Success ? mod.Groups[1].Value.Trim() : null;
+            return new LogEvent { At = e.TimeCreated ?? DateTime.MinValue, Source = L.T("src.winAppError"), Text = code.Success ? L.T("ev.appFaultCode", module ?? L.T("word.unknownModule"), code.Groups[1].Value) : L.T("ev.appFault", module ?? L.T("word.unknownModule")), Kind = "appcrash", Mod = module, Module = module };
         });
     }
     static void Query(CollectedData d, string log, string xpath, Func<EventRecord, LogEvent?> map)
@@ -314,7 +331,7 @@ public static class Collectors
             using var reader = new EventLogReader(new EventLogQuery(log, PathType.LogName, xpath));
             for (var e = reader.ReadEvent(); e != null; e = reader.ReadEvent()) { using (e) { var ev = map(e); if (ev != null) d.Events.Add(ev); } }
         }
-        catch (Exception ex) { d.Warnings.Add($"Event log '{log}' query failed: {ex.Message}"); }
+        catch (Exception ex) { d.Warnings.Add(L.T("warn.eventLog", log, ex.Message)); }
     }
 
     // ---------------- settings ----------------

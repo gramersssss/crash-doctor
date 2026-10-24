@@ -31,17 +31,30 @@ public static class LogCleaner
     public static string Folder => Path.Combine(GamePaths.AppData, "cleared-logs");
     const string Manifest = "cleared.json";
 
-    public static List<string> Find(GamePaths g)
+    // Mod Organizer 2 puts the logs the game writes into its overwrite folder, not the game folder (ModOrganizer.cs),
+    // so with MO2 the same log folders are also cleared there. Entries for those carry this prefix in the manifest;
+    // the overwrite folder they came from is written beside it in roots.json, so they go back to the same place.
+    const string Mo2Prefix = "mo2-overwrite|";
+    const string Roots = "roots.json";
+
+    public static List<string> Find(GamePaths g) => FindRooted(g).Select(x => x.full).ToList();
+
+    static List<(string full, string entry)> FindRooted(GamePaths g)
     {
-        var found = new List<string>();
-        void Top(string dir) { if (Directory.Exists(dir)) try { found.AddRange(Directory.EnumerateFiles(dir, "*.log", SearchOption.TopDirectoryOnly)); } catch { } }
-        void Each(string parent) { if (Directory.Exists(parent)) try { foreach (var d in Directory.EnumerateDirectories(parent)) Top(d); } catch { } }
-        Top(g.Red4extLogs);
-        Each(g.Red4extPlugins);
-        Top(g.Cet);
-        Each(g.CetMods);
-        Top(g.RedscriptLogs);
-        return found.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        var found = new List<(string, string)>();
+        void Scan(string root, string prefix)
+        {
+            void Top(string rel) { var dir = Path.Combine(root, rel); if (Directory.Exists(dir)) try { foreach (var f in Directory.EnumerateFiles(dir, "*.log", SearchOption.TopDirectoryOnly)) found.Add((f, prefix + Path.Combine(rel, Path.GetFileName(f)))); } catch { } }
+            void Each(string rel) { var dir = Path.Combine(root, rel); if (Directory.Exists(dir)) try { foreach (var d in Directory.EnumerateDirectories(dir)) Top(Path.Combine(rel, Path.GetFileName(d))); } catch { } }
+            Top(GamePaths.RelRed4extLogs);
+            Each(GamePaths.RelRed4extPlugins);
+            Top(GamePaths.RelCet);
+            Each(GamePaths.RelCetMods);
+            Top(GamePaths.RelRedscriptLogs);
+        }
+        Scan(g.GameDir, "");
+        if (g.Mo2 != null && Directory.Exists(g.Mo2.OverwriteDir)) { Scan(g.Mo2.OverwriteDir, Mo2Prefix); Scan(Path.Combine(g.Mo2.OverwriteDir, "Root"), Mo2Prefix + "Root\\"); }
+        return found.GroupBy(x => x.Item1, StringComparer.OrdinalIgnoreCase).Select(x => x.First()).ToList();
     }
 
     public static LogClearSummary Summary(GamePaths g)
@@ -68,45 +81,51 @@ public static class LogCleaner
 
     public static LogClearResult Clear(GamePaths g)
     {
-        if (GameBusy()) return new() { Message = "Close Cyberpunk 2077 first. The game is writing to its logs while it runs." };
-        var logs = Find(g);
-        if (logs.Count == 0) return new() { Ok = true, Message = "There are no logs to clear." };
+        if (GameBusy()) return new() { Message = L.T("logs.closeGame") };
+        var logs = FindRooted(g);
+        if (logs.Count == 0) return new() { Ok = true, Message = L.T("logs.none") };
         var dest = Path.Combine(Folder, DateTime.Now.ToString("yyyy-MM-dd HHmmss"));
         var moved = new List<string>(); var skipped = 0;
         try
         {
             Directory.CreateDirectory(dest);
-            foreach (var f in logs)
+            foreach (var (f, entry) in logs)
             {
-                var rel = Path.GetRelativePath(g.GameDir, f);
-                if (rel.StartsWith("..")) { skipped++; continue; }                     // never touch anything outside the game folder
-                var to = Path.Combine(dest, rel);
-                try { Directory.CreateDirectory(Path.GetDirectoryName(to)!); File.Move(f, to); moved.Add(rel); }
+                if (entry.Contains("..")) { skipped++; continue; }                      // never touch anything outside the log folders
+                var to = Path.Combine(dest, entry.Replace(Mo2Prefix, "mo2-overwrite\\"));
+                try { Directory.CreateDirectory(Path.GetDirectoryName(to)!); File.Move(f, to); moved.Add(entry); }
                 catch { skipped++; }                                                    // open in another program, or read-only
             }
             File.WriteAllText(Path.Combine(dest, Manifest), JsonSerializer.Serialize(moved, new JsonSerializerOptions { WriteIndented = true }));
+            if (g.Mo2 != null) File.WriteAllText(Path.Combine(dest, Roots), JsonSerializer.Serialize(new Dictionary<string, string> { ["mo2-overwrite"] = g.Mo2.OverwriteDir }, new JsonSerializerOptions { WriteIndented = true }));
         }
-        catch (Exception ex) { return new() { Message = "Could not clear the logs: " + ex.Message + (moved.Count > 0 ? $" {moved.Count} were already moved to {dest} and can be put back." : "") }; }
-        if (moved.Count == 0) { try { Directory.Delete(dest, true); } catch { } return new() { Message = "None of the logs could be moved. Another program may have them open." }; }
-        return new() { Ok = true, Message = $"Moved {moved.Count} log{(moved.Count == 1 ? "" : "s")} out of the game folder." + (skipped > 0 ? $" {skipped} could not be moved and were left." : "") + " The game writes new ones the next time it starts. Put them back from Settings if you need them." };
+        catch (Exception ex) { return new() { Message = moved.Count > 0 ? L.P("logs.failedSome", moved.Count, ex.Message, dest) : L.T("logs.failed", ex.Message) }; }
+        if (moved.Count == 0) { try { Directory.Delete(dest, true); } catch { } return new() { Message = L.T("logs.noneMoved") }; }
+        return new() { Ok = true, Message = L.Cat(L.P("logs.moved", moved.Count), skipped > 0 ? L.P("logs.skipped", skipped) : "", L.T("logs.writesNew")) };
     }
 
     public static LogClearResult Restore(GamePaths g)
     {
-        if (GameBusy()) return new() { Message = "Close Cyberpunk 2077 first." };
+        if (GameBusy()) return new() { Message = L.T("logs.closeGameShort") };
         var last = Latest();
-        if (last == null) return new() { Message = "There is nothing to put back." };
+        if (last == null) return new() { Message = L.T("logs.nothingBack") };
+        string? overwrite = null;
+        try { if (File.Exists(Path.Combine(last, Roots))) JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(Path.Combine(last, Roots)))?.TryGetValue("mo2-overwrite", out overwrite); } catch { }
         int back = 0, kept = 0;
-        foreach (var rel in ReadManifest(last))
+        foreach (var entry in ReadManifest(last))
         {
-            var from = Path.Combine(last, rel); var to = Path.Combine(g.GameDir, rel);
+            var mo2 = entry.StartsWith(Mo2Prefix);
+            var rel = mo2 ? entry[Mo2Prefix.Length..] : entry;
+            var from = Path.Combine(last, mo2 ? Path.Combine("mo2-overwrite", rel) : rel);
             if (!File.Exists(from)) continue;
+            if (mo2 && overwrite == null) { kept++; continue; }
+            var to = Path.Combine(mo2 ? overwrite! : g.GameDir, rel);
             // a newer log with the same name is the game's own: it stays, and the old one stays in the cleared folder
             if (File.Exists(to)) { kept++; continue; }
             try { Directory.CreateDirectory(Path.GetDirectoryName(to)!); File.Move(from, to); back++; } catch { kept++; }
         }
         if (kept == 0) { try { Directory.Delete(last, true); } catch { } }
         else { try { File.Move(Path.Combine(last, Manifest), Path.Combine(last, "cleared-partly-restored.json"), true); } catch { } }
-        return new() { Ok = back > 0 || kept == 0, Message = $"Put {back} log{(back == 1 ? "" : "s")} back." + (kept > 0 ? $" {kept} stayed in {last} because the game has written a newer file with the same name." : "") };
+        return new() { Ok = back > 0 || kept == 0, Message = L.Cat(L.P("logs.putBack", back), kept > 0 ? L.P("logs.keptNewer", kept, last) : "") };
     }
 }

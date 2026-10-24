@@ -135,10 +135,11 @@ public static class CrashArchive
         if (s.Red4extLog != null && File.Exists(s.Red4extLog)) { files.Add((s.Red4extLog, Path.Combine("logs", Path.GetFileName(s.Red4extLog)))); logs++; }
 
         // ArchiveXL names its log after the launch time, a second or two after RED4ext's
-        var axlDir = Path.Combine(d.Paths.Red4extPlugins, "ArchiveXL");
-        if (Directory.Exists(axlDir))
+        // all of these through GamePaths, so under Mod Organizer 2 the copies in its overwrite folder are the ones saved
+        var axlLogs = d.Paths.FilesIn(Path.Combine(GamePaths.RelRed4extPlugins, "ArchiveXL"), "ArchiveXL-*.log", newestWins: true).Select(x => x.full).ToList();
+        if (axlLogs.Count > 0)
         {
-            var axl = Directory.EnumerateFiles(axlDir, "ArchiveXL-*.log")
+            var axl = axlLogs
                 .Select(f => (f, t: StampOf(Path.GetFileNameWithoutExtension(f), "ArchiveXL-")))
                 .Where(x => x.t is { } t && Math.Abs((t - s.Start).TotalSeconds) <= 30)
                 .OrderBy(x => Math.Abs((x.t!.Value - s.Start).TotalSeconds)).Select(x => x.f).FirstOrDefault();
@@ -147,9 +148,10 @@ public static class CrashArchive
 
         // redscript renames its previous log using the NEXT launch's time, so the file that belongs to this session is
         // the one written shortly after this session started, whatever its name says
-        if (Directory.Exists(d.Paths.RedscriptLogs))
+        var rsLogs = d.Paths.FilesIn(GamePaths.RelRedscriptLogs, "redscript_r*.log", newestWins: true).Select(x => x.full).ToList();
+        if (rsLogs.Count > 0)
         {
-            var rs = Directory.EnumerateFiles(d.Paths.RedscriptLogs, "redscript_r*.log")
+            var rs = rsLogs
                 .Where(f => File.GetLastWriteTime(f) >= s.Start.AddSeconds(-5) && File.GetLastWriteTime(f) <= s.Start.AddMinutes(5))
                 .OrderBy(f => File.GetLastWriteTime(f)).FirstOrDefault();
             if (rs != null) files.Add((rs, Path.Combine("logs", "redscript-for-this-session.log")));
@@ -158,15 +160,16 @@ public static class CrashArchive
         // CET's logs are continuous across launches, so a copy is only worth taking while it still covers this session:
         // written after it started, and not so long after it ended that it is mostly other sessions. A crash whose own
         // logs have already rotated gets none - today's CET log says nothing about a crash from last week.
-        if (logs > 0 && Directory.Exists(d.Paths.Cet))
+        if (logs > 0 && d.Paths.DirExists(GamePaths.RelCet))
         {
             bool During(string f) { var t = File.GetLastWriteTime(f); return t >= s.Start && t <= end.AddHours(12); }
-            foreach (var f in Directory.EnumerateFiles(d.Paths.Cet, "*.log").Where(During))
+            foreach (var (f, _) in d.Paths.FilesIn(GamePaths.RelCet, "*.log", newestWins: true).Where(x => During(x.full)))
                 files.Add((f, Path.Combine("cet", Path.GetFileName(f))));
-            if (Directory.Exists(d.Paths.CetMods))
-                foreach (var f in Directory.EnumerateFiles(d.Paths.CetMods, "*.log", SearchOption.AllDirectories).Where(During))
-                    files.Add((f, Path.Combine("cet", "mods", Path.GetFileName(Path.GetDirectoryName(f)!), Path.GetFileName(f))));
+            foreach (var (f, rel) in d.Paths.FilesIn(GamePaths.RelCetMods, "*.log", recurse: true, newestWins: true).Where(x => During(x.full)))
+                files.Add((f, Path.Combine("cet", "mods", Path.GetRelativePath(GamePaths.RelCetMods, rel))));
         }
+        // Advanced Crash Reporter's report for this crash, when it wrote one
+        if (kind == "crash" && s.AcrFile != null && File.Exists(s.AcrFile)) files.Add((s.AcrFile, Path.Combine("advanced-crash-reporter", Path.GetFileName(s.AcrFile))));
 
         if (files.Count == 0) return null;
         if (kind == "crash" && logs == 0 && !files.Any(x => x.inZip.StartsWith("crash-report"))) return null;
@@ -202,7 +205,8 @@ public static class CrashArchive
                 if (s.Fault != null) w.WriteLine($"Fault: {s.Fault}{(s.Build != null ? " on game build " + s.Build : "")}");
                 if (s.Exception != null) w.WriteLine($"Exception: {s.Exception}");
                 if (s.VramUsedMB != null) w.WriteLine($"Video memory: {s.VramUsedMB} / {s.VramTotalMB} MB");
-                if (!string.IsNullOrEmpty(s.Verdict)) w.WriteLine("\nVerdict at the time:\n" + s.Verdict);
+                // the zip is read months later by whoever is helping; English, whatever the window was showing
+                if (!string.IsNullOrEmpty(s.Verdict)) w.WriteLine("\nVerdict at the time:\n" + L.REn(s.Verdict));
                 w.WriteLine("\nNote: redscript renames its previous log using the next launch's time, so its log here was chosen by when it was");
                 w.WriteLine("written, not by its name, and saved as redscript-for-this-session.log. CET logs are continuous across launches.");
             }

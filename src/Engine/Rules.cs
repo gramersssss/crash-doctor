@@ -57,6 +57,8 @@ public static class Rules
         EmptyOrTruncatedArchives,
         SavesInCloudStorage,
         DeployedFilesAreMissing,
+        Mo2EnabledModsMissing,
+        Mo2HiddenCode,
         // what the mod loaders reported this launch
         NativePluginsRefusingToLoad,
         ArchiveXlStartupProblems,
@@ -100,20 +102,16 @@ public static class Rules
     static IEnumerable<RuleHit> BrokenUpscalerOverride(CollectedData d, Report r)
     {
         var found = new List<string>();
-        foreach (var dir in new[] { d.Paths.Bin, d.Paths.GameDir })
-        {
-            if (!Directory.Exists(dir)) continue;
+        foreach (var dir in new[] { GamePaths.RelBin, "" })
             foreach (var f in EnablerFiles)
-                if (File.Exists(Path.Combine(dir, f))) found.Add(Path.GetFileName(f));
-        }
+                if (d.Paths.Exists(dir.Length == 0 ? f : Path.Combine(dir, f))) found.Add(Path.GetFileName(f));
         if (found.Count == 0) return None;
         return One(new RuleHit
         {
             Severity = "high",
-            Title = "A DLSS/FSR enabler has replaced files the game now owns",
-            Detail = $"Found {Join(found.Distinct().ToList())} in the game folder. Since patch 2.3 the game ships its own FidelityFX and XeSS, and these tools overwrite those DLLs with their own copies. "
-                   + "That combination is a common cause of GPU faults and of the game refusing to start after an update. Removing the mod does not undo it, because the game's original files were replaced: verify the game files through Steam, GOG or Epic to put them back.",
-            Action = new UiAction("open:gamefolder", "Open the game folder"),
+            Title = L.T("rule.enabler.title"),
+            Detail = L.T("rule.enabler.detail", L.List(found.Distinct().ToList())),
+            Action = new UiAction("open:gamefolder", L.T("act.openGameFolder")),
         });
     }
 
@@ -121,20 +119,18 @@ public static class Rules
     // reports nothing useful; the game simply misbehaves wherever that content was meant to appear.
     static IEnumerable<RuleHit> EmptyOrTruncatedArchives(CollectedData d, Report r)
     {
-        if (!Directory.Exists(d.Paths.ArchiveMods)) return None;
         var bad = new List<string>();
-        foreach (var f in Directory.EnumerateFiles(d.Paths.ArchiveMods, "*.archive"))
+        foreach (var (f, _) in d.Paths.FilesIn(GamePaths.RelArchiveMods, "*.archive"))
         {
             long len; try { len = new FileInfo(f).Length; } catch { continue; }
-            if (len < 1024) bad.Add(Path.GetFileName(f) + (len == 0 ? " (empty)" : $" ({len} bytes)"));
+            if (len < 1024) bad.Add(len == 0 ? L.T("rule.emptyArchive.empty", Path.GetFileName(f)) : L.T("rule.emptyArchive.bytes", Path.GetFileName(f), len));
         }
         if (bad.Count == 0) return None;
         return One(new RuleHit
         {
             Severity = "high",
-            Title = bad.Count == 1 ? "One mod archive is empty or truncated" : $"{bad.Count} mod archives are empty or truncated",
-            Detail = $"{Join(bad.Take(5).ToList())}{(bad.Count > 5 ? $" and {bad.Count - 5} more" : "")}. A real archive is never this small - these are interrupted downloads. "
-                   + "Nothing will report an error; the content simply is not there, and the game can fault where it was expected. Re-download and reinstall these mods.",
+            Title = L.P("rule.emptyArchive.title", bad.Count),
+            Detail = L.T("rule.emptyArchive.detail", ListMore(bad, 5)),
         });
     }
 
@@ -161,9 +157,8 @@ public static class Rules
         return One(new RuleHit
         {
             Severity = "medium",
-            Title = "Your saves are inside a cloud-synced folder",
-            Detail = $"Saves are at {hit}. Sync clients rewrite files while the game is writing them, and can leave a save as an online-only placeholder that is not really on disk. "
-                   + "That shows up as corrupted saves and as crashes on load. Move the Cyberpunk 2077 save folder out of the synced area, or exclude it from syncing.",
+            Title = L.T("rule.cloudSaves.title"),
+            Detail = L.T("rule.cloudSaves.detail", hit),
         });
     }
 
@@ -172,10 +167,10 @@ public static class Rules
     // counts, and without claiming to know that this one caused anything.
     static readonly Dictionary<string, string> Hooks = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["RTSSHooks64.dll"] = "RivaTuner Statistics Server (MSI Afterburner)",
-        ["graphics-hook64.dll"] = "OBS game capture",
-        ["fraps64.dll"] = "Fraps",
-        ["DiscordHook64.dll"] = "the Discord overlay",
+        ["RTSSHooks64.dll"] = "hook.rtss",
+        ["graphics-hook64.dll"] = "hook.obs",
+        ["fraps64.dll"] = "hook.fraps",
+        ["DiscordHook64.dll"] = "hook.discord",
     };
     static IEnumerable<RuleHit> OverlaysInjectedAtTheCrash(CollectedData d, Report r)
     {
@@ -190,10 +185,9 @@ public static class Rules
         return One(new RuleHit
         {
             Severity = "low",
-            Title = $"{worst.Key} was injected into the game in {worst.Value} of {dumps.Count} crashes",
-            Detail = $"Tools that hook the game's rendering sit between it and the driver, and this one is a documented source of instability with heavily modded Cyberpunk. "
-                   + $"{worst.Value} of {dumps.Count} is a correlation and not a cause - the way to settle it is to close it and play. "
-                   + (seen.Count > 1 ? "Also seen: " + Join(seen.Keys.Where(k => k != worst.Key).ToList()) + "." : ""),
+            Title = L.T("rule.overlay.title", L.T(worst.Key), worst.Value, dumps.Count),
+            Detail = L.Cat(L.T("rule.overlay.detail", worst.Value, dumps.Count),
+                           seen.Count > 1 ? L.T("rule.overlay.also", L.List(seen.Keys.Where(k => k != worst.Key).Select(k => L.T(k)).ToList())) : ""),
         });
     }
 
@@ -212,25 +206,22 @@ public static class Rules
         var cardFine = measured.Count - cardFull;
         var newest = oom.Max(c => c.At);
 
-        var detail = $"The crash report carries the engine's own out-of-memory flag in {oom.Count} of {all.Count} crash{(all.Count == 1 ? "" : "es")}, most recently on {newest:d MMM}. "
-                   + "That is the engine recording that it asked the system for memory and did not get it. ";
-        if (measured.Count == 0)
-            detail += "None of those crashes recorded how much video memory was in use, so there is no way to tell from here whether the card was the thing that ran out.";
-        else if (cardFine == 0)
-            detail += $"In all {cardFull} of them the graphics card was also at 95 % or more, so this is the same problem the video-memory reading already describes: the card is the constraint, and the settings that free the most are textures and crowd density.";
+        var lead = L.Cat(L.P("rule.oom.lead", all.Count, oom.Count, L.Date(newest)), L.T("rule.oom.meaning"));
+        string rest;
+        if (measured.Count == 0) rest = L.T("rule.oom.unmeasured");
+        else if (cardFine == 0) rest = L.T("rule.oom.cardFull", cardFull);
         else
         {
             var lowest = measured.Where(c => c.VramRatio < 0.95).Min(c => c.VramRatio);
-            detail += $"In {cardFine} of them the card was below its ceiling - as low as {lowest * 100:0} % - so the card is not what ran out there. Something else is: the Windows page file (a small or disabled one is the usual cause on a machine with plenty of RAM), other programs holding memory, or simply the number of mod archives the engine has to keep indexed. "
-                    + $"{(d.System.RamGB > 0 ? $"This machine has {d.System.RamGB} GB of RAM, which " : "Having a lot of RAM ")}does not help if the page file is capped - Windows still refuses the allocation.";
+            rest = L.Cat(L.T("rule.oom.cardFine", cardFine, L.Pct(lowest)), d.System.RamGB > 0 ? L.T("rule.oom.ram", d.System.RamGB) : L.T("rule.oom.ramUnknown"));
         }
 
         return One(new RuleHit
         {
             Severity = cardFine > 0 ? "high" : "medium",
-            Title = $"The engine ran out of memory in {oom.Count} crash{(oom.Count == 1 ? "" : "es")}",
-            Detail = detail,
-            Action = new UiAction(cardFine > 0 ? "mods" : "settings", cardFine > 0 ? "See the mod list" : "See the settings"),
+            Title = L.P("rule.oom.title", oom.Count),
+            Detail = L.Cat(lead, rest),
+            Action = new UiAction(cardFine > 0 ? "mods" : "settings", cardFine > 0 ? L.T("act.seeModList") : L.T("act.seeSettings")),
         });
     }
 
@@ -250,13 +241,11 @@ public static class Rules
         {
             Severity = "high",
             Title = so.Count == dumps.Count && dumps.Count > 1
-                ? $"All {dumps.Count} of your crashes are stack overflows"
-                : $"{so.Count} of {dumps.Count} crashes {(so.Count == 1 ? "is a stack overflow" : "are stack overflows")}",
-            Detail = $"The stack ran out of room{(where.Count > 0 ? ", faulting in " + Join(where) : "")}. A stack only runs out when something calls itself without ever returning, so this is a loop in code - not the graphics card, not video memory, and not something a settings change will alter. "
-                   + "In this game it is nearly always scripts: two mods replacing the same method so that each one ends up calling the other. "
-                   + (wrapped > 0
-                        ? $"redscript reported {wrapped} method{(wrapped == 1 ? "" : "s")} being replaced more than once this session, which is exactly the shape that produces it - those warnings name the methods, and the mods replacing them are where to look first."
-                        : "Start with whatever was installed or updated most recently, and look for two mods that change the same thing."),
+                ? L.T("rule.stack.titleAll", dumps.Count)
+                : L.P("rule.stack.title", so.Count, dumps.Count),
+            Detail = L.Cat(where.Count > 0 ? L.T("rule.stack.leadWhere", L.List(where)) : L.T("rule.stack.lead"),
+                           L.T("rule.stack.meaning"),
+                           wrapped > 0 ? L.P("rule.stack.wrapped", wrapped) : L.T("rule.stack.noWrapped")),
         });
     }
 
@@ -276,11 +265,12 @@ public static class Rules
         return One(new RuleHit
         {
             Severity = "high",
-            Title = $"All {crashes.Count} recent crashes happened in the first {StartupMinutes:0} minutes",
-            Detail = $"The longest of them lasted {(longest < 1 ? $"{longest * 60:0} seconds" : $"{longest:0.#} minutes")}. A crash that always arrives before you are properly in the game is a loading problem - a plugin, a script that fails to compile, or a save that cannot be read - rather than anything about where you were or what you were doing. "
-                   + (played > 0 ? $"{played} session{(played == 1 ? "" : "s")} in the same period got past that point and ended normally, so the game is not broken outright. " : "")
-                   + "It is also the easiest kind of crash to find, because it happens every time instead of eventually: Find it will narrow the mod list down in a handful of short runs rather than a week of playing. Start with whatever you installed or updated most recently.",
-            Action = new UiAction("bisect", "Find it"),
+            Title = L.P("rule.startup.title", crashes.Count, StartupMinutes),
+            Detail = L.Cat(L.T("rule.startup.longest", longest < 1 ? L.P("word.seconds", Math.Round(longest * 60)) : L.P("word.minutes", Math.Round(longest, 1))),
+                           L.T("rule.startup.meaning"),
+                           played > 0 ? L.P("rule.startup.played", played) : "",
+                           L.T("rule.startup.easy")),
+            Action = new UiAction("bisect", L.T("act.findIt")),
         });
     }
 
@@ -329,19 +319,61 @@ public static class Rules
         {
             Severity = "high",
             Title = mods.Count == 1
-                ? $"Vortex thinks {mods[0]} is installed, but its files are not in the game folder"
-                : $"{missing.Count} files Vortex deployed are missing from the game folder",
-            Detail = (all
-                    ? $"None of the {entries.Count} files in Vortex's deployment record is actually on disk. "
-                    : $"{missing.Count} of the {entries.Count} files in Vortex's deployment record are not on disk, across {mods.Count} mod{(mods.Count == 1 ? "" : "s")}: {Join(mods.Take(4).ToList())}{(mods.Count > 4 ? $" and {mods.Count - 4} more" : "")}. ")
-                + "Verifying the game files through Steam, GOG or Epic does this - the store deletes everything it does not recognise, and the manager is never told. Antivirus quarantine and a deployment that was interrupted have the same effect. "
-                + "Vortex still lists these mods as installed and the game never sees them, which is the state behind \"the mod does nothing\" and ArchiveXL complaining that a file does not exist. Open Vortex and deploy again - purge first if it says everything is already deployed."
+                ? L.T("rule.vortexMissing.titleOne", mods[0])
+                : L.P("rule.vortexMissing.titleMany", missing.Count),
+            Detail = L.Cat(all
+                    ? L.P("rule.vortexMissing.none", entries.Count)
+                    : L.P("rule.vortexMissing.some", entries.Count, missing.Count, L.P("word.nMods", mods.Count), ListMore(mods, 4)),
+                L.T("rule.vortexMissing.why"),
+                L.T("rule.vortexMissing.fix"),
                 // Said out loud, not swallowed: it stops the count reading as the whole picture, and it is how
                 // anyone posting a report tells us these entries exist in the wild at all.
-                + (skipped > 0 ? $" ({skipped} further files deploy to their own target folder and were not checked.)" : ""),
+                skipped > 0 ? L.P("rule.vortexMissing.skipped", skipped) : ""),
             Mod = mods.Count == 1 ? mods[0] : null,
-            Flag = mods.Count == 1 ? "files missing" : null,
+            Flag = mods.Count == 1 ? L.T("flag.filesMissing") : null,
         });
+    }
+
+    // Mod Organizer 2's version of the same trap: the profile enables a mod whose folder is gone (deleted or renamed
+    // outside MO2, or the mods folder moved). MO2 marks it in its own list, but nothing tells the game, and the scan
+    // would otherwise just see a mod with no files.
+    static IEnumerable<RuleHit> Mo2EnabledModsMissing(CollectedData d, Report r)
+    {
+        var m = d.Paths.Mo2; var missing = d.Mods.Mo2Missing;
+        if (m == null || missing.Count == 0 || d.Mods.Manager != ModOrganizer.ManagerName) return None;
+        return One(new RuleHit
+        {
+            Severity = "high",
+            Title = missing.Count == 1 ? L.T("rule.mo2Missing.titleOne", missing[0]) : L.P("rule.mo2Missing.titleMany", missing.Count),
+            Detail = L.T("rule.mo2Missing.detail", m.Profile, ListMore(missing, 4), m.ModsDir),
+            Mod = missing.Count == 1 ? missing[0] : null,
+            Flag = missing.Count == 1 ? L.T("flag.folderMissing") : null,
+        });
+    }
+
+    // In MO2 two mods that ship the same file do not both load: the one lower in the list wins and the other's copy
+    // is hidden from the game. Usually that is the point (a patch, an update installed as its own mod). For code -
+    // scripts, plugins, tweaks, archives - it is also how a mod ends up "doing nothing", so the pairs are listed, low
+    // and with the files named. Data files (textures, configs) are left out: those overlaps are routine.
+    static readonly string[] CodeExt = { ".reds", ".lua", ".dll", ".asi", ".xl", ".yaml", ".yml", ".tweak", ".archive" };
+    static IEnumerable<RuleHit> Mo2HiddenCode(CollectedData d, Report r)
+    {
+        if (d.Mods.Manager != ModOrganizer.ManagerName || d.Mods.Mo2Conflicts.Count == 0) return None;
+        var hits = new List<RuleHit>();
+        var code = d.Mods.Mo2Conflicts.Where(c => CodeExt.Any(e => c.rel.EndsWith(e, StringComparison.OrdinalIgnoreCase))).ToList();
+        foreach (var pair in code.SelectMany(c => c.losers.Select(l => (c.winner, loser: l, c.rel))).GroupBy(x => (x.winner, x.loser)).OrderByDescending(g => g.Count()).Take(3))
+        {
+            var files = pair.Select(x => Path.GetFileName(x.rel)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            hits.Add(new RuleHit
+            {
+                Severity = "low",
+                Title = L.P("rule.mo2Hidden.title", files.Count, pair.Key.winner, pair.Key.loser),
+                Detail = L.T("rule.mo2Hidden.detail", ListMore(files, 3), pair.Key.winner, pair.Key.loser),
+                Mod = pair.Key.loser,
+                Flag = L.T("flag.filesHidden"),
+            });
+        }
+        return hits;
     }
 
     // ------------------------------------------------- migrated out of Analyzer.Health
@@ -365,10 +397,10 @@ public static class Rules
             hits.Add(new RuleHit
             {
                 Severity = "medium",
-                Title = $"Native plugin refuses to load on this patch: {name}",
-                Detail = inc + " Whatever this mod does through its native half is silently off, and its script half may error.",
+                Title = L.T("rule.plugin.title", name),
+                Detail = L.T("rule.plugin.detail", inc),
                 Mod = owner,
-                Flag = "plugin not loading",
+                Flag = L.T("flag.pluginNotLoading"),
                 Action = Analyzer.NexusAction(d, owner),
             });
         }
@@ -394,18 +426,17 @@ public static class Rules
             var msgs = grp.Select(e => e.Text).Distinct().ToList(); var first = grp.First();
             var owner = grp.Key.owner == "" ? null : grp.Key.owner;
             var world = grp.Key.cat == "world"; var missing = grp.Key.cat == "missing";
-            var title = world ? "World sector patch fails every launch" : missing ? "Mod points at resources that do not exist" : "ArchiveXL reports a problem";
-            if (owner == null) title += " (mod not identified)";
-            var detail = msgs.Count == 1 ? msgs[0] : $"{msgs.Count} distinct messages, e.g. {msgs[0]}";
-            if (world) detail += " Another mod changed that sector first, or the game patch did; the patch is skipped.";
-            else if (missing) detail += " The mod references files that are not installed or were removed in a game patch; those parts are skipped.";
+            var title = world ? L.T("rule.xl.titleWorld") : missing ? L.T("rule.xl.titleMissing") : L.T("rule.xl.titleOther");
+            if (owner == null) title = L.T("rule.xl.notIdentified", title);
+            var detail = L.Cat(msgs.Count == 1 ? msgs[0] : L.P("rule.xl.distinct", msgs.Count, msgs[0]),
+                               world ? L.T("rule.xl.world") : missing ? L.T("rule.xl.missing") : "");
             hits.Add(new RuleHit
             {
                 Severity = world ? "medium" : first.Kind == "xl-error" ? (owner == null ? "low" : "medium") : "low",
                 Title = title,
                 Detail = detail,
                 Mod = owner,
-                Flag = world ? "world patch failing" : missing ? "missing resources" : "ArchiveXL problem",
+                Flag = world ? L.T("flag.worldPatch") : missing ? L.T("flag.missingResources") : L.T("flag.xlProblem"),
                 Action = owner != null ? Analyzer.NexusAction(d, owner) : null,
             });
         }
@@ -424,20 +455,20 @@ public static class Rules
             hits.Add(new RuleHit
             {
                 Severity = overwrite ? "low" : "medium",
-                Title = overwrite ? "Two mods replace the same script method" : "redscript warning",
+                Title = overwrite ? L.T("rule.rs.overwriteTitle") : L.T("rule.rs.warningTitle"),
                 Detail = w,
                 Mod = Analyzer.GuessOwnerFromText(d, w),
-                Flag = overwrite ? "script overridden" : "redscript warning",
+                Flag = overwrite ? L.T("flag.scriptOverridden") : L.T("flag.redscriptWarning"),
             });
         }
         foreach (var e in d.RedscriptErrors.Take(6))
             hits.Add(new RuleHit
             {
                 Severity = "high",
-                Title = "redscript error: a script mod does not compile",
+                Title = L.T("rule.rs.errorTitle"),
                 Detail = e,
                 Mod = Analyzer.GuessOwnerFromText(d, e),
-                Flag = "does not compile",
+                Flag = L.T("flag.doesNotCompile"),
             });
         return hits;
     }
@@ -455,10 +486,10 @@ public static class Rules
             hits.Add(new RuleHit
             {
                 Severity = "medium",
-                Title = $"{owner} logs the same error {grp.Count()} times per session",
-                Detail = Analyzer.Short(grp.Last().Text) + " A feature of the mod is not working; check for an update.",
+                Title = L.P("rule.spam.title", grp.Count(), owner),
+                Detail = L.T("rule.spam.detail", Analyzer.Short(grp.Last().Text)),
                 Mod = owner,
-                Flag = "error spam",
+                Flag = L.T("flag.errorSpam"),
                 Action = Analyzer.NexusAction(d, owner),
             });
         }
@@ -467,13 +498,15 @@ public static class Rules
 
     // The same file name in two places is only a conflict when the contents are the same script - two mods bundling
     // one shared fix. Different files that happen to share a common name are not a problem and must not be listed.
+    // Read through GamePaths, so under Mod Organizer 2 it is the merged set the game compiles.
     static IEnumerable<RuleHit> DuplicatedScripts(CollectedData d, Report r)
     {
-        if (!Directory.Exists(d.Paths.Scripts)) return None;
-        var dups = Directory.EnumerateFiles(d.Paths.Scripts, "*.reds", SearchOption.AllDirectories)
-            .GroupBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
+        var all = d.Paths.FilesIn(GamePaths.RelScripts, "*.reds", recurse: true);
+        if (all.Count == 0) return None;
+        var dups = all
+            .GroupBy(f => Path.GetFileName(f.full), StringComparer.OrdinalIgnoreCase)
             .Where(g => g.Count() > 1 && !Analyzer.GenericScriptName(g.Key))
-            .Select(g => g.GroupBy(f => { try { return Fixes.Sha(f); } catch { return f; } }).Where(x => x.Count() > 1).ToList())
+            .Select(g => g.GroupBy(f => { try { return Fixes.Sha(f.full); } catch { return f.full; } }).Where(x => x.Count() > 1).ToList())
             .Where(x => x.Count > 0).ToList();
 
         var hits = new List<RuleHit>();
@@ -482,9 +515,8 @@ public static class Rules
                 hits.Add(new RuleHit
                 {
                     Severity = "low",
-                    Title = $"{Path.GetFileName(same.First())} is installed {same.Count()} times",
-                    Detail = "Identical copies of one script compile more than once; the compiler warns and the last one wins. Two mods are bundling the same fix: "
-                           + string.Join(", ", same.Select(f => d.Mods.FileOwner.FirstOrDefault(kv => kv.Key.EndsWith(Path.GetRelativePath(d.Paths.GameDir, f), StringComparison.OrdinalIgnoreCase)).Value ?? Path.GetRelativePath(d.Paths.Scripts, f))),
+                    Title = L.P("rule.dupScript.title", same.Count(), Path.GetFileName(same.First().full)),
+                    Detail = L.T("rule.dupScript.detail", string.Join(", ", same.Select(f => d.Mods.OwnerOf(f.rel) ?? Path.GetRelativePath(GamePaths.RelScripts, f.rel)))),
                 });
         return hits;
     }
@@ -498,17 +530,17 @@ public static class Rules
         if (withVram.Count == 0) return None;
         var total = withVram[0].VramTotalMB!.Value;
         var atCeiling = withVram.Where(s => (double)s.VramUsedMB!.Value / s.VramTotalMB!.Value >= 0.95).ToList();
-        var lines = withVram.Select(s => $"{s.Start:d MMM HH:mm} {s.VramUsedMB} MB ({Analyzer.Pct((double)s.VramUsedMB!.Value / s.VramTotalMB!.Value)})");
+        var lines = withVram.Select(s => L.T("rule.vramCrash.item", L.Date(s.Start, "dmt"), s.VramUsedMB, L.Pct((double)s.VramUsedMB!.Value / s.VramTotalMB!.Value)));
         var lead = atCeiling.Count == 0
-            ? $"None of the last {withVram.Count} crashes was short of video memory, so the card is not the constraint."
-            : $"{atCeiling.Count} of the last {withVram.Count} crashes happened with the {total} MB card at 95 % or more. That is where allocations start failing, and a failed allocation crashes the engine with nothing written to any log.";
+            ? L.P("rule.vramCrash.none", withVram.Count)
+            : L.P("rule.vramCrash.some", withVram.Count, atCeiling.Count, total);
         return One(new RuleHit
         {
             Severity = atCeiling.Count >= 3 ? "high" : atCeiling.Count > 0 ? "medium" : "info",
-            Title = $"Video memory at the last {withVram.Count} crash{(withVram.Count == 1 ? "" : "es")}",
-            Detail = lead + "  Newest first: " + string.Join(" · ", lines) + $".  Card total {total} MB."
-                   + (atCeiling.Count > 0 ? "  Textures and crowd density free the most; ray traced lighting and reflections are next." : ""),
-            Action = new UiAction("settings", "See settings"),
+            Title = L.P("rule.vramCrash.title", withVram.Count),
+            Detail = L.Cat(lead, L.T("rule.newestFirst", string.Join(" · ", lines)), L.T("rule.vramCrash.card", total),
+                           atCeiling.Count > 0 ? L.T("rule.vram.levers") : ""),
+            Action = new UiAction("settings", L.T("act.seeSettings")),
         });
     }
 
@@ -524,19 +556,19 @@ public static class Rules
         var total = recorded[0].VramLog!.TotalMB;
         var hot = recorded.Where(s => s.VramLog!.Peak >= 0.95 || s.VramLog!.MinutesAbove90 >= 2).ToList();
         var above = Math.Round(recorded.Sum(s => s.VramLog!.MinutesAbove90));
-        var lines = recorded.Select(s => $"{s.Start:d MMM HH:mm} peak {Analyzer.Pct(s.VramLog!.Peak)}, median {Analyzer.Pct(s.VramLog!.Median)}"
-                                       + (s.VramLog!.MinutesAbove90 >= 1 ? $", {Math.Round(s.VramLog!.MinutesAbove90)} min above 90%" : ""));
-        var n = recorded.Count; var ses = n == 1 ? "session" : "sessions";
+        var lines = recorded.Select(s => s.VramLog!.MinutesAbove90 >= 1
+            ? L.T("rule.vramPlay.itemAbove", L.Date(s.Start, "dmt"), L.Pct(s.VramLog!.Peak), L.Pct(s.VramLog!.Median), Math.Round(s.VramLog!.MinutesAbove90))
+            : L.T("rule.vramPlay.item", L.Date(s.Start, "dmt"), L.Pct(s.VramLog!.Peak), L.Pct(s.VramLog!.Median)));
+        var n = recorded.Count;
         var lead = hot.Count == 0
-            ? $"In the last {n} recorded {ses} the {total} MB card never sat near its ceiling, so video memory is not the constraint with the current settings."
-            : $"In {hot.Count} of the last {n} recorded {ses} the {total} MB card ran close to full" + (above >= 1 ? $", {above} min above 90 % in all" : ", touching 95 % or more") + ". That is the range where the engine's next texture or mesh allocation can fail, and a failed allocation crashes it with nothing written to any log.";
+            ? L.P("rule.vramPlay.none", n, total)
+            : above >= 1 ? L.P("rule.vramPlay.hotAbove", n, hot.Count, total, above) : L.P("rule.vramPlay.hot", n, hot.Count, total);
         return One(new RuleHit
         {
             Severity = hot.Count >= 3 ? "high" : hot.Count > 0 ? "medium" : "info",
-            Title = $"Video memory while you played, last {n} {ses}",
-            Detail = lead + "  Newest first: " + string.Join(" · ", lines) + "."
-                   + (hot.Count > 0 ? "  Textures and crowd density free the most; ray traced lighting and reflections are next." : ""),
-            Action = new UiAction("sessions", "See sessions"),
+            Title = L.P("rule.vramPlay.title", n),
+            Detail = L.Cat(lead, L.T("rule.newestFirst", string.Join(" · ", lines)), hot.Count > 0 ? L.T("rule.vram.levers") : ""),
+            Action = new UiAction("sessions", L.T("act.seeSessions")),
         });
     }
 
@@ -552,17 +584,17 @@ public static class Rules
             hits.Add(new RuleHit
             {
                 Severity = r.Sessions.Any(s => s.EndKind == EndKind.Gpu) ? "high" : "medium",
-                Title = $"Frame generation with ray tracing on an {d.System.VramGB} GB GPU",
-                Detail = $"Ray traced lighting is {rtl}. This combination sits at the VRAM ceiling on {d.System.VramGB} GB; GPU faults on the map or in dense areas are the usual result. Turn one of them down.",
-                Action = new UiAction("settings", "See settings"),
+                Title = L.T("rule.fgRt.title", d.System.VramGB),
+                Detail = L.T("rule.fgRt.detail", Analyzer.Gfx(rtl), d.System.VramGB),
+                Action = new UiAction("settings", L.T("act.seeSettings")),
             });
         if (d.Settings.TryGetValue("RayTracedPathTracing", out var pt) && pt == "true" && d.System.VramGB <= 12)
             hits.Add(new RuleHit
             {
                 Severity = "medium",
-                Title = "Path tracing on a card with 12 GB or less",
-                Detail = "Path tracing needs more VRAM than any other setting. Expect faults in dense areas.",
-                Action = new UiAction("settings", "See settings"),
+                Title = L.T("rule.pt.title"),
+                Detail = L.T("rule.pt.detail"),
+                Action = new UiAction("settings", L.T("act.seeSettings")),
             });
         return hits;
     }
@@ -575,10 +607,12 @@ public static class Rules
         return One(new RuleHit
         {
             Severity = "low",
-            Title = $"Graphics driver is from {dd:MMM yyyy}",
-            Detail = "Not necessarily a problem, but frame generation and ray tracing fixes ship in driver updates.",
+            Title = L.T("rule.driver.title", L.Date(dd, "my")),
+            Detail = L.T("rule.driver.detail"),
         });
     }
 
-    static string Join(List<string> x) => x.Count == 0 ? "" : x.Count == 1 ? x[0] : string.Join(", ", x.Take(x.Count - 1)) + " and " + x[^1];
+    /// <summary>"a, b, c and 4 more" - the first few named, the rest counted.</summary>
+    internal static string ListMore(List<string> items, int show) =>
+        items.Count <= show ? L.List(items) : L.List(items.Take(show).Append(L.P("word.nMore", items.Count - show)).ToList());
 }

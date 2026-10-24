@@ -169,3 +169,50 @@ code does not read. So it only runs on a PC where the game has been launched at 
 
 What it cannot test from the command line: the refusal to apply while Cyberpunk 2077 is running (the check is a
 process lookup; start the game and click Apply to see it), and the native confirmation dialogs in the window.
+
+## make-mo2-fixture.py
+
+    python tools/make-mo2-fixture.py C:\temp\fixtures
+    set CRASHDOCTOR_TEST_ROOT=C:\temp\fixtures\mo2
+    CrashDoctor.exe --json out.json --game C:\temp\fixtures\mo2\game
+
+A Mod Organizer 2 install (lynsis, Sep 2026): the game folder holds only the exe; the mods live in a global MO2
+instance whose `base_directory` points elsewhere, with Root Builder's `Root` folder for RED4ext, loose archives in one
+mod, a separator, an unmanaged DLC line, a disabled mod, an enabled mod with no folder, one mod whose script another
+hides, a `.mohidden` file, and three clean sessions whose logs exist only in MO2's overwrite folder. A second instance
+for another game must be ignored. Expected: manager "Mod Organizer 2", 8 mods (7 enabled), 3 clean sessions, RED4ext,
+CET and ArchiveXL found, and the two MO2 rules (Mo2EnabledModsMissing, Mo2HiddenCode) in Health. Instance discovery
+looks only at the test root while `CRASHDOCTOR_TEST_ROOT` is set (no registry, no running MO2, no drive scan).
+
+## make-acr-fixture.py
+
+    python tools/make-acr-fixture.py C:\temp\fixtures
+    set CRASHDOCTOR_TEST_ROOT=C:\temp\fixtures\acr
+
+Copies four real crashes - the engine's crash report folder and Advanced Crash Reporter's report for each - from this
+PC (read only) and writes a session log around each: two watchdog freezes (CET on a blocked worker after three stall
+reports; Steam's overlay on the main thread), one native fault in game code, and one report doctored so a mod's own
+native code is on the faulting thread. Expected: two "froze" sessions, one "crashed inside the native code of
+TrainerBridge", the function names in the evidence and the crash groups, and Advanced Crash Reporter "installed" in
+Requirements. Needs ACR's reports on this PC (`<game>\bin\x64\plugins\AdvancedCrashReporter\reports`).
+
+## make-update-fixture.py
+
+    python tools/make-update-fixture.py C:\temp\fixtures
+    set CRASHDOCTOR_TEST_ROOT=C:\temp\fixtures\updated
+
+The morning after a game update: three clean sessions on 2.31, the exe rewritten, then one launch on a made-up new
+build (2.5 / 3.0.81.10000) in which RED4ext refuses ArchiveXL and TweakXL and Cyber Engine Tweaks says it does not
+support the game version, ending in a crash. Expected: the high "Your game updated to 2.5, and your frameworks do not
+all support it yet" item first in Health, those three "outdated" in Requirements, and the crash's verdict pointing at
+the update. Scan it twice: the second scan reads the change remembered in config.json and must say the same.
+
+## check-lang.py
+
+    python tools/check-lang.py [code ...]
+
+Every sentence lives in `ui/lang/<code>.json`; `en.json` is the reference (Lang.cs explains the token design). This
+checks that every key the engine (`L.T`, `L.P`, `L.TF`) and the page (`t`, `tp`, `data-i18n`) use exists in en.json,
+that every engine call passes as many arguments as the English text has placeholders, and that each translation has
+the same keys, the same placeholders, the plural forms its language needs and the same `<b>` tags. Run it after any
+wording change; 0 problems is the bar.

@@ -17,7 +17,8 @@ public sealed class KnownFix
     public string Why { get; set; } = "";
     public string? NexusId { get; set; }
 
-    public string TargetPath(GamePaths g) => Path.Combine(g.GameDir, Target);
+    // through GamePaths, so under Mod Organizer 2 this is the copy in the mod's own folder that the game loads
+    public string TargetPath(GamePaths g) => g.Find(Target) ?? Path.Combine(g.GameDir, Target);
     public string State(GamePaths g)
     {
         var p = TargetPath(g); if (!File.Exists(p)) return "missing";
@@ -48,25 +49,25 @@ public static class Fixes
     {
         var target = fix.TargetPath(g);
         var state = fix.State(g);
-        if (state == "missing") return "The mod file is not installed, nothing to fix.";
-        if (state == "applied") return "Already applied.";
-        if (state == "different-version") return "The file on disk is a different version than this fix was written for (the mod was probably updated). Not touching it.";
+        if (state == "missing") return L.T("fix.missing");
+        if (state == "applied") return L.T("fix.already");
+        if (state == "different-version") return L.T("fix.otherVersion");
         var patched = Path.Combine(FixesDir, fix.PatchedFile);
-        if (!File.Exists(patched) || Sha(patched) != fix.PatchedSha256) return "The fix file shipped with Crash Doctor is missing or damaged.";
+        if (!File.Exists(patched) || Sha(patched) != fix.PatchedSha256) return L.T("fix.damaged");
         var bdir = Path.Combine(BackupDir, fix.Id); Directory.CreateDirectory(bdir);
         File.Copy(target, Path.Combine(bdir, "original" + Path.GetExtension(target)), true);
         File.Copy(patched, target, true);
-        return "Applied. The original is backed up and one click reverts it.";
+        return L.T("fix.applied");
     }
 
     public static string Revert(KnownFix fix, GamePaths g)
     {
         var target = fix.TargetPath(g);
         var backup = Path.Combine(BackupDir, fix.Id, "original" + Path.GetExtension(target));
-        if (!File.Exists(backup)) return "No backup found for this fix, so nothing was changed. Reinstall the mod to get the original back.";
+        if (!File.Exists(backup)) return L.T("fix.noBackup");
         if (!File.Exists(Path.GetDirectoryName(target)!)) { /* dir check below */ }
-        if (!Directory.Exists(Path.GetDirectoryName(target))) return "The mod folder is gone (mod uninstalled?). Nothing to revert.";
+        if (!Directory.Exists(Path.GetDirectoryName(target))) return L.T("fix.folderGone");
         File.Copy(backup, target, true);
-        return "Reverted. The original file is back.";
+        return L.T("fix.reverted");
     }
 }

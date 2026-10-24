@@ -27,7 +27,8 @@ public sealed class MainForm : Form
     {
         _vramTimer.Tick += async (_, _) => await VramTickAsync();
         _vramTimer.Start();
-        Text = "Crash Doctor for Cyberpunk 2077";
+        L.Use(L.StartLanguage(GameLocator.LoadConfig().Language));
+        Text = L.R(L.T("host.title"));
         Width = 1280; Height = 820; MinimumSize = new Size(900, 600); StartPosition = FormStartPosition.CenterScreen;
         BackColor = Color.FromArgb(0xED, 0xF0, 0xF3);
         // Take the icon out of our own exe, where ApplicationIcon has already embedded it. Reading app.ico from
@@ -55,12 +56,28 @@ public sealed class MainForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, "Crash Doctor needs the Microsoft WebView2 runtime to draw its window.\n\n" + ex.Message + "\n\nInstall it from the Microsoft site and start Crash Doctor again.", "Crash Doctor", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            OpenUrl(RequirementsCheck.WebView2Url);
+            // Only send people to the download page when the runtime really is missing. Under Mod Organizer 2's virtual
+            // file system WebView2 can fail to start although it is installed (caniscanem, 23 Sep); saying "install it"
+            // then was a lie. Crash Doctor reads MO2's mods directly now, so it never needs to be started through MO2.
+            var installed = RequirementsCheck.WebView2Version();
+            if (installed != null)
+                MessageBox.Show(this, Q("host.webviewFailed", installed, ex.Message), "Crash Doctor", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            else
+            {
+                MessageBox.Show(this, Q("host.webviewMissing", ex.Message), "Crash Doctor", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                OpenUrl(RequirementsCheck.WebView2Url);
+            }
         }
     }
 
-    void Post(object o) => _web.CoreWebView2?.PostWebMessageAsJson(JsonSerializer.Serialize(o, Scanner.Json));
+    // Everything posted to the page is rendered in the chosen language on the way (Lang.cs): the report keeps its tokens,
+    // so switching language only re-renders what is already in memory.
+    void Post(object o) => _web.CoreWebView2?.PostWebMessageAsJson(L.Json(o, L.Current, Scanner.Json));
+    void PostIn(object o, Lang lang) => _web.CoreWebView2?.PostWebMessageAsJson(L.Json(o, lang, Scanner.Json));
+
+    void PostLanguage() => Post(new { cmd = "lang", code = L.Current.Code, rtl = L.Current.Rtl, dict = L.Current.Raw, en = L.Current.Code == "en" ? null : L.En.Raw, languages = L.Available() });
+
+    static string Q(string key, params object?[] args) => L.R(L.T(key, args));
 
     async void OnMessage(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
@@ -68,7 +85,20 @@ public sealed class MainForm : Form
         var cmd = doc.RootElement.TryGetProperty("cmd", out var c) ? c.GetString() : null;
         switch (cmd)
         {
-            case "ready": await ScanAsync(); break;
+            case "ready": PostLanguage(); await ScanAsync(); break;
+            case "lang":
+                // the language picker, and Ctrl+L back to English: saved at once, and the report re-rendered without a rescan
+                var code = L.Normalise(doc.RootElement.TryGetProperty("code", out var lc) ? lc.GetString() : null) ?? "en";
+                var lcfg = GameLocator.LoadConfig(); lcfg.Language = code; GameLocator.SaveConfig(lcfg);
+                L.Use(code);
+                Text = L.R(L.T("host.title"));
+                PostLanguage();
+                if (_report != null) Post(new { cmd = "report", report = _report, keep = true });
+                break;
+            case "english":
+                // the copied summary and the text for an AI, in English, for posting in English-speaking places
+                if (_report != null) PostIn(new { cmd = "english", report = _report, dict = L.En.Raw, purpose = doc.RootElement.TryGetProperty("purpose", out var pu) ? pu.GetString() : null }, L.En);
+                break;
             case "scan": await ScanAsync(); break;
             case "export": Export(); break;
             case "action": await ActionAsync(doc.RootElement.TryGetProperty("id", out var id) ? id.GetString() ?? "" : ""); break;
@@ -158,7 +188,7 @@ public sealed class MainForm : Form
             {
                 case "save": res = GraphicsProfiles.SaveCurrent(name); break;
                 case "delete":
-                    if (MessageBox.Show(this, $"Delete the profile \"{name}\"?\n\nThe game's current settings are not affected.", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    if (MessageBox.Show(this, Q("host.deleteProfile", name), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
                     res = GraphicsProfiles.Delete(name); break;
                 case "update":
                     var edits = new Dictionary<string, System.Text.Json.Nodes.JsonNode?>();
@@ -166,16 +196,16 @@ public sealed class MainForm : Form
                         foreach (var p in e.EnumerateObject()) edits[p.Name] = System.Text.Json.Nodes.JsonNode.Parse(p.Value.GetRawText());
                     res = GraphicsProfiles.Update(name, edits, S("newName"), m.TryGetProperty("notes", out var n) ? n.GetString() : null); break;
                 case "apply":
-                    if (MessageBox.Show(this, $"Put the \"{name}\" graphics settings into the game?\n\nYour current settings are backed up first, and Undo puts them back. Only graphics and display settings change; controls, audio and key bindings are left alone.", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    if (MessageBox.Show(this, Q("host.applyProfile", name), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
                     res = GraphicsProfiles.Apply(name); break;
                 case "undo":
-                    if (MessageBox.Show(this, "Put back the game's graphics settings from before the last profile was applied?", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    if (MessageBox.Show(this, Q("host.undoProfile"), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
                     res = GraphicsProfiles.Undo(); break;
                 case "play":
                     // apply, start the game, and put the previous settings back when it closes (Launcher.cs)
-                    if (_game == null) { res = new ProfileResult { Ok = false, Message = "The game folder is not known yet. Scan first." }; break; }
-                    if (_play != null) { res = new ProfileResult { Ok = false, Message = $"A play with \"{_play.Profile}\" is already in progress." }; break; }
-                    if (MessageBox.Show(this, $"Play with the \"{name}\" settings?\n\nYour current graphics settings are backed up, the profile is put into the game, and the game is started{(_game.Store.Equals("Steam", StringComparison.OrdinalIgnoreCase) ? " through Steam" : "")}. When the game closes, your previous settings are put back automatically. Only graphics and display settings change; controls, audio and key bindings are left alone.", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                    if (_game == null) { res = new ProfileResult { Ok = false, Message = L.T("host.noGameYet") }; break; }
+                    if (_play != null) { res = new ProfileResult { Ok = false, Message = L.T("host.playBusy", _play.Profile) }; break; }
+                    if (MessageBox.Show(this, Q(_game.Store.Equals("Steam", StringComparison.OrdinalIgnoreCase) ? "host.playProfileSteam" : "host.playProfile", name), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
                     var (pr, play) = Launcher.PlayWith(_game, name);
                     res = pr; _play = play;
                     Post(new { cmd = "play", play = play == null ? null : new { profile = play.Profile, restore = play.Restore, running = false } });
@@ -183,7 +213,7 @@ public sealed class MainForm : Form
                 default: return;
             }
         }
-        catch (Exception ex) { res = new ProfileResult { Ok = false, Message = "That did not work: " + ex.Message }; }
+        catch (Exception ex) { res = new ProfileResult { Ok = false, Message = L.T("host.failed", ex.Message) }; }
 
         if (_report != null) Scanner.RefreshProfiles(_report);
         Post(new { cmd = "profiles", ok = res.Ok, message = res.Message, graphics = _report?.Graphics, profiles = _report?.Profiles, settingsBackup = _report?.SettingsBackup });
@@ -231,7 +261,7 @@ public sealed class MainForm : Form
             _game ??= GameLocator.Locate();
             if (_game == null)
             {
-                Post(new { cmd = "error", text = "Cyberpunk 2077 was not found in Steam, GOG or Epic. Pick the game folder (the one that contains bin\\x64\\Cyberpunk2077.exe)." });
+                Post(new { cmd = "error", text = L.T("host.notFound") });
                 if (!PickGameFolder()) { Post(new { cmd = "noscan" }); return; }
             }
             var g = _game!;
@@ -247,7 +277,7 @@ public sealed class MainForm : Form
             }
             Post(new { cmd = "report", report = _report });
         }
-        catch (Exception ex) { Post(new { cmd = "error", text = "The scan failed: " + ex.Message }); }
+        catch (Exception ex) { Post(new { cmd = "error", text = L.T("host.scanFailed", ex.Message) }); }
         finally { _scanning = false; }
         // once a day, and only if the user turned it on: ask the version file whether a newer build exists
         if (Updates.Due()) await UpdateCheckAsync(force: true);
@@ -267,9 +297,9 @@ public sealed class MainForm : Form
 
     bool PickGameFolder()
     {
-        using var dlg = new FolderBrowserDialog { Description = "Select the Cyberpunk 2077 game folder", UseDescriptionForTitle = true, ShowNewFolderButton = false };
+        using var dlg = new FolderBrowserDialog { Description = Q("host.pickFolder"), UseDescriptionForTitle = true, ShowNewFolderButton = false };
         if (dlg.ShowDialog(this) != DialogResult.OK) return false;
-        if (!GameLocator.IsGameDir(dlg.SelectedPath)) { MessageBox.Show(this, "That folder does not contain bin\\x64\\Cyberpunk2077.exe.", "Crash Doctor"); return false; }
+        if (!GameLocator.IsGameDir(dlg.SelectedPath)) { MessageBox.Show(this, Q("host.notGameFolder"), "Crash Doctor"); return false; }
         _game = new GamePaths { GameDir = dlg.SelectedPath, Store = "manual" };
         var keep = GameLocator.LoadConfig(); keep.GamePath = dlg.SelectedPath; GameLocator.SaveConfig(keep);
         return true;
@@ -283,19 +313,14 @@ public sealed class MainForm : Form
         var includeMods = true;
         if (_report.ModsList.Count > 0)
         {
-            var q = MessageBox.Show(this,
-                $"Include your mod list in the saved report?" + Environment.NewLine + Environment.NewLine +
-                $"It names all {_report.ModsList.Count} of your mods. That is usually what makes a report worth reading, but saved reports often get posted publicly, so it is worth deciding on purpose." + Environment.NewLine + Environment.NewLine +
-                "Leaving it out also removes mod names from the requirements and area panels. The handful of mods the diagnosis actually names still appear, because naming them is the diagnosis." + Environment.NewLine + Environment.NewLine +
-                "Yes - include the mod list.   No - leave it out.   Cancel - do not save.",
-                "Save report", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            var q = MessageBox.Show(this, Q("host.includeMods", _report.ModsList.Count), Q("host.saveReport"), MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
             if (q == DialogResult.Cancel) return;
             includeMods = q == DialogResult.Yes;
         }
-        using var dlg = new SaveFileDialog { Filter = "HTML report|*.html", FileName = $"CrashDoctor-report-{DateTime.Now:yyyyMMdd-HHmm}.html", Title = "Save the full report" };
+        using var dlg = new SaveFileDialog { Filter = Q("host.htmlFilter") + "|*.html", FileName = $"CrashDoctor-report-{DateTime.Now:yyyyMMdd-HHmm}.html", Title = Q("host.saveTitle") };
         if (dlg.ShowDialog(this) != DialogResult.OK) return;
-        try { HtmlExporter.Save(_report, dlg.FileName, includeMods); Post(new { cmd = "toast", text = includeMods ? "Report saved." : "Report saved without the mod list." }); OpenUrl(dlg.FileName); }
-        catch (Exception ex) { Post(new { cmd = "error", text = "Could not save the report: " + ex.Message }); }
+        try { HtmlExporter.Save(_report, dlg.FileName, includeMods); Post(new { cmd = "toast", text = L.T(includeMods ? "host.saved" : "host.savedNoMods") }); OpenUrl(dlg.FileName); }
+        catch (Exception ex) { Post(new { cmd = "error", text = L.T("host.saveFailed", ex.Message) }); }
     }
 
     async Task ActionAsync(string id)
@@ -306,7 +331,13 @@ public sealed class MainForm : Form
         // list" was a button that did nothing; listing the views here means a new rule can point at any of them.
         if (id is "settings" or "mods" or "health" or "sessions" or "bisect" or "req") { Post(new { cmd = "go", view = id }); return; }
         if (id == "open:driver") { Run("devmgmt.msc"); return; }
-        if (id == "open:redscript" && g != null) { OpenUrl(Path.Combine(g.RedscriptLogs, "redscript_rCURRENT.log")); return; }
+        if (id == "open:redscript" && g != null) { OpenUrl(g.Find(Path.Combine(GamePaths.RelRedscriptLogs, "redscript_rCURRENT.log")) ?? Path.Combine(g.RedscriptLogs, "redscript_rCURRENT.log")); return; }
+        if (id.StartsWith("open:acr:"))
+        {
+            var af = _report?.Sessions.FirstOrDefault(x => x.Id == id["open:acr:".Length..])?.AcrFile;
+            if (af != null && File.Exists(af)) Run("explorer.exe", "/select,\"" + af + "\"");
+            return;
+        }
         if (id == "open:gamefolder" && g != null) { OpenUrl(g.GameDir); return; }
         if (id == "open:crashlogs") { Directory.CreateDirectory(CrashArchive.Folder); OpenUrl(CrashArchive.Folder); return; }
         if (id == "open:vramlogs") { Directory.CreateDirectory(VramLogs.Folder); OpenUrl(VramLogs.Folder); return; }
@@ -338,7 +369,7 @@ public sealed class MainForm : Form
         {
             var fix = Fixes.ById(id[4..]); if (fix == null) return;
             var applied = fix.Applied(g);
-            var q = applied ? $"Revert the fix \"{fix.Title}\"?\n\nThe mod's original file will be put back." : $"Apply the fix \"{fix.Title}\" to {fix.Mod}?\n\n{fix.Why}\n\nThe original file is backed up first and can be reverted with one click.";
+            var q = applied ? Q("host.revertFix", fix.Title) : Q("host.applyFix", fix.Title, fix.Mod, fix.Why);
             if (MessageBox.Show(this, q, "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             var msg = applied ? Fixes.Revert(fix, g) : Fixes.Apply(fix, g);
             Post(new { cmd = "toast", text = msg });
@@ -352,9 +383,8 @@ public sealed class MainForm : Form
                 var sig = id["bisect:start:".Length..];
                 var n = _report.ModsList.Count(m => m.Status == "enabled" && !Bisect.IsFramework(m.Name));
                 var steps = n > 1 ? (int)Math.Ceiling(Math.Log2(n)) : 1;
-                if (MessageBox.Show(this,
-                        $"Hunt {sig} by bisection?" + Environment.NewLine + Environment.NewLine + "Crash Doctor will ask you to switch groups of mods off in Vortex, play, and scan again. It never changes anything itself - it only checks what is actually deployed and reads the result from your logs." + Environment.NewLine + Environment.NewLine + "{n} mods are in the running, so expect about {steps} rounds of play.",
-                        "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                // before 0.8.0 the count and the rounds were shown as a literal "{n}" and "{steps}": the text was not interpolated
+                if (MessageBox.Show(this, L.R(L.P("host.bisectStart", steps, sig, Bisect.Manager(_report), n)), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
                 var d = Collectors.CollectAll(_game!, DateTime.Now.AddDays(-30));
                 Bisect.Start(d, _report, sig);
                 await ScanAsync();
@@ -363,7 +393,7 @@ public sealed class MainForm : Form
             }
             if (id == "bisect:stop")
             {
-                if (MessageBox.Show(this, "Stop the bisect and forget its progress?" + Environment.NewLine + Environment.NewLine + "Your mods are left exactly as they are now - turn the ones you switched off back on in Vortex when you are ready.", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                if (MessageBox.Show(this, Q("host.bisectStop", Bisect.Manager(_report)), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
                 Bisect.Save(null);
                 await ScanAsync();
                 return;
@@ -371,7 +401,7 @@ public sealed class MainForm : Form
             if (id == "bisect:copy")
             {
                 var v = _report.Bisect;
-                if (v != null && v.Off.Count > 0) { try { Clipboard.SetText(string.Join(Environment.NewLine, v.Off)); Post(new { cmd = "toast", text = $"{v.Off.Count} mod names copied - paste into Vortex's search to find them." }); } catch { } }
+                if (v != null && v.Off.Count > 0) { try { Clipboard.SetText(string.Join(Environment.NewLine, v.Off)); Post(new { cmd = "toast", text = L.P("host.copiedNames", v.Off.Count) }); } catch { } }
                 return;
             }
         }
@@ -388,17 +418,17 @@ public sealed class MainForm : Form
     async Task InstallAsync(Requirement r)
     {
         if (r.Url == null) return;
-        if (MessageBox.Show(this, $"Download and run the installer for {r.Name} from Microsoft?\n\n{r.Url}", "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+        if (MessageBox.Show(this, Q("host.installAsk", r.Name, r.Url), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
         try
         {
-            Post(new { cmd = "toast", text = $"Downloading {r.Name}…" });
+            Post(new { cmd = "toast", text = L.T("host.downloading", r.Name) });
             var tmp = Path.Combine(Path.GetTempPath(), $"crashdoctor-{r.Id}.exe");
             using (var http = new HttpClient()) { var bytes = await http.GetByteArrayAsync(r.Url); await File.WriteAllBytesAsync(tmp, bytes); }
             var p = Process.Start(new ProcessStartInfo(tmp) { UseShellExecute = true });
             if (p != null) await p.WaitForExitAsync();
-            Post(new { cmd = "toast", text = $"{r.Name} installer finished." });
+            Post(new { cmd = "toast", text = L.T("host.installed", r.Name) });
         }
-        catch (Exception ex) { Post(new { cmd = "error", text = $"Could not install {r.Name}: {ex.Message}. You can install it by hand from {r.Url}" }); }
+        catch (Exception ex) { Post(new { cmd = "error", text = L.T("host.installFailed", r.Name, ex.Message, r.Url) }); }
     }
 
     static void OpenUrl(string url) { try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); } catch { } }

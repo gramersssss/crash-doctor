@@ -29,7 +29,7 @@
   --rail-bg:#E4E8ED; --rail-hover:#D9DEE5; --rail-on:#10141A; --rail-on-fg:#FFFFFF; --badge:#FFFFFF; --badge-on:#2A313B; --badge-on-fg:#C9CFD8;
   --tip-bg:#10141A; --tip-fg:#FFFFFF; --tip-muted:#AEB6C2;
   --grid:rgba(16,20,26,.045); --bar:#10141A; --pulse-glow:rgba(31,157,106,.25);
-  --c-clean:#1F9D6A; --c-gpu:#D93A3A; --c-vram:#C2410C; --c-script:#E09A1B; --c-engine:#A34D9E; --c-unknown:#9AA3AF; --c-running:#2F6FED;
+  --c-clean:#1F9D6A; --c-gpu:#D93A3A; --c-vram:#C2410C; --c-script:#E09A1B; --c-engine:#A34D9E; --c-unknown:#9AA3AF; --c-running:#2F6FED; --c-hang:#0E7490;
   --radius:8px; --radius-sm:5px; --radius-pill:999px;
   --display:"Bahnschrift","Bahnschrift SemiCondensed","Segoe UI",Arial,sans-serif;
   --body:"Segoe UI",system-ui,Arial,sans-serif;
@@ -50,7 +50,7 @@
   --rail-bg:#11161C; --rail-hover:#1B2129; --rail-on:#E6EAF0; --rail-on-fg:#0E1217; --badge:#222932; --badge-on:#C9D1DB; --badge-on-fg:#0E1217;
   --tip-bg:#E6EAF0; --tip-fg:#0E1217; --tip-muted:#4A5360;
   --grid:rgba(230,234,240,.05); --bar:#E6EAF0; --pulse-glow:rgba(60,192,138,.28);
-  --c-clean:#3CC08A; --c-gpu:#F0605A; --c-vram:#F07A3A; --c-script:#F0B040; --c-engine:#C77DC2; --c-unknown:#7C8592; --c-running:#6E9BFF;
+  --c-clean:#3CC08A; --c-gpu:#F0605A; --c-vram:#F07A3A; --c-script:#F0B040; --c-engine:#C77DC2; --c-unknown:#7C8592; --c-running:#6E9BFF; --c-hang:#38BDF8;
 }
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -259,7 +259,7 @@ button.mark:hover{filter:brightness(.94)}
 .sess .end{display:flex;align-items:center;gap:8px}
 .sess .end i{width:10px;height:10px;border-radius:2px;flex:none}
 .sesslist{border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.i-clean{background:var(--c-clean)}.i-gpu{background:var(--c-gpu)}.i-vram{background:var(--c-vram)}.i-script{background:var(--c-script)}.i-engine{background:var(--c-engine)}.i-unknown{background:var(--c-unknown)}.i-running{background:var(--c-running)}
+.i-clean{background:var(--c-clean)}.i-gpu{background:var(--c-gpu)}.i-vram{background:var(--c-vram)}.i-script{background:var(--c-script)}.i-engine{background:var(--c-engine)}.i-unknown{background:var(--c-unknown)}.i-running{background:var(--c-running)}.i-hang{background:var(--c-hang)}
 
 /* ---------- health ---------- */
 .hl{display:grid;grid-template-columns:90px 1fr 220px;gap:14px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--card)}
@@ -282,9 +282,10 @@ button.mark:hover{filter:brightness(.94)}
 /* drop readouts in reverse order of usefulness rather than truncating all of them */
 /* a 1440p window at 100 % scaling left the right 40 % empty: let the page grow, keeping the main column at a readable width */
 @media (min-width:1700px){.view{max-width:1480px}.dx{grid-template-columns:1fr 340px;gap:24px}.bx{grid-template-columns:1fr 360px}.main{padding:32px 40px 48px}}
-@media (max-width:1180px){.bezel .chip.opt3{display:none}}
-@media (max-width:1020px){.bezel .chip.opt2{display:none}}
-@media (max-width:860px){.bezel .chip.opt1{display:none}}
+/* the language button took about 130 px of the bezel in 0.8.0, so the readouts give way that much earlier */
+@media (max-width:1360px){.bezel .chip.opt3{display:none}}
+@media (max-width:1200px){.bezel .chip.opt2{display:none}}
+@media (max-width:1040px){.bezel .chip.opt1{display:none}}
 @media (max-width:760px){.trace-wrap{padding:14px 12px 10px;background-size:28px 100%}.trace{height:120px}}
 @media (max-width:980px){.dx{grid-template-columns:1fr}.frame{grid-template-columns:150px 1fr}.sess{grid-template-columns:130px 60px 1fr}.sess .dist{display:none}}
 .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);background:var(--tip-bg);color:var(--tip-fg);padding:10px 16px;border-radius:6px;font-size:13px;opacity:0;transition:all .18s;z-index:9;max-width:70vw}.toast.on{opacity:1;transform:translate(-50%,0)}.toast.err{background:var(--signal)}
@@ -308,7 +309,7 @@ button.mark:hover{filter:brightness(.94)}
   --rail-bg:#050A0F; --rail-hover:#0C1C25; --rail-on:#0C2A33; --rail-on-fg:#5EF6FF; --badge:#0C1C25; --badge-on:#5EF6FF; --badge-on-fg:#04070B;
   --tip-bg:#08111A; --tip-fg:#C4FCFF; --tip-muted:#58A9B2;
   --grid:rgba(94,246,255,.06); --bar:#5EF6FF; --pulse-glow:rgba(44,240,168,.4);
-  --c-clean:#2CF0A8; --c-gpu:#FF4F5A; --c-vram:#FF8A3D; --c-script:#F3E600; --c-engine:#D46BFF; --c-unknown:#3C6670; --c-running:#5EF6FF;
+  --c-clean:#2CF0A8; --c-gpu:#FF4F5A; --c-vram:#FF8A3D; --c-script:#F3E600; --c-engine:#D46BFF; --c-unknown:#3C6670; --c-running:#5EF6FF; --c-hang:#A78BFA;
   --radius:0; --radius-sm:0; --radius-pill:0;
   --display:"Cascadia Mono","Consolas","Courier New",monospace;
   --body:"Cascadia Mono","Consolas","Courier New",monospace;
@@ -340,7 +341,7 @@ button.mark:hover{filter:brightness(.94)}
   --rail-bg:#0C0A0F; --rail-hover:#261218; --rail-on:#FF5C5C; --rail-on-fg:#0A090D; --badge:#261218; --badge-on:#0A090D; --badge-on-fg:#FF5C5C;
   --tip-bg:#1A0E13; --tip-fg:#FFE6DF; --tip-muted:#C9636A;
   --grid:rgba(255,92,92,.07); --bar:#FF5C5C; --pulse-glow:rgba(94,246,255,.4);
-  --c-clean:#5EF6FF; --c-gpu:#FF4A57; --c-vram:#FF8A3D; --c-script:#F3E600; --c-engine:#D46BFF; --c-unknown:#6C4B51; --c-running:#FFFFFF;
+  --c-clean:#5EF6FF; --c-gpu:#FF4A57; --c-vram:#FF8A3D; --c-script:#F3E600; --c-engine:#D46BFF; --c-unknown:#6C4B51; --c-running:#FFFFFF; --c-hang:#B794F6;
   --radius:0; --radius-sm:0; --radius-pill:0;
   --display:"Bahnschrift SemiCondensed","Bahnschrift","Segoe UI",Arial,sans-serif;
 }
@@ -391,7 +392,8 @@ button.mark:hover{filter:brightness(.94)}
 .edithead input{padding:7px 10px;border:1px solid var(--line);border-radius:var(--radius-sm);font:inherit;background:var(--card);color:var(--ink);min-width:220px}
 
 .saved{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 0;font-size:12.5px;color:var(--steel)}
-.saved .ok{color:var(--mint);font-weight:600}
+/* reset everything the no-crash panel's .ok sets: sharing the name drew a padded box round "Logs saved" */
+.saved .ok{color:var(--mint);font-weight:600;padding:0;border:0;background:none;max-width:none;clip-path:none;box-shadow:none}
 .switch{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
 .switch input{margin-top:3px;width:16px;height:16px;accent-color:var(--trace)}
 /* video memory recorded while the game runs (VramMonitor.cs): a live strip while it is running, and a curve on the card */
@@ -434,32 +436,73 @@ button.mark:hover{filter:brightness(.94)}
 .theme .pv.half > span{position:relative;display:block;background:var(--paper);overflow:hidden}
 .theme .nm{display:block;padding:9px 11px 2px;font-family:var(--display);font-size:13.5px;letter-spacing:.02em}
 .theme .ds{display:block;padding:0 11px 10px;font-size:12px;color:var(--steel);line-height:1.35}
+
+/* ---------- languages ----------
+   The language button sits in the bezel at all times, with a globe that reads as "language" whatever the current
+   language is, and the current language written in its own name. The menu lists English first and marks it, gives
+   every language in its own name with the English name beside it, and Ctrl+L goes straight back to English from
+   anywhere - so picking a language you cannot read by accident is always one keystroke or one obvious click from
+   undone. Fonts: Chromium picks the right Windows font for Chinese, Japanese, Korean, Thai and Arabic from the page's
+   lang attribute, so no theme has to list them. */
+.bezel .langbtn{display:flex;align-items:center;gap:7px;background:transparent;color:var(--bezel-value);border:1px solid var(--bezel-line);border-radius:var(--radius-sm);padding:6px 10px;font-family:var(--body);font-size:12.5px;flex:none;white-space:nowrap;margin-left:12px;max-width:190px}
+.bezel .langbtn:hover{border-color:var(--bezel-key)}
+.bezel .langbtn svg{width:16px;height:16px;flex:none;opacity:.9}
+.bezel .langbtn .ln{overflow:hidden;text-overflow:ellipsis}
+.langmenu{position:fixed;top:54px;right:14px;z-index:20;background:var(--card);color:var(--ink);border:1px solid var(--line-strong);border-radius:var(--radius);box-shadow:0 10px 30px rgba(0,0,0,.28);width:300px;max-height:calc(100vh - 80px);overflow:auto;display:none;padding:6px 0}
+.langmenu.on{display:block}
+.langmenu .hd{display:flex;align-items:center;gap:8px;padding:8px 14px 8px;font-family:var(--display);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--steel);border-bottom:1px solid var(--line)}
+.langmenu .hd svg{width:14px;height:14px}
+.langmenu button{display:flex;width:100%;align-items:baseline;justify-content:space-between;gap:10px;background:transparent;border:0;color:var(--ink);padding:8px 14px;text-align:start;font-family:var(--body);font-size:13.5px}
+.langmenu button:hover,.langmenu button:focus-visible{background:var(--sunk)}
+.langmenu button.on{background:var(--trace-bg)}
+.langmenu button .en{font-size:12px;color:var(--steel)}
+.langmenu button .tick{color:var(--mint);margin-inline-end:6px}
+.langmenu .first{border-bottom:1px solid var(--line);padding-bottom:10px}
+.langmenu .first .mark{margin-inline-start:6px}
+.langmenu .ft{border-top:1px solid var(--line);padding:9px 14px 6px;font-size:12px;color:var(--steel);line-height:1.5}
+.langmenu .ft kbd{font-family:var(--mono);font-size:11.5px;border:1px solid var(--line-strong);border-radius:3px;padding:0 4px;color:var(--ink)}
+.copyen{display:flex;gap:7px;align-items:center;font-size:12.5px;color:var(--steel);margin-left:6px}
+/* right-to-left (Arabic): the grid and flex layouts mirror by themselves; these are the few rules written for one side */
+[dir="rtl"] .rail button,[dir="rtl"] th,[dir="rtl"] td,[dir="rtl"] .suspect .acts button,[dir="rtl"] .theme{text-align:right}
+[dir="rtl"] .hl .act{text-align:left}
+[dir="rtl"] .dx .verdict{border-left:0;border-right:5px solid var(--amber)}
+[dir="rtl"] .dx .verdict.sig{border-right-color:var(--signal)}[dir="rtl"] .dx .verdict.mint{border-right-color:var(--mint)}[dir="rtl"] .dx .verdict.grey{border-right-color:var(--steel)}
+[dir="rtl"] .ok,[dir="rtl"] .vramlive,[dir="rtl"] .newcrash{border-left-width:1px;border-right-width:5px}
+[dir="rtl"] .bezel .brand{margin-right:0;margin-left:26px}
+[dir="rtl"] .bezel .chip{border-left:0;border-right:1px solid var(--bezel-line)}
+[dir="rtl"] .bezel .scan{margin-left:0;margin-right:14px}
+[dir="rtl"] .bezel .langbtn{margin-left:0;margin-right:12px}
+[dir="rtl"] .langmenu{right:auto;left:14px}
+[dir="rtl"] .bstat dd{text-align:left}
+[dir="rtl"] .mono,[dir="rtl"] .ev .txt,[dir="rtl"] .pick .sig{unicode-bidi:plaintext}
 </style>
 </head>
 <body>
 
 <header class="bezel">
   <div class="brand"><span class="pulse" id="pulse"></span>Crash Doctor</div>
-  <div class="chip"><span class="k">Game</span><span class="v" id="c-game">—</span></div>
-  <div class="chip opt1"><span class="k">GPU</span><span class="v" id="c-gpu">—</span></div>
-  <div class="chip opt2"><span class="k">Driver</span><span class="v" id="c-driver">—</span></div>
-  <div class="chip"><span class="k">Mods</span><span class="v" id="c-mods">—</span></div>
-  <div class="chip opt3"><span class="k">Last scan</span><span class="v" id="c-scan">never</span></div>
+  <div class="chip"><span class="k" data-i18n="ui.chip.game">Game</span><span class="v" id="c-game">—</span></div>
+  <div class="chip opt1"><span class="k" data-i18n="ui.chip.gpu">GPU</span><span class="v" id="c-gpu">—</span></div>
+  <div class="chip opt2"><span class="k" data-i18n="ui.chip.driver">Driver</span><span class="v" id="c-driver">—</span></div>
+  <div class="chip"><span class="k" data-i18n="ui.chip.mods">Mods</span><span class="v" id="c-mods">—</span></div>
+  <div class="chip opt3"><span class="k" data-i18n="ui.chip.lastScan">Last scan</span><span class="v" id="c-scan" data-i18n="ui.chip.never">never</span></div>
   <div class="spacer"></div>
-  <button class="scan" id="btn-scan" onclick="scan()">Scan now</button>
+  <button class="langbtn" id="btn-lang" onclick="toggleLangMenu()" aria-haspopup="listbox" aria-expanded="false" title="Language (Ctrl+L: English)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M2.8 12h18.4M12 2.8c2.6 2.6 3.9 5.6 3.9 9.2s-1.3 6.6-3.9 9.2M12 2.8C9.4 5.4 8.1 8.4 8.1 12s1.3 6.6 3.9 9.2"/></svg><span class="ln" id="lang-name">English</span></button>
+  <button class="scan" id="btn-scan" onclick="scan()" data-i18n="ui.scanNow">Scan now</button>
 </header>
+<div class="langmenu" id="lang-menu" role="listbox" aria-label="Language"></div>
 
 <div class="frame">
   <nav class="rail" aria-label="Sections">
-    <button class="on" data-view="dx" onclick="go('dx')">Diagnosis</button>
-    <button data-view="sessions" onclick="go('sessions')">Sessions <span class="n" id="n-sessions">0</span></button>
-    <button data-view="health" onclick="go('health')">Health <span class="n" id="n-health">0</span></button>
-    <button data-view="mods" onclick="go('mods')">Mods <span class="n" id="n-mods">0</span></button>
-    <button data-view="bisect" onclick="go('bisect')">Find it <span class="n" id="n-bisect"></span></button>
-    <button data-view="req" onclick="go('req')">Requirements <span class="n" id="n-req"></span></button>
-    <button data-view="settings" onclick="go('settings')">Settings</button>
-    <button data-view="report" onclick="go('report')">Report</button>
-    <div class="foot" id="foot">Changes nothing unless you press a button that says so.</div>
+    <button class="on" data-view="dx" onclick="go('dx')"><span data-i18n="ui.nav.dx">Diagnosis</span></button>
+    <button data-view="sessions" onclick="go('sessions')"><span data-i18n="ui.nav.sessions">Sessions</span> <span class="n" id="n-sessions">0</span></button>
+    <button data-view="health" onclick="go('health')"><span data-i18n="ui.nav.health">Health</span> <span class="n" id="n-health">0</span></button>
+    <button data-view="mods" onclick="go('mods')"><span data-i18n="ui.nav.mods">Mods</span> <span class="n" id="n-mods">0</span></button>
+    <button data-view="bisect" onclick="go('bisect')"><span data-i18n="ui.nav.bisect">Find it</span> <span class="n" id="n-bisect"></span></button>
+    <button data-view="req" onclick="go('req')"><span data-i18n="ui.nav.req">Requirements</span> <span class="n" id="n-req"></span></button>
+    <button data-view="settings" onclick="go('settings')"><span data-i18n="ui.nav.settings">Settings</span></button>
+    <button data-view="report" onclick="go('report')"><span data-i18n="ui.nav.report">Report</span></button>
+    <div class="foot" id="foot" data-i18n="ui.foot">Changes nothing unless you press a button that says so.</div>
   </nav>
 
   <main class="main">
@@ -469,7 +512,7 @@ button.mark:hover{filter:brightness(.94)}
     <div id="play"></div>
     <!-- DIAGNOSIS -->
     <section class="view on" id="v-dx">
-      <p class="eyebrow">Diagnosis · latest crash</p>
+      <p class="eyebrow" data-i18n="ui.dx.eyebrow">Diagnosis · latest crash</p>
       <div id="dx-empty" style="display:none"></div>
       <div class="dx fade" id="dx-body">
         <div>
@@ -479,10 +522,10 @@ button.mark:hover{filter:brightness(.94)}
             <p class="sentence" id="dx-sentence"></p>
             <div id="dx-vram"></div>
             <div id="dx-vramlog"></div>
-            <div class="conf"><span>Confidence</span><span class="dots" id="dx-conf"></span><span id="dx-conf-txt"></span></div>
+            <div class="conf"><span data-i18n="ui.dx.confidence">Confidence</span><span class="dots" id="dx-conf"></span><span id="dx-conf-txt"></span></div>
             <div id="dx-saved"></div>
             <div class="evidence">
-              <p class="eyebrow" style="margin-top:6px">Evidence · seconds before the crash</p>
+              <p class="eyebrow" style="margin-top:6px" data-i18n="ui.dx.evidence">Evidence · seconds before the crash</p>
               <div id="dx-evidence"></div>
             </div>
           </div>
@@ -491,15 +534,15 @@ button.mark:hover{filter:brightness(.94)}
           <div id="dx-changes"></div>
           <div class="trace-wrap">
             <div class="trace-head">
-              <p class="eyebrow" style="margin:0">Session trace · how each play session ended</p>
-              <div class="legend"><span><i class="i-clean"></i>closed normally</span><span><i class="i-gpu"></i>GPU fault</span><span><i class="i-vram"></i>out of video memory</span><span><i class="i-script"></i>mod / script</span><span><i class="i-engine"></i>engine error</span><span><i class="i-unknown"></i>unknown</span></div>
+              <p class="eyebrow" style="margin:0" data-i18n="ui.trace.title">Session trace · how each play session ended</p>
+              <div class="legend"><span><i class="i-clean"></i><span data-i18n="ui.kind.clean">closed normally</span></span><span><i class="i-gpu"></i><span data-i18n="ui.kind.gpu">GPU fault</span></span><span><i class="i-vram"></i><span data-i18n="ui.kind.vram">out of video memory</span></span><span><i class="i-script"></i><span data-i18n="ui.legend.script">mod / script</span></span><span><i class="i-engine"></i><span data-i18n="ui.kind.engine">engine error</span></span><span><i class="i-hang"></i><span data-i18n="ui.kind.hang">froze</span></span><span><i class="i-unknown"></i><span data-i18n="ui.legend.unknown">unknown</span></span></div>
             </div>
             <div class="trace" id="trace"><div class="tip" id="tip"></div></div>
             <div class="trace-foot"><span id="trace-from"></span><span id="trace-to"></span></div>
           </div>
         </div>
         <aside class="card">
-          <p class="eyebrow">What to do</p>
+          <p class="eyebrow" data-i18n="ui.dx.whatToDo">What to do</p>
           <div id="dx-suspects"></div>
           <div id="dx-ruledout"></div>
         </aside>
@@ -508,104 +551,96 @@ button.mark:hover{filter:brightness(.94)}
 
     <!-- SESSIONS -->
     <section class="view" id="v-sessions">
-      <p class="eyebrow">Sessions</p>
-      <h1>Every launch, and how it ended</h1>
+      <p class="eyebrow" data-i18n="ui.nav.sessions">Sessions</p>
+      <h1 data-i18n="ui.sessions.h1">Every launch, and how it ended</h1>
       <div class="sesslist" id="sess-list"></div>
     </section>
 
     <!-- HEALTH -->
     <section class="view" id="v-health">
-      <p class="eyebrow">Health · standing problems found before you crash</p>
-      <h1 id="health-h1">Checks</h1>
+      <p class="eyebrow" data-i18n="ui.health.eyebrow">Health · standing problems found before you crash</p>
+      <h1 id="health-h1" data-i18n="ui.health.h1">Checks</h1>
       <div class="hlist" id="health-list"></div>
     </section>
 
     <!-- MODS -->
     <section class="view" id="v-mods">
-      <p class="eyebrow">Mods</p>
-      <h1 id="mods-h1">Installed mods</h1>
+      <p class="eyebrow" data-i18n="ui.nav.mods">Mods</p>
+      <h1 id="mods-h1" data-i18n="ui.mods.h1">Installed mods</h1>
       <div class="filters">
-        <input id="mods-q" placeholder="Filter by name, type or flag..." oninput="renderMods()">
+        <input id="mods-q" data-i18n-placeholder="ui.mods.filter" placeholder="Filter by name, type or flag..." oninput="renderMods()">
         <div class="fchips" id="mods-status"></div>
         <div class="fchips" id="mods-kind"></div>
-        <button class="btn" onclick="resetMods()">Reset</button>
+        <button class="btn" onclick="resetMods()" data-i18n="ui.mods.reset">Reset</button>
         <span class="muted" id="mods-count"></span>
       </div>
       <div class="card" style="padding:0;overflow:auto;max-height:70vh">
         <table id="mods-table">
           <thead><tr>
-            <th class="sortable" onclick="sortMods(&quot;name&quot;)">Mod<i></i></th>
-            <th class="sortable" onclick="sortMods(&quot;version&quot;)">Version<i></i></th>
-            <th class="sortable" onclick="sortMods(&quot;type&quot;)">Type<i></i></th>
-            <th class="sortable" onclick="sortMods(&quot;status&quot;)">Status<i></i></th>
-            <th class="sortable" onclick="sortMods(&quot;flags&quot;)">Flags<i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;name&quot;)"><span data-i18n="ui.mods.colMod">Mod</span><i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;version&quot;)"><span data-i18n="ui.mods.colVersion">Version</span><i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;type&quot;)"><span data-i18n="ui.mods.colType">Type</span><i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;status&quot;)"><span data-i18n="ui.mods.colStatus">Status</span><i></i></th>
+            <th class="sortable" onclick="sortMods(&quot;flags&quot;)"><span data-i18n="ui.mods.colFlags">Flags</span><i></i></th>
           </tr></thead>
           <tbody></tbody>
         </table>
       </div>
-      <div class="empty" id="mods-empty" style="display:none;margin-top:12px">Nothing matches those filters. <button class="btn" onclick="resetMods()">Clear them</button></div>
+      <div class="empty" id="mods-empty" style="display:none;margin-top:12px"><span data-i18n="ui.mods.noMatch">Nothing matches those filters.</span> <button class="btn" onclick="resetMods()" data-i18n="ui.mods.clearFilters">Clear them</button></div>
     </section>
 
     <!-- BISECT -->
     <section class="view" id="v-bisect">
-      <p class="eyebrow">Find it &middot; guided bisect</p>
+      <p class="eyebrow" data-i18n="ui.bisect.eyebrow">Find it · guided bisect</p>
       <div id="bisect-body"></div>
     </section>
 
     <!-- REQUIREMENTS -->
     <section class="view" id="v-req">
-      <p class="eyebrow">Requirements · what mods need in order to run</p>
-      <h1 id="req-h1">Setup check</h1>
-      <p class="muted" style="margin-top:-6px">Crash Doctor detects each piece, shows what your installed mods actually depend on, and takes you to the right download. Mod frameworks come from Nexus (its rules only allow automatic downloads for Premium accounts, so those buttons open the page); Microsoft runtimes install directly.</p>
-      <div class="row" style="margin:10px 0 14px"><button class="btn primary" id="req-all" onclick="act('req:install-missing')">Install everything that can be installed directly</button><button class="btn" onclick="act('req:open-missing')">Open every missing Nexus page</button><span class="muted" id="req-msg"></span></div>
+      <p class="eyebrow" data-i18n="ui.req.eyebrow">Requirements · what mods need in order to run</p>
+      <h1 id="req-h1" data-i18n="ui.req.h1">Setup check</h1>
+      <p class="muted" style="margin-top:-6px" data-i18n="ui.req.intro">Crash Doctor detects each piece, shows what your installed mods actually depend on, and takes you to the right download. Mod frameworks come from Nexus (its rules only allow automatic downloads for Premium accounts, so those buttons open the page); Microsoft runtimes install directly.</p>
+      <div class="row" style="margin:10px 0 14px"><button class="btn primary" id="req-all" onclick="act('req:install-missing')" data-i18n="ui.req.installAll">Install everything that can be installed directly</button><button class="btn" onclick="act('req:open-missing')" data-i18n="ui.req.openMissing">Open every missing Nexus page</button><span class="muted" id="req-msg"></span></div>
       <div class="hlist" id="req-list"></div>
     </section>
 
     <!-- SETTINGS -->
     <section class="view" id="v-settings">
-      <p class="eyebrow">Settings</p>
-      <h1>Settings</h1>
-      <h2 style="margin-top:6px">Crash logs</h2>
+      <p class="eyebrow" data-i18n="ui.nav.settings">Settings</p>
+      <h1 data-i18n="ui.nav.settings">Settings</h1>
+      <h2 style="margin-top:6px" data-i18n="ui.set.language">Language</h2>
+      <div class="card" id="lang-card"></div>
+      <h2 data-i18n="ui.set.crashLogs">Crash logs</h2>
       <div class="card" id="archive-card"></div>
-      <h2>Game logs</h2>
+      <h2 data-i18n="ui.set.gameLogs">Game logs</h2>
       <div class="card" id="gamelogs-card"></div>
-      <h2>Video memory</h2>
+      <h2 data-i18n="ui.set.vram">Video memory</h2>
       <div class="card" id="vramlog-card"></div>
-      <h2>Updates</h2>
+      <h2 data-i18n="ui.set.updates">Updates</h2>
       <div class="card" id="update-card"></div>
-      <h2>Appearance</h2>
+      <h2 data-i18n="ui.set.appearance">Appearance</h2>
       <div class="themes" id="themes"></div>
-      <h2>Graphics profiles</h2>
+      <h2 data-i18n="ui.set.profiles">Graphics profiles</h2>
       <div id="profiles"></div>
-      <h2 id="gfx-h">Graphics settings <span class="muted" style="font-size:13px;font-weight:400">· what the game is set to now</span></h2>
+      <h2 id="gfx-h"></h2>
       <div class="card" id="gfx-card"><div class="kv" id="settings-kv"></div></div>
       <div id="settings-notes" style="margin-top:14px"></div>
     </section>
 
     <!-- REPORT -->
     <section class="view" id="v-report">
-      <p class="eyebrow">Report</p>
-      <h1>Share what Crash Doctor found</h1>
+      <p class="eyebrow" data-i18n="ui.nav.report">Report</p>
+      <h1 data-i18n="ui.report.h1">Share what Crash Doctor found</h1>
       <div class="card">
         <!-- These two are not the same job and it is unhelpful to present them as if they were. Most places people
              actually ask for help - a mod's Bugs tab, Nexus comments, Reddit - take text and not files, so the
              summary is the one that gets used. Saying so beats letting someone save an HTML file and then discover
              they have nowhere to put it. -->
-        <p><b>Copy summary</b> is the one to paste for help: plain text, short enough for a mod's Bugs tab, a forum
-        post or a Discord message.</p>
-        <p class="sub"><b>Copy for an AI</b> builds the same evidence into a question you can paste into Claude,
-        ChatGPT or any assistant you already use. Crash Doctor gathers things no chatbot can see on its own — the
-        faulting instruction, the video memory at the moment of death, and what the sessions that ended normally
-        have already ruled out — so handing those over is worth far more than describing the crash from memory. It
-        also asks the assistant not to invent mod names. Nothing is sent anywhere by Crash Doctor; it only puts
-        text on your clipboard.</p>
-        <p class="sub"><b>Save full report as HTML</b> writes one self-contained file — every session, every crash,
-        the whole health list — that opens in any browser. Most help pages will not let you attach a file, so it is
-        for somewhere that does, for a Crash Doctor bug report, or as your own before-and-after record when you
-        change a setting or switch a mod off.</p>
-        <p class="sub">None of them contains personal data beyond your game path and hardware, and folder paths
-        under your Windows account are replaced first.</p>
-        <div class="row"><button class="btn primary" onclick="copyReport()">Copy summary</button><button class="btn primary" onclick="copyForAi()">Copy for an AI</button><button class="btn" onclick="exportReport()">Save full report as HTML</button><span class="muted" id="report-msg"></span></div>
+        <p data-i18n-html="ui.report.summaryHelp"><b>Copy summary</b> is the one to paste for help: plain text, short enough for a mod's Bugs tab, a forum post or a Discord message.</p>
+        <p class="sub" data-i18n-html="ui.report.aiHelp"><b>Copy for an AI</b> builds the same evidence into a question you can paste into Claude, ChatGPT or any assistant you already use. Crash Doctor gathers things no chatbot can see on its own — the faulting instruction, the video memory at the moment of death, and what the sessions that ended normally have already ruled out — so handing those over is worth far more than describing the crash from memory. It also asks the assistant not to invent mod names. Nothing is sent anywhere by Crash Doctor; it only puts text on your clipboard.</p>
+        <p class="sub" data-i18n-html="ui.report.htmlHelp"><b>Save full report as HTML</b> writes one self-contained file — every session, every crash, the whole health list — that opens in any browser. Most help pages will not let you attach a file, so it is for somewhere that does, for a Crash Doctor bug report, or as your own before-and-after record when you change a setting or switch a mod off.</p>
+        <p class="sub" data-i18n="ui.report.privacy">None of them contains personal data beyond your game path and hardware, and folder paths under your Windows account are replaced first.</p>
+        <div class="row"><button class="btn primary" onclick="copyReport()" data-i18n="ui.report.copy">Copy summary</button><button class="btn primary" onclick="copyForAi()" data-i18n="ui.report.copyAi">Copy for an AI</button><button class="btn" onclick="exportReport()" data-i18n="ui.report.save">Save full report as HTML</button><label class="copyen" id="copy-en-wrap" style="display:none"><input type="checkbox" id="copy-en" checked onchange="renderReport(REPORT)"><span data-i18n="ui.report.inEnglish">Copy in English (for English-speaking forums)</span></label><span class="muted" id="report-msg"></span></div>
         <pre class="mono" id="report-pre" style="white-space:pre-wrap;background:var(--sunk);border:1px solid var(--line);border-radius:6px;padding:14px;margin-top:14px;max-height:50vh;overflow:auto"></pre>
       </div>
     </section>
@@ -614,68 +649,176 @@ button.mark:hover{filter:brightness(.94)}
 
 <div class="toast" id="toast"></div>
 <script>
+/* ---------- languages (Lang.cs on the engine side) ----------
+   The engine sends every sentence already in the chosen language. This page translates only its own words, from the
+   same ui\lang\<code>.json the engine uses: t('ui.key', {name: value}) and tp('ui.key', n, {...}) for counts, with the
+   plural form chosen by the browser's own CLDR rules. English is always loaded as the fallback, so a key a translation
+   is missing shows in English rather than as a key. */
+var LANG={code:'en',dict:null,en:null,rtl:false,list:[]};
+function _tpl(key,dict){ var d=dict||LANG.dict, v=d&&d[key]; if(v==null&&LANG.en) v=LANG.en[key]; return v; }
+// an abbreviation at the end of a value ("2 Okt.", "55 Min.") already carries the sentence's full stop
+function _fill(s,vars){ return String(s).replace(/\{(\w+)\}(\.(?!\.))?/g,function(m,k,dot){ if(!(vars&&vars[k]!==undefined&&vars[k]!==null)) return m; var v=String(vars[k]); return v+(dot&&!/\.$/.test(v)?'.':''); }); }
+function t(key,vars,fallback){ var v=_tpl(key); if(v&&typeof v==='object') v=v.other; if(v==null) v=fallback!=null?fallback:key; return _fill(v,vars); }
+function tp(key,n,vars){
+  var v=_tpl(key), cat='other'; try{ cat=new Intl.PluralRules(LANG.code).select(n); }catch(e){}
+  var s=(v&&typeof v==='object')?(v[cat]||v.other):v;
+  if(s==null&&LANG.en){ var e=LANG.en[key]; s=(e&&typeof e==='object')?(n===1?e.one||e.other:e.other):e; }
+  var all=Object.assign({n:n},vars||{}); return _fill(s==null?key:s,all);
+}
+// between sentences: a space in most languages, nothing in Chinese and Japanese (fmt.sentenceSep)
+function SP(){ var v=_tpl('fmt.sentenceSep'); return typeof v==='string'?v:' '; }
+function locale(){ return t('_lang.locale',null,'en-GB'); }
+// the same rendering for a report text in another language, used to copy the summary in English
+function inLang(dict,code,fn){ var save={d:LANG.dict,c:LANG.code}; LANG.dict=dict; LANG.code=code; try{ return fn(); } finally { LANG.dict=save.d; LANG.code=save.c; } }
+
+function applyStatic(){
+  document.documentElement.lang=LANG.code; document.documentElement.dir=LANG.rtl?'rtl':'ltr';
+  document.querySelectorAll('[data-i18n]').forEach(function(el){ var k=el.getAttribute('data-i18n'); if(!el._en) el._en=el.textContent; el.textContent=LANG.dict?t(k,null,el._en):el._en; });
+  document.querySelectorAll('[data-i18n-html]').forEach(function(el){ var k=el.getAttribute('data-i18n-html'); if(!el._en) el._en=el.innerHTML; el.innerHTML=LANG.dict?t(k,null,el._en):el._en; });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(function(el){ var k=el.getAttribute('data-i18n-placeholder'); if(!el._en) el._en=el.placeholder; el.placeholder=LANG.dict?t(k,null,el._en):el._en; });
+  var me=LANG.list.filter(function(l){return l.code===LANG.code;})[0];
+  document.getElementById('lang-name').textContent=me?me.name:(LANG.code==='en'?'English':LANG.code);
+  // the button always says what it is in English too, so it can be found by someone who cannot read the current language
+  document.getElementById('btn-lang').title=(LANG.code==='en'?'Language':t('ui.lang.title')+' / Language')+' — Ctrl+L: English';
+  document.getElementById('copy-en-wrap').style.display=LANG.code==='en'?'none':'';
+  if(!hasHost()&&!window.EXPORTED) document.getElementById('foot').textContent=t('ui.foot');
+}
+function setLang(code){
+  closeLangMenu();
+  if(code===LANG.code) return;
+  if(hasHost()){ window.chrome.webview.postMessage({cmd:'lang',code:code}); return; }
+  // a saved report carries its own language and English, nothing else
+  if(window.EXPORTED){ var en=code==='en'; if(en&&!window.EXPORTED_EN) return;
+    var r=en?window.EXPORTED_EN:window.EXPORTED, d=en?window.EXPORTED_LANG_EN:window.EXPORTED_LANG;
+    useLang({code:en?'en':(window.EXPORTED_CODE||'en'),dict:d,en:window.EXPORTED_LANG_EN||window.EXPORTED_LANG,rtl:(d['_lang.dir']==='rtl')}); load(r,true); exportFoot(r); }
+}
+function useLang(m){
+  LANG.code=m.code; LANG.dict=m.dict||LANG.dict; LANG.en=m.en||m.dict||LANG.en; LANG.rtl=!!m.rtl; if(m.languages) LANG.list=m.languages;
+  try{ localStorage.setItem('cd.lang',LANG.code); }catch(e){}
+  applyStatic(); renderLangMenu(); renderThemes(); renderLangCard();
+}
+var GLOBE='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><path d="M2.8 12h18.4M12 2.8c2.6 2.6 3.9 5.6 3.9 9.2s-1.3 6.6-3.9 9.2M12 2.8C9.4 5.4 8.1 8.4 8.1 12s1.3 6.6 3.9 9.2"/></svg>';
+function langItems(){
+  var list=LANG.list.length?LANG.list:[{code:'en',name:'English',english:'English'}];
+  var en=list.filter(function(l){return l.code==='en';}), rest=list.filter(function(l){return l.code!=='en';}).sort(function(a,b){return a.english.localeCompare(b.english,'en');});
+  return en.concat(rest);
+}
+function renderLangMenu(){
+  var host=document.getElementById('lang-menu'); if(!host) return;
+  var items=langItems();
+  host.innerHTML='<div class="hd">'+GLOBE+'<span>'+(LANG.code==='en'?'Language':esc(t('ui.lang.title'))+' · Language')+'</span></div>'
+    +items.map(function(l,i){
+      var on=l.code===LANG.code;
+      return '<button role="option" aria-selected="'+on+'" class="'+(on?'on':'')+(i===0?' first':'')+'" lang="'+esc(l.code)+'" dir="'+(l.rtl?'rtl':'ltr')+'" onclick="setLang(&quot;'+esc(l.code)+'&quot;)">'
+        +'<span>'+(on?'<span class="tick">✓</span>':'')+esc(l.name)+(l.code==='en'?' <span class="mark grey">default</span>':'')+'</span>'
+        +(l.code==='en'?'':'<span class="en" lang="en">'+esc(l.english)+'</span>')+'</button>';
+    }).join('')
+    +'<div class="ft" lang="en"><kbd>Ctrl</kbd>+<kbd>L</kbd> switches back to English from anywhere. <kbd>Esc</kbd> closes this list.'
+    +(LANG.code==='en'?'':'<br><span lang="'+esc(LANG.code)+'">'+esc(t('ui.lang.shortcut'))+'</span>')+'</div>';
+}
+function toggleLangMenu(){ var m=document.getElementById('lang-menu'); if(m.classList.contains('on')) closeLangMenu(); else { renderLangMenu(); m.classList.add('on'); document.getElementById('btn-lang').setAttribute('aria-expanded','true'); var b=m.querySelector('button.on')||m.querySelector('button'); if(b) b.focus(); } }
+function closeLangMenu(){ var m=document.getElementById('lang-menu'); if(!m) return; m.classList.remove('on'); document.getElementById('btn-lang').setAttribute('aria-expanded','false'); }
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&!e.altKey&&(e.key==='l'||e.key==='L')){ e.preventDefault(); setLang('en'); return; }
+  if(e.key==='Escape') closeLangMenu();
+});
+document.addEventListener('click',function(e){ var m=document.getElementById('lang-menu'); if(m&&m.classList.contains('on')&&!m.contains(e.target)&&!document.getElementById('btn-lang').contains(e.target)) closeLangMenu(); });
+function renderLangCard(){
+  var host=document.getElementById('lang-card'); if(!host) return;
+  host.innerHTML='<div class="row"><button class="btn" onclick="toggleLangMenu()">'+GLOBE.replace('<svg ','<svg style="width:15px;height:15px;vertical-align:-3px;margin-inline-end:6px" ')+esc(document.getElementById('lang-name').textContent)+'</button>'
+    +(LANG.code!=='en'?'<button class="btn" onclick="setLang(&quot;en&quot;)" lang="en">English</button>':'')
+    +'<span class="muted" style="font-size:13px">'+esc(t('ui.lang.help'))+'</span></div>'
+    +(LANG.code==='en'?'':'<p class="muted" style="font-size:12.5px;margin:10px 0 0">'+esc(t('ui.lang.machine'))+'</p>');
+}
+
 /* ---------- bridge: the C# host injects window.crashdoctor; in the browser we use sample data ---------- */
-var REPORT = null;
+var REPORT = null, EXPORT_CODE='en';
 function hasHost(){ return !!(window.chrome && window.chrome.webview); }
 function scan(){
-  var b=document.getElementById('btn-scan'); b.disabled=true; b.textContent='Scanning…';
+  var b=document.getElementById('btn-scan'); b.disabled=true; b.textContent=t('ui.scanning');
   if(hasHost()){ window.chrome.webview.postMessage({cmd:'scan'}); }
   else { setTimeout(function(){ load(SAMPLE); }, 700); }
 }
-if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return; if(m.cmd==='report'){ load(m.report); } else if(m.cmd==='error'){ toast(m.text,true); done(); } else if(m.cmd==='toast'){ toast(m.text,false); } else if(m.cmd==='go'){ go(m.view); } else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?'Crash logs will be kept from the next scan.':'Crash logs will not be kept. Copies already saved are left where they are.',false); } else if(m.cmd==='vram'){ renderVramLive(m.live); } else if(m.cmd==='update'){ if(REPORT){ REPORT.update=m.update; renderUpdate(REPORT); renderUpdateCard(REPORT); } } else if(m.cmd==='play'){ renderPlay(m.play); } else if(m.cmd==='vramlog'){ if(REPORT){ REPORT.vramLogs=m.vramLogs; renderVramLogCard(REPORT); } toast(m.vramLogs&&m.vramLogs.enabled?'Video memory will be recorded while the game runs and this window is open.':'Video memory will not be recorded. Files already saved are left where they are.',false); } else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); } else if(m.cmd==='noscan'){ done(); } }); }
-function toast(text,isErr){ var t=document.getElementById('toast'); t.textContent=text; t.className='toast on'+(isErr?' err':''); clearTimeout(t._h); t._h=setTimeout(function(){ t.className='toast'; }, isErr?9000:3500); }
-function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent='Scan now'; }
+var ENGLISH_WAIT=null;
+if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ var m=e.data; if(!m) return;
+  if(m.cmd==='lang'){ useLang({code:m.code,dict:m.dict,en:m.en||m.dict,rtl:m.rtl,languages:m.languages}); if(REPORT) load(REPORT,true); }
+  else if(m.cmd==='report'){ load(m.report,m.keep); }
+  else if(m.cmd==='english'){ if(ENGLISH_WAIT){ var f=ENGLISH_WAIT; ENGLISH_WAIT=null; f(m.report,m.dict); } }
+  else if(m.cmd==='error'){ toast(m.text,true); done(); }
+  else if(m.cmd==='toast'){ toast(m.text,false); }
+  else if(m.cmd==='go'){ go(m.view); }
+  else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?t('ui.toast.archiveOn'):t('ui.toast.archiveOff'),false); }
+  else if(m.cmd==='vram'){ renderVramLive(m.live); }
+  else if(m.cmd==='update'){ if(REPORT){ REPORT.update=m.update; renderUpdate(REPORT); renderUpdateCard(REPORT); } }
+  else if(m.cmd==='play'){ renderPlay(m.play); }
+  else if(m.cmd==='vramlog'){ if(REPORT){ REPORT.vramLogs=m.vramLogs; renderVramLogCard(REPORT); } toast(m.vramLogs&&m.vramLogs.enabled?t('ui.toast.vramOn'):t('ui.toast.vramOff'),false); }
+  else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); }
+  else if(m.cmd==='noscan'){ done(); } }); }
+function toast(text,isErr){ var t2=document.getElementById('toast'); t2.textContent=text; t2.className='toast on'+(isErr?' err':''); clearTimeout(t2._h); t2._h=setTimeout(function(){ t2.className='toast'; }, isErr?9000:3500); }
+function done(){ var b=document.getElementById('btn-scan'); b.disabled=false; b.textContent=t('ui.scanNow'); }
 
 /* ---------- rendering ---------- */
-var KIND={clean:['mint','closed normally'],gpu:['sig','GPU fault'],vram:['sig','out of video memory'],script:['amb','mod / script crash'],engine:['engine','engine error'],unknown:['grey','crashed, cause unknown'],running:['trace','still running']};
+var KIND_CLS={clean:'mint',gpu:'sig',vram:'sig',script:'amb',engine:'engine',unknown:'grey',running:'trace',hang:'amb'};
+function kindLabel(k){ return t('ui.kind.'+(KIND_CLS[k]?k:'unknown')); }
 function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
-function fmtDate(iso){ var d=new Date(iso); return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }
-function fmtDur(m,known){ if(known===false) return 'length unknown'; if(m<1) return '<1 min'; if(m<60) return Math.round(m)+' min'; var h=Math.floor(m/60); return h+' h '+Math.round(m-h*60)+' min'; }
+function fmtDate(iso){ var d=new Date(iso); try{ return d.toLocaleString(locale(),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}); }catch(e){ return d.toLocaleString(); } }
+function fmtDay(iso){ var d=new Date(iso); try{ return d.toLocaleDateString(locale(),{month:'short',day:'numeric'}); }catch(e){ return d.toLocaleDateString(); } }
+function fmtDur(m,known){ if(known===false) return t('ui.dur.unknown'); if(m<1) return t('ui.dur.lt1'); if(m<60) return t('ui.dur.min',{m:Math.round(m)}); var h=Math.floor(m/60); return t('ui.dur.hm',{h:h,m:Math.round(m-h*60)}); }
+function confLabel(c){ return t('ui.conf.'+(['low','fair','good','high'][c]||'low')); }
+function sevLabel(s){ return t('ui.sev.'+s,null,s); }
+function levelLabel(s){ return t('ui.level.'+s,null,s); }
+function gfxv(v){ return t('gfxv.'+v,null,v); }
 
 // With no mod manager to ask, the list is files and folders, not mods: one mod is often an archive, a script folder
 // and a CET folder, so it would be counted three times. Say what the number is rather than call it "mods".
 function modsCounted(r){ return r.mods.counted==='pieces'; }
-function modsChip(r){ return modsCounted(r) ? r.mods.enabled+' mod files · no manager found' : r.mods.enabled+' enabled · '+r.mods.manager; }
-function modsLine(r){ return modsCounted(r) ? r.mods.enabled+' mod files and folders found (no mod manager detected, so this counts pieces: one mod is often several of them)' : r.mods.enabled+' mods enabled via '+r.mods.manager; }
+// "in {manager}": the engine's own words for "your mod manager" (mgr.manual), which every language wrote for that place
+function mgrName(r){ return r.mods.manager==='manual'?t('mgr.manual'):r.mods.manager; }
+function modsChip(r){ return modsCounted(r) ? tp('ui.mods.chipPieces',r.mods.enabled) : tp('ui.mods.chip',r.mods.enabled,{manager:mgrName(r)}); }
+function modsLine(r){ return modsCounted(r) ? tp('ui.mods.linePieces',r.mods.enabled) : tp('ui.mods.line',r.mods.enabled,{manager:mgrName(r)})+(r.mods.mo2Profile?SP()+t('ui.mods.mo2Profile',{profile:r.mods.mo2Profile}):''); }
 
-function load(r){
+function load(r,keepView){
   REPORT=r; done();
   // an install whose exe carries no version info would otherwise read as "Cyberpunk 2077  · manual"
-  document.getElementById('c-game').textContent=r.game.name+' '+(r.game.version||'version unknown')+' · '+r.game.store;
+  document.getElementById('c-game').textContent=r.game.name+' '+(r.game.version||t('ui.versionUnknown'))+(r.game.updatedAt&&r.game.previousVersion?' · '+t('ui.chip.updated',{date:fmtDay(r.game.updatedAt)}):'')+' · '+(r.game.store==='manual'?t('ui.store.manual'):r.game.store);
   document.getElementById('c-gpu').textContent=r.system.gpu+' · '+r.system.vramGB+' GB';
   document.getElementById('c-driver').textContent=r.system.driver;
   document.getElementById('c-mods').textContent=modsChip(r);
   document.getElementById('c-scan').textContent=fmtDate(r.generatedAt);
-  var crashes=r.sessions.filter(function(s){return s.endKind!=='clean'&&s.endKind!=='running';});
   document.getElementById('n-sessions').textContent=r.sessions.length;
   var hi=r.health.filter(function(h){return h.severity==='high';}).length, med=r.health.filter(function(h){return h.severity==='medium';}).length;
   var nh=document.getElementById('n-health'); nh.textContent=r.health.length; nh.className='n '+(hi?'sig':med?'amb':'');
   document.getElementById('n-mods').textContent=r.modsList.length;
   document.getElementById('pulse').style.background = hi ? 'var(--signal)' : med ? 'var(--amber)' : 'var(--mint)';
-  renderNewCrashes(r); renderUpdate(r); renderDx(r); renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
+  var shown=keepView&&CURRENT_SESSION?r.sessions.filter(function(x){return x.id===CURRENT_SESSION;})[0]:null;
+  renderNewCrashes(r); renderUpdate(r);
+  if(shown){ var save=r.latest; r.latest=shown; renderDx(r); r.latest=save; } else { CURRENT_SESSION=null; renderDx(r); }
+  renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
 }
+var CURRENT_SESSION=null;
 
 function renderDx(r){
   var s=r.latest; var empty=document.getElementById('dx-empty'), body=document.getElementById('dx-body');
   if(!s){ empty.style.display=''; empty.innerHTML=noCrashPanel(r); body.style.display='none'; return; }
   empty.style.display='none'; body.style.display='';
-  var k=KIND[s.endKind]||KIND.unknown;
-  var card=document.getElementById('dx-card'); card.className='card verdict '+(k[0]==='engine'?'sig':k[0]);
-  document.getElementById('dx-when').innerHTML='<span>'+esc(fmtDate(s.start))+'</span><span>'+(s.durationKnown===false?'length unknown':'ran '+esc(fmtDur(s.minutes)))+'</span>'+(s.partial?'<span class="mark grey">crash report only</span>':'')+(s.district?'<span>'+esc(s.district)+'</span>':'')+(s.quest?'<span>'+esc(s.quest)+'</span>':'')+'<span class="mark '+(k[0]==='engine'?'sig':k[0])+'">'+esc(k[1])+'</span>';
+  var cls=KIND_CLS[s.endKind]||'grey'; if(cls==='engine') cls='sig';
+  var card=document.getElementById('dx-card'); card.className='card verdict '+cls;
+  document.getElementById('dx-when').innerHTML='<span>'+esc(fmtDate(s.start))+'</span><span>'+(s.durationKnown===false?esc(t('ui.dur.unknown')):esc(t('ui.dx.ran',{dur:fmtDur(s.minutes)})))+'</span>'+(s.partial?'<span class="mark grey">'+esc(t('ui.dx.reportOnly'))+'</span>':'')+(s.district?'<span>'+esc(s.district)+'</span>':'')+(s.quest?'<span>'+esc(s.quest)+'</span>':'')+'<span class="mark '+cls+'">'+esc(kindLabel(s.endKind))+'</span>';
   document.getElementById('dx-flagnote').innerHTML='';
   document.getElementById('dx-sentence').textContent=s.verdict;
   renderVram(s); renderVramLog(s);
   renderArea(s); renderChanges(s); renderSaved(r,s);
   var dots=''; for(var i=0;i<3;i++) dots+='<i class="'+(i<s.confidence?'on':'')+'"></i>';
   document.getElementById('dx-conf').innerHTML=dots;
-  document.getElementById('dx-conf-txt').textContent=['low','fair','good','high'][s.confidence]||'';
+  document.getElementById('dx-conf-txt').textContent=confLabel(s.confidence);
   var ev=document.getElementById('dx-evidence'); ev.innerHTML='';
-  if(!s.evidence.length){ ev.innerHTML='<div class="muted" style="padding:8px 0">Nothing was logged in the two minutes before the crash. That usually means a hard fault the engine could not describe.</div>'; }
+  if(!s.evidence.length){ ev.innerHTML='<div class="muted" style="padding:8px 0">'+esc(t('ui.dx.noEvidence'))+'</div>'; }
   s.evidence.forEach(function(e){ var d=document.createElement('div'); d.className='ev'; d.innerHTML='<div class="t '+(e.hit?'hit':'')+'">'+(e.tMinus===0?'T-0':'T-'+e.tMinus+'s')+'</div><div><div class="src">'+esc(e.source)+'</div><div class="txt">'+esc(e.text)+'</div></div>'; ev.appendChild(d); });
+  if(s.acrFile&&hasHost()&&!window.EXPORTED){ var a=document.createElement('div'); a.className='ev'; a.innerHTML='<div class="t"></div><div><button class="btn" onclick="act(&quot;open:acr:'+esc(s.id)+'&quot;)">'+esc(t('ui.dx.openAcr'))+'</button></div>'; ev.appendChild(a); }
   renderRuledOut(s);
   var su=document.getElementById('dx-suspects'); su.innerHTML='';
-  if(!s.suspects.length){ su.innerHTML='<div class="muted">No single mod stands out. See Health for standing problems.</div>'; }
-  s.suspects.forEach(function(x){ var d=document.createElement('div'); d.className='suspect'; d.innerHTML='<div class="name"><span>'+esc(x.mod)+'</span><span class="mark '+(x.level==='high'?'sig':x.level==='low'?'grey':'amb')+'">'+esc(x.level)+'</span></div><div class="why">'+esc(x.why)+'</div><div class="acts">'+x.actions.map(function(a){return '<button class="btn" onclick="act('+esc(JSON.stringify(a.id))+')">'+esc(a.label)+'</button>';}).join('')+'</div>'; su.appendChild(d); });
+  if(!s.suspects.length){ su.innerHTML='<div class="muted">'+esc(t('ui.dx.noSuspect'))+'</div>'; }
+  s.suspects.forEach(function(x){ var d=document.createElement('div'); d.className='suspect'; d.innerHTML='<div class="name"><span>'+esc(x.mod)+'</span><span class="mark '+(x.level==='high'?'sig':x.level==='low'?'grey':'amb')+'">'+esc(levelLabel(x.level))+'</span></div><div class="why">'+esc(x.why)+'</div><div class="acts">'+x.actions.map(function(a){return '<button class="btn" onclick="act('+esc(JSON.stringify(a.id))+')">'+esc(a.label)+'</button>';}).join('')+'</div>'; su.appendChild(d); });
 }
 
 // Video memory in use at the moment of the crash. The engine writes this only into the crash report folder, so it is
@@ -687,14 +830,10 @@ function renderVram(s){
   var cls = ratio>=0.95 ? 'full' : ratio>=0.90 ? 'warn' : '';
   // the bar is drawn against the larger of the card and what was in use, so an over-commit stays visible
   var scale=Math.max(total,used), fill=Math.min(100,used/scale*100), ceil=total/scale*100;
-  var note = ratio>=1 ? 'Past what the card holds — the driver had spilled into system memory.'
-           : ratio>=0.95 ? 'At the ceiling. This is where texture and mesh allocations start failing.'
-           : ratio>=0.90 ? 'Close enough to the ceiling to fail: the engine needs spare room for what it loads next.'
-           : ratio>=0.80 ? 'High, but with room left.'
-           : 'Comfortable. Video memory was not the constraint here.';
-  host.innerHTML='<div class="vram '+cls+'"><div class="lbl"><span>Video memory in use at the crash</span><b>'+used+' / '+total+' MB · '+pct+'%</b></div>'+
+  var note = t(ratio>=1 ? 'ui.vram.over' : ratio>=0.95 ? 'ui.vram.ceiling' : ratio>=0.90 ? 'ui.vram.close' : ratio>=0.80 ? 'ui.vram.high' : 'ui.vram.ok');
+  host.innerHTML='<div class="vram '+cls+'"><div class="lbl"><span>'+esc(t('ui.vram.atCrash'))+'</span><b>'+used+' / '+total+' MB · '+pct+'%</b></div>'+
     '<div class="bar"><i style="width:'+fill.toFixed(1)+'%"></i>'+(used>total?'<span class="ceil" style="left:'+ceil.toFixed(1)+'%"></span>':'')+'</div>'+
-    '<div class="note">'+note+(s.position?'  Player was at '+esc(s.position)+'.':'')+'</div></div>';
+    '<div class="note">'+esc(note)+(s.position?'  '+esc(t('ui.vram.position',{pos:s.position})):'')+'</div></div>';
 }
 
 // What is NOT the cause. Half the value of a diagnosis is the things it takes off the table, so this is shown
@@ -703,7 +842,7 @@ function renderRuledOut(s){
   var host=document.getElementById('dx-ruledout');
   var list=s.ruledOut||[];
   if(!list.length){ host.innerHTML=''; return; }
-  host.innerHTML='<p class="eyebrow" style="margin-top:22px">Ruled out</p>'+list.map(function(x){
+  host.innerHTML='<p class="eyebrow" style="margin-top:22px">'+esc(t('ui.dx.ruledOut'))+'</p>'+list.map(function(x){
     return '<div class="cleared"><div class="name">'+esc(x.mod)+'</div><div class="why">'+esc(x.why)+'</div></div>';
   }).join('');
 }
@@ -713,13 +852,11 @@ var TRACE_RESIZE=null;
 function watchTrace(){
   if(TRACE_RESIZE||!window.ResizeObserver) return;
   var host=document.getElementById('trace'); if(!host) return;
-  var t=null;
-  TRACE_RESIZE=new ResizeObserver(function(){ clearTimeout(t); t=setTimeout(function(){ if(REPORT) renderTrace(REPORT); },120); });
+  var tm=null;
+  TRACE_RESIZE=new ResizeObserver(function(){ clearTimeout(tm); tm=setTimeout(function(){ if(REPORT) renderTrace(REPORT); },120); });
   TRACE_RESIZE.observe(host);
 }
 
-// Which mods were rewriting the map sectors streaming in around the player when the game died. Read out of the
-// ArchiveXL log, which names both the sector and every .xl applied to it, so this is measured rather than guessed.
 // What the messages in the evidence are known to mean. These come from knowledge\*.json, not from the analysis, so
 // each one shows the line that brought it up and where the knowledge came from: the reader gets to judge it rather
 // than being asked to take it on trust. An entry explains a message; it never names a mod as the cause.
@@ -727,25 +864,26 @@ function renderKnowledge(r){
   var host=document.getElementById("dx-knowledge"); if(!host) return;
   var k=r.knowledge||[];
   if(!k.length){ host.innerHTML=""; return; }
-  host.innerHTML='<div class="area"><p class="eyebrow">What these messages mean</p>'
-    +'<p class="sub">From Crash Doctor’s knowledge base — explanations of the exact lines your logs contain. '
-    +'Not a diagnosis of your install: the evidence above is what applies to you.</p>'
+  host.innerHTML='<div class="area"><p class="eyebrow">'+esc(t('ui.kb.title'))+'</p>'
+    +'<p class="sub">'+esc(t('ui.kb.sub'))+'</p>'
     +k.map(function(h){
       return '<div style="padding:12px 0;border-top:1px solid var(--line)">'
         +'<div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">'
         +'<b>'+esc(h.title)+'</b>'
-        +'<span class="mark '+(h.confidence==='established'?'mint':'grey')+'">'+esc(h.confidence)+'</span>'
-        +(h.crashes>1?'<span class="muted" style="font-size:12px">seen in '+h.crashes+' of your crashes</span>':'')
+        +'<span class="mark '+(h.confidence==='established'?'mint':'grey')+'">'+esc(t('ui.kb.'+h.confidence,null,h.confidence))+'</span>'
+        +(h.crashes>1?'<span class="muted" style="font-size:12px">'+esc(tp('ui.kb.seen',h.crashes))+'</span>':'')
         +'</div>'
         +'<p style="margin:6px 0 0">'+esc(h.says)+'</p>'
-        +(h.do?'<p style="margin:6px 0 0"><b>What to do.</b> '+esc(h.do)+'</p>':'')
-        +'<p class="mono muted" style="font-size:11.5px;margin:8px 0 0">matched: '+esc(h.matched)+'</p>'
-        +'<p class="muted" style="font-size:11.5px;margin:2px 0 0">source: '+esc(h.source)+'</p>'
+        +(h.do?'<p style="margin:6px 0 0"><b>'+esc(t('ui.kb.do'))+'</b> '+esc(h.do)+'</p>':'')
+        +'<p class="mono muted" style="font-size:11.5px;margin:8px 0 0">'+esc(t('ui.kb.matched',{line:h.matched}))+'</p>'
+        +'<p class="muted" style="font-size:11.5px;margin:2px 0 0">'+esc(t('ui.kb.source',{source:h.source}))+'</p>'
         +'</div>';
     }).join('')
     +'</div>';
 }
 
+// Which mods were rewriting the map sectors streaming in around the player when the game died. Read out of the
+// ArchiveXL log, which names both the sector and every .xl applied to it, so this is measured rather than guessed.
 // It matters because several mods editing the same ground is a real and common cause of crashes while moving,
 // and because it is otherwise invisible: nothing in the game tells you two mods are fighting over one street.
 function renderArea(s){
@@ -756,9 +894,8 @@ function renderArea(s){
   var failing=rows.filter(function(x){return x.failing;});
   var shared=rows.filter(function(x){return x.sharedWith>0;}).length;
 
-  var sub="At the moment of the crash "+(s.areaSectors?s.areaSectors+" map sectors were streaming in around you":"the map was streaming in around you")+
-    (s.position?" at "+esc(s.position):"")+(s.district?", in "+esc(s.district):"")+". "+
-    rows.length+(rows.length===1?" mod was":" mods were")+" rewriting them as they loaded.";
+  var sub=(s.areaSectors?tp('ui.area.sectors',s.areaSectors):t('ui.area.streaming'))
+    +((s.position||s.district)?' ('+[s.position,s.district].filter(Boolean).join(', ')+')':'')+t('ui.area.stop')+SP()+tp('ui.area.rewriting',rows.length);
 
   var body=rows.map(function(x){
     var pct=Math.max(6,Math.round(x.sectors/max*100));
@@ -766,29 +903,26 @@ function renderArea(s){
       '<div class="fl">'+esc(x.file)+"</div>"+
       (x.failing&&x.note?'<div class="warn">'+esc(x.note)+"</div>":"")+"</div>"+
       '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
-      '<div class="n">'+x.sectors+(x.sectors===1?" sector":" sectors")+"<br>"+(x.sharedWith>0?"+"+x.sharedWith+" others here":"only mod here")+"</div></div>";
+      '<div class="n">'+esc(tp('ui.area.nSectors',x.sectors))+"<br>"+esc(x.sharedWith>0?tp('ui.area.others',x.sharedWith):t('ui.area.only'))+"</div></div>";
   }).join("");
 
   // The honest reading: overlap is a risk factor, a failed patch is a fact. Neither on its own names a culprit.
   var foot = failing.length
-    ? "<b>"+esc(failing.map(function(x){return x.mod;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(", "))+
-      "</b> no longer matches the sector it edits, so ArchiveXL had to skip part of its patch. That proves the mod was built against a different version of this map \u2014 it does not prove it caused this crash."
-    : shared>1
-      ? "Several of these edit the same ground. Overlapping sector edits are a common cause of crashes while moving through an area, but overlap on its own is not evidence against any one of them."
-      : "Nothing here is failing and there is little overlap, so the map edits in this spot look healthy.";
-  host.innerHTML='<div class="area"><p class="eyebrow">Rewriting the ground you were on</p><p class="sub">'+sub+"</p>"+body+
+    ? t('ui.area.footFailing',{mods:'\u0001'}).split('\u0001').map(esc).join('<b>'+esc(failing.map(function(x){return x.mod;}).filter(function(v,i,a){return a.indexOf(v)===i;}).join(", "))+'</b>')
+    : esc(shared>1 ? t('ui.area.footShared') : t('ui.area.footHealthy'));
+  host.innerHTML='<div class="area"><p class="eyebrow">'+esc(t('ui.area.title'))+'</p><p class="sub">'+esc(sub)+"</p>"+body+
     '<div class="foot">'+foot+"</div></div>";
 }
 
 // What changed between the last session that ended normally and this crash. The engine decides the wording of the
 // note above the list; the page only lays it out. It is a list of facts, and it is never a list of suspects.
 function changeRows(list){
-  return list.map(function(c){ return '<div class="crow"><div class="t">'+esc(fmtDate(c.at))+'</div><div><span class="k '+esc(c.kind)+'">'+esc(c.kind)+'</span>'+esc(c.text)+'</div></div>'; }).join('');
+  return list.map(function(c){ return '<div class="crow"><div class="t">'+esc(fmtDate(c.at))+'</div><div><span class="k '+esc(c.kind)+'">'+esc(t('ui.chg.'+c.kind,null,c.kind))+'</span>'+esc(c.text)+'</div></div>'; }).join('');
 }
 function renderChanges(s){
   var host=document.getElementById('dx-changes'); if(!host) return;
   if(!s||s.endKind==='clean'||s.endKind==='running'||!s.changesNote){ host.innerHTML=''; return; }
-  host.innerHTML='<div class="area changes"><p class="eyebrow">What changed since the last clean session</p><p class="sub">'+esc(s.changesNote)+'</p>'+changeRows(s.changes||[])+'</div>';
+  host.innerHTML='<div class="area changes"><p class="eyebrow">'+esc(t('ui.chg.title'))+'</p><p class="sub">'+esc(s.changesNote)+'</p>'+changeRows(s.changes||[])+'</div>';
 }
 
 // The screen a healthy install sees. "Nothing found" is the correct answer for most people most of the time, and
@@ -802,27 +936,25 @@ function noCrashPanel(r){
 
   var head, lead;
   if(!ss.length){
-    head='Crash Doctor has not seen the game run yet.';
-    lead='Play for a while, then come back and press <b>Scan now</b>. It reads the logs the game and your mod loaders leave behind, so there is nothing to show until they exist.';
+    head=t('ui.ok.notSeen');
+    lead=t('ui.ok.notSeenLead',{scan:'<b>'+esc(t('ui.scanNow'))+'</b>'});
   } else {
-    head='No crashes to explain.';
-    lead=ss.length+(ss.length===1?' session':' sessions')+' on record'+
-      (clean.length===ss.length?', every one closed normally':', '+clean.length+' closed normally')+
-      (longest?'. The longest ran '+esc(fmtDur(longest.minutes))+'.':'.')+
-      ' Nothing here needs diagnosing, which is the right answer rather than a missing one.';
+    head=t('ui.ok.head');
+    lead=esc((clean.length===ss.length?tp('ui.ok.allClean',ss.length):tp('ui.ok.someClean',ss.length,{clean:clean.length}))
+      +(longest?SP()+t('ui.ok.longest',{dur:fmtDur(longest.minutes)}):'')+SP()+t('ui.ok.right'));
     var newest=ss.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);})[0];
-    if(newest&&newest.vramLog&&newest.vramLog.totalMB) lead+=' In the latest one the graphics card peaked at '+Math.round(newest.vramLog.peak*100)+'% of its memory'+(newest.vramLog.minutesAbove90>=1?', with '+Math.round(newest.vramLog.minutesAbove90)+' min above 90%':'')+'.';
+    if(newest&&newest.vramLog&&newest.vramLog.totalMB) lead+=SP()+esc(newest.vramLog.minutesAbove90>=1?t('ui.ok.vramAbove',{pct:Math.round(newest.vramLog.peak*100),min:Math.round(newest.vramLog.minutesAbove90)}):t('ui.ok.vram',{pct:Math.round(newest.vramLog.peak*100)}));
   }
   var next=[];
-  if(missing.length) next.push('<button class="btn primary" onclick=&quot;go(&#39;req&#39;)&quot;>'+missing.length+(missing.length===1?' missing requirement':' missing requirements')+'</button>');
-  if(badHealth.length) next.push('<button class="btn" onclick=&quot;go(&#39;health&#39;)&quot;>'+badHealth.length+' thing'+(badHealth.length===1?'':'s')+' worth knowing</button>');
-  if(ss.length) next.push('<button class="btn" onclick=&quot;go(&#39;sessions&#39;)&quot;>See every session</button>');
+  if(missing.length) next.push('<button class="btn primary" onclick=&quot;go(&#39;req&#39;)&quot;>'+esc(tp('ui.ok.missing',missing.length))+'</button>');
+  if(badHealth.length) next.push('<button class="btn" onclick=&quot;go(&#39;health&#39;)&quot;>'+esc(tp('ui.ok.worth',badHealth.length))+'</button>');
+  if(ss.length) next.push('<button class="btn" onclick=&quot;go(&#39;sessions&#39;)&quot;>'+esc(t('ui.ok.every'))+'</button>');
 
-  var recent=(ss.length&&r.recentChangesNote)?'<div class="changes" style="margin-top:18px"><p class="eyebrow">Since your last clean session</p><p class="sub">'+esc(r.recentChangesNote)+'</p>'+changeRows(r.recentChanges||[])+'</div>':'';
+  var recent=(ss.length&&r.recentChangesNote)?'<div class="changes" style="margin-top:18px"><p class="eyebrow">'+esc(t('ui.ok.since'))+'</p><p class="sub">'+esc(r.recentChangesNote)+'</p>'+changeRows(r.recentChanges||[])+'</div>':'';
   return '<div class="ok"><h2>'+esc(head)+'</h2><p>'+lead+'</p>'+recent+
     (next.length?'<div class="row" style="margin-top:16px">'+next.join('')+'</div>':'')+
     // only claim a clean bill of health when the game has actually run and produced logs to judge
-    (ss.length&&!missing.length&&!badHealth.length?'<p class="fine">Frameworks loaded, scripts compiled, no standing problems found.</p>':'')+
+    (ss.length&&!missing.length&&!badHealth.length?'<p class="fine">'+esc(t('ui.ok.fine'))+'</p>':'')+
     '</div>';
 }
 
@@ -831,12 +963,12 @@ function renderTrace(r){
   host.querySelectorAll('svg').forEach(function(x){x.remove();});
   var sessions=r.sessions.slice().sort(function(a,b){return new Date(a.start)-new Date(b.start);});
   if(!sessions.length) return;
-  // group by day; each day is one row-less strip along x = time within the whole span, but crashes cluster, so use per-session equal slots with width by duration (log scale)
   // Draw at the container's real width. Previously this was a fixed 1000-unit box stretched with
   // preserveAspectRatio="none", so narrowing the window squashed the bars into slivers and distorted the labels.
   var W=Math.max(280,Math.round(host.clientWidth||host.getBoundingClientRect().width||1000));
   var H=host.clientHeight?Math.max(110,host.clientHeight):150, pad=8, baseY=H-26;
   var svgNS='http://www.w3.org/2000/svg'; var svg=document.createElementNS(svgNS,'svg'); svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  if(LANG.rtl) svg.setAttribute('direction','ltr');
   var base=document.createElementNS(svgNS,'line'); base.setAttribute('x1',0);base.setAttribute('x2',W);base.setAttribute('y1',baseY);base.setAttribute('y2',baseY);base.setAttribute('class','base'); svg.appendChild(base);
   // width: log scale of minutes so 3-minute and 4-hour sessions both read
   function widthOf(s){ return s.durationKnown===false?12:14+Math.log10(1+Math.max(s.minutes,0.5))*38; }
@@ -844,8 +976,8 @@ function renderTrace(r){
   // and say so, rather than rendering forty slivers.
   var avail=W-pad*2, hidden=0;
   while(sessions.length>1){
-    var t=sessions.reduce(function(a,s){return a+widthOf(s);},0)+(sessions.length-1)*6;
-    if(avail/t>=5/14) break;              // scale would shrink a minimum bar below 5px
+    var tw=sessions.reduce(function(a,s){return a+widthOf(s);},0)+(sessions.length-1)*6;
+    if(avail/tw>=5/14) break;              // scale would shrink a minimum bar below 5px
     sessions.shift(); hidden++;
   }
   var widths=sessions.map(widthOf);
@@ -853,15 +985,15 @@ function renderTrace(r){
   var scale=Math.min(1,avail/total); var x=pad+ (avail-total*scale)/2;
   // Colours come from the theme. "vram" was missing from this table, so every crash caused by video memory was
   // drawn in the grey reserved for unknown endings while the legend promised orange.
-  var colors={clean:'var(--c-clean)',gpu:'var(--c-gpu)',vram:'var(--c-vram)',script:'var(--c-script)',engine:'var(--c-engine)',unknown:'var(--c-unknown)',running:'var(--c-running)'};
+  var colors={clean:'var(--c-clean)',gpu:'var(--c-gpu)',vram:'var(--c-vram)',script:'var(--c-script)',engine:'var(--c-engine)',unknown:'var(--c-unknown)',running:'var(--c-running)',hang:'var(--c-hang)'};
   var g=document.createElementNS(svgNS,'g'); g.setAttribute('class','day'); svg.appendChild(g);
   var lastDay=''; var lastLabelX;
   sessions.forEach(function(s,i){
     var w=widths[i]*scale; var h=s.durationKnown===false?14:18+Math.min(s.minutes,240)/240*70; var y=baseY-h;
     var rect=document.createElementNS(svgNS,'rect'); rect.setAttribute('x',x);rect.setAttribute('y',y);rect.setAttribute('width',w);rect.setAttribute('height',h);rect.setAttribute('rx',2);rect.style.fill='var(--bar)';rect.setAttribute('fill-opacity',s.endKind==='clean'?'.22':'.55');rect.setAttribute('class','bar');
     var cap=document.createElementNS(svgNS,'rect'); cap.setAttribute('x',x+w-4);cap.setAttribute('y',y-3);cap.setAttribute('width',4);cap.setAttribute('height',h+3);cap.style.fill=colors[s.endKind]||colors.unknown;cap.setAttribute('class','cap');
-    var day=new Date(s.start).toLocaleDateString(undefined,{month:'short',day:'numeric'});
-    if(day!==lastDay && (lastLabelX===undefined || x-lastLabelX>44)){ lastLabelX=x; var t=document.createElementNS(svgNS,'text'); t.setAttribute('x',x);t.setAttribute('y',H-8);t.setAttribute('font-family','Cascadia Mono, Consolas, monospace');t.setAttribute('font-size','11');t.style.fill='var(--steel)';t.textContent=day; g.appendChild(t); lastDay=day; }
+    var day=fmtDay(s.start);
+    if(day!==lastDay && (lastLabelX===undefined || x-lastLabelX>44)){ lastLabelX=x; var tx=document.createElementNS(svgNS,'text'); tx.setAttribute('x',x);tx.setAttribute('y',H-8);tx.setAttribute('font-family','Cascadia Mono, Consolas, monospace');tx.setAttribute('font-size','11');tx.style.fill='var(--steel)';tx.textContent=day; g.appendChild(tx); lastDay=day; }
     (function(s,x,w,y){
       rect.addEventListener('mousemove',function(ev){ var b=host.getBoundingClientRect(); tip.style.left=(ev.clientX-b.left)+'px'; tip.style.top=(ev.clientY-b.top-8)+'px'; tip.innerHTML='<div class="t">'+esc(fmtDate(s.start))+' · '+esc(fmtDur(s.minutes,s.durationKnown))+'</div>'+esc(s.verdict); tip.className='tip on'; });
       rect.addEventListener('mouseleave',function(){ tip.className='tip'; });
@@ -870,66 +1002,66 @@ function renderTrace(r){
     g.appendChild(rect); g.appendChild(cap); x+=w+6*scale;
   });
   host.appendChild(svg);
-  document.getElementById('trace-from').textContent=(hidden?'+'+hidden+' earlier · ':'')+fmtDate(sessions[0].start);
+  document.getElementById('trace-from').textContent=(hidden?tp('ui.trace.earlier',hidden)+' · ':'')+fmtDate(sessions[0].start);
   document.getElementById('trace-to').textContent=fmtDate(sessions[sessions.length-1].start);
 }
 
 function renderSessions(r){
   var el=document.getElementById('sess-list'); el.innerHTML='';
   r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).forEach(function(s){
-    var k=KIND[s.endKind]||KIND.unknown; var d=document.createElement('div'); d.className='sess'; d.tabIndex=0; d.setAttribute('role','button');
+    var d=document.createElement('div'); d.className='sess'; d.tabIndex=0; d.setAttribute('role','button');
     var isNew=!window.EXPORTED&&(r.newCrashes||[]).indexOf(s.id)>=0;
-    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+(isNew?'<span class="mark new">new</span> ':'')+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+(s.vramLog&&s.vramLog.totalMB?'<br><span class="mono">recorded peak '+Math.round(s.vramLog.peak*100)+'%</span>':'')+'</div>';
+    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+(isNew?'<span class="mark new">'+esc(t('ui.new'))+'</span> ':'')+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+(s.vramLog&&s.vramLog.totalMB?'<br><span class="mono">'+esc(t('ui.sess.recordedPeak',{pct:Math.round(s.vramLog.peak*100)}))+'</span>':'')+'</div>';
     d.onclick=function(){ showSession(s.id); }; d.onkeydown=function(e){ if(e.key==='Enter') showSession(s.id); };
     el.appendChild(d);
   });
 }
-function showSession(id){ var s=REPORT.sessions.filter(function(x){return x.id===id;})[0]; if(!s) return; var save=REPORT.latest; REPORT.latest=s; renderDx(REPORT); REPORT.latest=save; go('dx'); document.querySelector('.main').scrollTop=0; }
+function showSession(id){ var s=REPORT.sessions.filter(function(x){return x.id===id;})[0]; if(!s) return; CURRENT_SESSION=id; var save=REPORT.latest; REPORT.latest=s; renderDx(REPORT); REPORT.latest=save; go('dx'); document.querySelector('.main').scrollTop=0; }
 
 function renderBisect(r){
   var host=document.getElementById("bisect-body"); if(!host) return;
   var b=r.bisect, badge=document.getElementById("n-bisect");
-  if(badge){ badge.textContent=b&&b.status==="running"?"on":""; badge.className="n"+(b&&b.status==="running"?" amb":""); badge.style.display=b&&b.status==="running"?"":"none"; }
+  if(badge){ badge.textContent=b&&b.status==="running"?t('ui.bisect.on'):""; badge.className="n"+(b&&b.status==="running"?" amb":""); badge.style.display=b&&b.status==="running"?"":"none"; }
 
   // Nothing running: offer the repeating faults, because a one-off is not worth days of testing.
   if(!b||b.status==="stopped"){
     var groups=(r.crashGroups||[]).filter(function(g){return g.count>=2;});
-    var intro='<h2>Find the cause by halving the mod list</h2>'+
-      '<p class="lead">When the logs name nothing, this always works. Crash Doctor asks you to switch off half the mods, you play, and it watches whether the same fault comes back \u2014 then halves again. It never changes a mod itself: it tells you what to switch off in Vortex and then checks what is actually deployed before it will trust the result.</p>';
-    if(!groups.length){ host.innerHTML=intro+'<div class="empty">No fault has happened more than once yet, so there is nothing worth bisecting. Come back if a crash starts repeating \u2014 chasing a one-off costs days and usually proves nothing.</div>'; return; }
-    host.innerHTML=intro+'<p class="eyebrow">Pick the fault to hunt</p>'+groups.map(function(g){
-      return '<div class="pick"><div><div class="sig">'+esc(g.signature)+'</div><div class="meta">'+g.count+' crashes \u00b7 '+esc(g.exception)+' \u00b7 '+fmtDate(g.firstSeen)+' to '+fmtDate(g.lastSeen)+(g.current?" \u00b7 still happening":" \u00b7 not seen since your last clean session")+'</div>'+
-        (g.minutesToBeat?'<div class="meta">A clean run would have to last <b>'+g.minutesToBeat+' min</b> to count. '+esc(g.thresholdNote||'')+'</div>':'')+'</div>'+
-        '<button class="btn primary" onclick="act('+esc(JSON.stringify("bisect:start:"+g.signature))+')">Hunt this one</button></div>';
+    var intro='<h2>'+esc(t('ui.bisect.title'))+'</h2>'+
+      '<p class="lead">'+esc(t('ui.bisect.lead',{manager:mgrName(r)}))+'</p>';
+    if(!groups.length){ host.innerHTML=intro+'<div class="empty">'+esc(t('ui.bisect.none'))+'</div>'; return; }
+    host.innerHTML=intro+'<p class="eyebrow">'+esc(t('ui.bisect.pick'))+'</p>'+groups.map(function(g){
+      return '<div class="pick"><div><div class="sig">'+esc(g.signature)+'</div>'+(g.symbol?'<div class="meta mono">'+esc(g.symbol)+'</div>':'')+'<div class="meta">'+esc(tp('ui.bisect.crashes',g.count))+' · '+esc(g.exception)+' · '+esc(t('ui.bisect.range',{from:fmtDate(g.firstSeen),to:fmtDate(g.lastSeen)}))+' · '+esc(g.current?t('ui.bisect.still'):t('ui.bisect.notSince'))+'</div>'+
+        (g.minutesToBeat?'<div class="meta">'+t('ui.bisect.mustLast',{min:'<b>'+g.minutesToBeat+'</b>'})+' '+esc(g.thresholdNote||'')+'</div>':'')+'</div>'+
+        '<button class="btn primary" onclick="act('+esc(JSON.stringify("bisect:start:"+g.signature))+')">'+esc(t('ui.bisect.hunt'))+'</button></div>';
     }).join("");
     return;
   }
 
-  var done=b.stepNumber-(b.status==="running"?1:0);
-  var total=Math.max(1,done+(b.stepsLeft||0));
-  var bars=""; for(var i=0;i<total;i++) bars+='<i class="'+(i<done?"done":i===done&&b.status==="running"?"now":"")+'"></i>';
+  var doneN=b.stepNumber-(b.status==="running"?1:0);
+  var total=Math.max(1,doneN+(b.stepsLeft||0));
+  var bars=""; for(var i=0;i<total;i++) bars+='<i class="'+(i<doneN?"done":i===doneN&&b.status==="running"?"now":"")+'"></i>';
 
   var right='<div class="bstat"><dl>'+
-    '<dt style="grid-column:1/-1">Fault being hunted</dt><dd class="wide">'+esc(b.signature)+'</dd>'+
-    '<dt>Still possible</dt><dd>'+b.candidates+'</dd>'+
-    '<dt>Cleared so far</dt><dd>'+b.cleared+'</dd>'+
-    '<dt>Round</dt><dd>'+b.stepNumber+'</dd>'+
-    (b.status==="running"?'<dt>Rounds left, about</dt><dd>'+b.stepsLeft+'</dd><dt>A clean run must beat</dt><dd>'+b.minutesToBeat+' min</dd>':"")+
+    '<dt style="grid-column:1/-1">'+esc(t('ui.bisect.fault'))+'</dt><dd class="wide">'+esc(b.signature)+'</dd>'+
+    '<dt>'+esc(t('ui.bisect.possible'))+'</dt><dd>'+b.candidates+'</dd>'+
+    '<dt>'+esc(t('ui.bisect.cleared'))+'</dt><dd>'+b.cleared+'</dd>'+
+    '<dt>'+esc(t('ui.bisect.round'))+'</dt><dd>'+b.stepNumber+'</dd>'+
+    (b.status==="running"?'<dt>'+esc(t('ui.bisect.left'))+'</dt><dd>'+b.stepsLeft+'</dd><dt>'+esc(t('ui.bisect.beat'))+'</dt><dd>'+esc(t('ui.dur.min',{m:b.minutesToBeat}))+'</dd>':"")+
     '</dl>'+(b.thresholdNote?'<div class="muted" style="font-size:12px;margin-top:10px;line-height:1.5">'+esc(b.thresholdNote)+'</div>':'')+
-    '<div class="row" style="margin-top:12px"><button class="btn" onclick="act(\'bisect:stop\')">'+(b.status==="running"?"Stop":"Clear this run")+'</button></div></div>'+
-    (b.history&&b.history.length?'<div class="bhist"><p class="eyebrow">What has been settled</p>'+b.history.map(function(h){return "<div>"+esc(h)+"</div>";}).join("")+"</div>":"");
+    '<div class="row" style="margin-top:12px"><button class="btn" onclick="act(\'bisect:stop\')">'+esc(b.status==="running"?t('ui.bisect.stop'):t('ui.bisect.clear'))+'</button></div></div>'+
+    (b.history&&b.history.length?'<div class="bhist"><p class="eyebrow">'+esc(t('ui.bisect.settled'))+'</p>'+b.history.map(function(h){return "<div>"+esc(h)+"</div>";}).join("")+"</div>":"");
 
   var main='<h2>'+esc(b.headline)+'</h2><p class="lead">'+esc(b.detail)+'</p>';
   if(b.status==="running"){
     main+='<div class="steps">'+bars+'</div>';
     var offSet={}; (b.turnOff||[]).forEach(function(n){offSet[n]=1;});
-    main+='<div class="checklist"><div class="h"><span>Turn these off in Vortex</span>'+
-      '<button class="btn" onclick="act(\'bisect:copy\')">Copy '+b.off.length+' names</button></div><ul>'+
+    main+='<div class="checklist"><div class="h"><span>'+esc(t('ui.bisect.turnOff',{manager:mgrName(r)}))+'</span>'+
+      '<button class="btn" onclick="act(\'bisect:copy\')">'+esc(tp('ui.bisect.copyNames',b.off.length))+'</button></div><ul>'+
       b.off.map(function(n){ var todo=offSet[n];
-        return '<li class="'+(todo?"todo":"")+'"><span class="tick">'+(todo?"\u2715":"\u2713")+'</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
+        return '<li class="'+(todo?"todo":"")+'"><span class="tick">'+(todo?"✕":"✓")+'</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
     if(b.turnOn&&b.turnOn.length)
-      main+='<div class="checklist"><div class="h"><span>Turn these back on \u2014 they are still in the test</span></div><ul>'+
-        b.turnOn.map(function(n){return '<li class="todo"><span class="tick">\u2715</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
+      main+='<div class="checklist"><div class="h"><span>'+esc(t('ui.bisect.turnOn'))+'</span></div><ul>'+
+        b.turnOn.map(function(n){return '<li class="todo"><span class="tick">✕</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
   }
   host.innerHTML='<div class="bx"><div>'+main+"</div>"+right+"</div>";
 }
@@ -940,10 +1072,10 @@ function renderHealth(r){
   var list=r.health.slice().sort(function(a,b){return order[a.severity]-order[b.severity];});
   // Counts the rows on screen, not the non-info ones: the rail badge and this heading used to disagree with
   // each other and with the list underneath, which reads as a bug even though nothing was wrong.
-  document.getElementById('health-h1').textContent=list.length? (list.length+' things worth knowing') : 'Nothing standing out';
-  if(!list.length){ el.innerHTML='<div class="empty" style="border:0">No standing problems found in the logs.</div>'; return; }
+  document.getElementById('health-h1').textContent=list.length? tp('ui.health.count',list.length) : t('ui.health.nothing');
+  if(!list.length){ el.innerHTML='<div class="empty" style="border:0">'+esc(t('ui.health.none'))+'</div>'; return; }
   list.forEach(function(h){ var d=document.createElement('div'); d.className='hl'; var m={high:'sig',medium:'amb',low:'grey',info:'trace'}[h.severity];
-    d.innerHTML='<div><span class="mark '+m+'">'+esc(h.severity)+'</span></div><div><div class="title">'+esc(h.title)+'</div><div class="detail">'+esc(h.detail)+'</div>'+(h.mod?'<div class="mono muted" style="margin-top:4px">'+esc(h.mod)+'</div>':'')+'</div><div class="act">'+(h.action?'<button class="btn" onclick="act('+esc(JSON.stringify(h.action.id))+')">'+esc(h.action.label)+'</button>':'')+'</div>'; el.appendChild(d); });
+    d.innerHTML='<div><span class="mark '+m+'">'+esc(sevLabel(h.severity))+'</span></div><div><div class="title">'+esc(h.title)+'</div><div class="detail">'+esc(h.detail)+'</div>'+(h.mod?'<div class="mono muted" style="margin-top:4px">'+esc(h.mod)+'</div>':'')+'</div><div class="act">'+(h.action?'<button class="btn" onclick="act('+esc(JSON.stringify(h.action.id))+')">'+esc(h.action.label)+'</button>':'')+'</div>'; el.appendChild(d); });
 }
 
 var MODS_SORT={key:"name",dir:1}, MODS_STATUS="all", MODS_KIND="all";
@@ -958,6 +1090,9 @@ function resetMods(){ MODS_STATUS="all"; MODS_KIND="all"; MODS_SORT={key:"name",
 // The worst flag a mod carries. Used for the "flagged only" filter and to sort by severity instead of alphabetically.
 var FLAG_RANK={high:3,medium:2,low:1,cleared:0};
 function worstFlag(m){ return (m.flags||[]).reduce(function(a,f){ var r=FLAG_RANK[f.level]; return Math.max(a, r===undefined?0:r); },-1); }
+function statusLabel(s){ return t('ui.status.'+s,null,s); }
+// "native plugin + redscript" -> each part in the reader's words
+function typeLabel(ty){ return (ty||'').split(' + ').map(function(p){ return t('ui.type.'+p.replace(/ /g,'_'),null,p); }).join(' + '); }
 
 function renderMods(){
   if(!REPORT) return;
@@ -966,8 +1101,8 @@ function renderMods(){
   // chips are built from what is actually installed, so they never offer a choice that matches nothing
   var statuses=["all"].concat(all.map(function(m){return m.status;}).filter(function(v,i,a){return v&&a.indexOf(v)===i;}).sort());
   document.getElementById("mods-status").innerHTML=statuses.map(function(v){
-    return '<button class="fchip'+(MODS_STATUS===v?" on":"")+'" onclick="setModFilter(&quot;status&quot;,&quot;'+v+'&quot;)">'+esc(v==="all"?"All statuses":v)+"</button>";}).join("");
-  var kinds=[["all","Everything"],["problems","Flagged only"],["cleared","Ruled out"]];
+    return '<button class="fchip'+(MODS_STATUS===v?" on":"")+'" onclick="setModFilter(&quot;status&quot;,&quot;'+v+'&quot;)">'+esc(v==="all"?t('ui.mods.allStatuses'):statusLabel(v))+"</button>";}).join("");
+  var kinds=[["all",t('ui.mods.everything')],["problems",t('ui.mods.flagged')],["cleared",t('ui.mods.ruledOut')]];
   document.getElementById("mods-kind").innerHTML=kinds.map(function(kv){
     return '<button class="fchip'+(MODS_KIND===kv[0]?" on":"")+'" onclick="setModFilter(&quot;kind&quot;,&quot;'+kv[0]+'&quot;)">'+esc(kv[1])+"</button>";}).join("");
 
@@ -976,7 +1111,7 @@ function renderMods(){
     if(MODS_KIND==="problems" && worstFlag(m)<1) return false;
     if(MODS_KIND==="cleared" && !(m.flags||[]).some(function(f){return f.level==="cleared";})) return false;
     if(q){
-      var hay=(m.name+" "+(m.version||"")+" "+(m.type||"")+" "+m.status+" "+(m.flags||[]).map(function(f){return f.label+" "+(f.detail||"");}).join(" ")).toLowerCase();
+      var hay=(m.name+" "+(m.version||"")+" "+(m.type||"")+" "+typeLabel(m.type)+" "+m.status+" "+statusLabel(m.status)+" "+(m.flags||[]).map(function(f){return f.label+" "+(f.detail||"");}).join(" ")).toLowerCase();
       if(hay.indexOf(q)<0) return false;
     }
     return true;
@@ -1002,17 +1137,17 @@ function renderMods(){
       var cls=f.level==="high"?"sig":f.level==="medium"?"amb":f.level==="cleared"?"cleared":"grey";
       var title=esc((f.detail||"")+(f.when?"  ("+f.when+")":""));
       // a flag that came from a particular crash opens that crash and explains itself; others stay plain labels
-      if(f.sessionId) return '<button class="mark '+cls+'" title="'+title+'" onclick="showModFlag('+esc(JSON.stringify(m.name))+","+i+')">'+esc(f.label)+" \u2192</button> ";
+      if(f.sessionId) return '<button class="mark '+cls+'" title="'+title+'" onclick="showModFlag('+esc(JSON.stringify(m.name))+","+i+')">'+esc(f.label)+" →</button> ";
       return '<span class="mark '+cls+'" title="'+title+'">'+esc(f.label)+"</span> ";
     }).join("");
-    tr.innerHTML="<td>"+esc(m.name)+'</td><td class="mono">'+esc(m.version||"")+'</td><td class="muted">'+esc(m.type||"")+"</td>"+
-      '<td><span class="mark '+(m.status==="enabled"?"mint":m.status==="disabled"?"grey":"sig")+'">'+esc(m.status)+"</span></td><td>"+flags+"</td>";
+    tr.innerHTML="<td>"+esc(m.name)+'</td><td class="mono">'+esc(m.version||"")+'</td><td class="muted">'+esc(typeLabel(m.type))+"</td>"+
+      '<td><span class="mark '+(m.status==="enabled"?"mint":m.status==="disabled"?"grey":"sig")+'">'+esc(statusLabel(m.status))+"</span></td><td>"+flags+"</td>";
     tb.appendChild(tr);
   });
   document.getElementById("mods-empty").style.display=rows.length?"none":"";
-  var unit=modsCounted(REPORT)?" mod files and folders":" mods";
-  document.getElementById("mods-count").textContent=rows.length===all.length?all.length+unit:rows.length+" of "+all.length;
-  document.getElementById("mods-h1").textContent=all.length+unit;
+  var unitKey=modsCounted(REPORT)?'ui.mods.nPieces':'ui.mods.nMods';
+  document.getElementById("mods-count").textContent=rows.length===all.length?tp(unitKey,all.length):t('ui.mods.nOf',{n:rows.length,total:all.length});
+  document.getElementById("mods-h1").textContent=tp(unitKey,all.length);
 }
 
 // Clicking a flag answers "why?": open the crash it came from, with the reason pinned above the verdict.
@@ -1021,17 +1156,17 @@ function showModFlag(modName,i){
   var f=(m.flags||[])[i]; if(!f) return;
   if(f.sessionId) showSession(f.sessionId); else go("dx");
   var host=document.getElementById("dx-flagnote");
-  if(host) host.innerHTML='<div class="flagnote"><b>'+esc(m.name)+"</b> \u2014 "+esc(f.label)+(f.when?" \u00b7 "+esc(f.when):"")+"<div>"+esc(f.detail||"")+"</div></div>";
+  if(host) host.innerHTML='<div class="flagnote"><b>'+esc(m.name)+"</b> — "+esc(f.label)+(f.when?" · "+esc(f.when):"")+"<div>"+esc(f.detail||"")+"</div></div>";
 }
 
 function renderReq(r){
   var el=document.getElementById('req-list'); el.innerHTML=''; var list=r.requirements||[]; var missing=list.filter(function(x){return x.status==='missing';}).length, outdated=list.filter(function(x){return x.status==='outdated';}).length;
   var n=document.getElementById('n-req'); n.textContent=missing+outdated||''; n.className='n '+(missing?'sig':outdated?'amb':'');
-  document.getElementById('req-h1').textContent= missing? missing+' missing'+(outdated?', '+outdated+' outdated':'') : outdated? outdated+' outdated' : 'Everything your mods need is installed';
+  document.getElementById('req-h1').textContent= missing? (outdated?t('ui.req.missingOutdated',{missing:missing,outdated:outdated}):tp('ui.req.missing',missing)) : outdated? tp('ui.req.outdated',outdated) : t('ui.req.allGood');
   document.getElementById('req-all').style.display = list.some(function(x){return x.status!=='ok' && x.directInstall;}) ? '' : 'none';
-  list.forEach(function(x){ var d=document.createElement('div'); d.className='hl'; var m={ok:'mint',missing:'sig',outdated:'amb',optional:'grey',unknown:'grey'}[x.status]||'grey'; var label={ok:'installed',missing:'missing',outdated:'outdated',optional:'not needed',unknown:'unknown'}[x.status]||x.status;
-    var btn=''; if(x.status!=='ok'){ btn = x.directInstall ? '<button class="btn primary" onclick="act('+esc(JSON.stringify('req:install:'+x.id))+')">Install</button>' : '<button class="btn" onclick="act('+esc(JSON.stringify('req:open:'+x.id))+')">Open download page</button>'; }
-    d.innerHTML='<div><span class="mark '+m+'">'+esc(label)+'</span></div><div><div class="title">'+esc(x.name)+(x.version?' <span class="mono muted">'+esc(x.version)+'</span>':'')+'</div><div class="detail">'+esc(x.detail)+'</div>'+(function(){var n=x.neededByCount||(x.neededBy?x.neededBy.length:0); if(!n) return ''; var names=(x.neededBy&&x.neededBy.length&&n<=4)?': '+esc(x.neededBy.join(', ')):''; return '<div class="muted" style="font-size:12px;margin-top:4px">Needed by '+n+' installed mod'+(n===1?'':'s')+names+'</div>';})()+'</div><div class="act">'+btn+'</div>'; el.appendChild(d); });
+  list.forEach(function(x){ var d=document.createElement('div'); d.className='hl'; var m={ok:'mint',missing:'sig',outdated:'amb',optional:'grey',unknown:'grey'}[x.status]||'grey'; var label=t('ui.req.st.'+x.status,null,x.status);
+    var btn=''; if(x.status!=='ok'){ btn = x.directInstall ? '<button class="btn primary" onclick="act('+esc(JSON.stringify('req:install:'+x.id))+')">'+esc(t('ui.req.install'))+'</button>' : '<button class="btn" onclick="act('+esc(JSON.stringify('req:open:'+x.id))+')">'+esc(t('ui.req.openPage'))+'</button>'; }
+    d.innerHTML='<div><span class="mark '+m+'">'+esc(label)+'</span></div><div><div class="title">'+esc(x.name)+(x.version?' <span class="mono muted">'+esc(x.version)+'</span>':'')+'</div><div class="detail">'+esc(x.detail)+'</div>'+(function(){var nb=x.neededByCount||(x.neededBy?x.neededBy.length:0); if(!nb) return ''; var names=(x.neededBy&&x.neededBy.length&&nb<=4)?': '+esc(x.neededBy.join(', ')):''; return '<div class="muted" style="font-size:12px;margin-top:4px">'+esc(tp('ui.req.neededBy',nb))+names+'</div>';})()+'</div><div class="act">'+btn+'</div>'; el.appendChild(d); });
 }
 /* ---------- graphics settings and profiles ----------
    The engine decides what is editable and validates every value again before saving; the page only offers what the
@@ -1040,47 +1175,47 @@ function renderReq(r){
 var EDITING=null;   // {name, edits:{key:value}} while a profile is open for editing
 
 // floats are stored as 0.1500000059; nobody set that, they set 0.15
-function gshow(v){ if(v===true) return 'On'; if(v===false) return 'Off'; if(v===null||v===undefined) return ''; if(typeof v==='number'&&!Number.isInteger(v)) return String(Math.round(v*100)/100); return String(v).replace('UI-Settings-Video-QualitySetting-',''); }
+function gshow(v){ if(v===true) return gfxv('On'); if(v===false) return gfxv('Off'); if(v===null||v===undefined) return ''; if(typeof v==='number'&&!Number.isInteger(v)) return String(Math.round(v*100)/100); var s=String(v).replace('UI-Settings-Video-QualitySetting-',''); return gfxv(s); }
 // The settings that move video memory and frame rate the most, first. Everything else follows in the game's own groups.
 var GFX_FIRST=['/graphics/presets/TextureQuality','/graphics/performance/CrowdDensity','/graphics/raytracing/RayTracing','/graphics/raytracing/RayTracedLighting','/graphics/raytracing/RayTracedReflections','/graphics/raytracing/RayTracedPathTracing','/graphics/advanced/ScreenSpaceReflectionsQuality','/graphics/presets/FrameGeneration','/graphics/presets/ResolutionScaling','/graphics/presets/DLSS','/video/display/Resolution'];
-function gfxOrdered(g){ var first=GFX_FIRST.map(function(k){ return g.filter(function(o){return o.key===k;})[0]; }).filter(Boolean).map(function(o){ return Object.assign({},o,{group:'The ones that matter most'}); });
+function gfxOrdered(g){ var first=GFX_FIRST.map(function(k){ return g.filter(function(o){return o.key===k;})[0]; }).filter(Boolean).map(function(o){ return Object.assign({},o,{group:t('ui.gfx.matterMost')}); });
   return first.concat(g.filter(function(o){ return GFX_FIRST.indexOf(o.key)<0; })); }
 function gsame(a,b){ return JSON.stringify(a)===JSON.stringify(b); }
-function profileOp(msg){ if(hasHost()) window.chrome.webview.postMessage(Object.assign({cmd:'profile'},msg)); else toast('Profiles are available in the app, not in a saved report.',true); }
+function profileOp(msg){ if(hasHost()) window.chrome.webview.postMessage(Object.assign({cmd:'profile'},msg)); else toast(t('ui.prof.appOnly'),true); }
 
 function renderProfiles(r){
   var host=document.getElementById('profiles'); if(!host) return;
   var g=r.graphics||[], ps=r.profiles||[];
-  if(!g.length){ host.innerHTML='<div class="empty" style="padding:22px">The game\u2019s settings file was not found. Launch Cyberpunk 2077 once so it creates one, then scan again.</div>'; return; }
+  if(!g.length){ host.innerHTML='<div class="empty" style="padding:22px">'+esc(t('ui.prof.noFile'))+'</div>'; return; }
   var html='';
-  if(r.game&&r.game.running) html+='<div class="notice">Cyberpunk 2077 is running. You can save and edit profiles, but close the game before applying one \u2014 it rewrites its settings when it exits, which would undo the change.</div>';
+  if(r.game&&r.game.running) html+='<div class="notice">'+esc(t('ui.prof.running'))+'</div>';
   html+='<div class="profs">';
   ps.forEach(function(p){
     var n=esc(p.name).replace(/'/g,'&#39;'), q='&quot;'+n+'&quot;';
     html+='<div class="prof'+(p.matchesGame?' active':'')+'"><div class="top"><span class="nm">'+esc(p.name)+'</span>'
-      +(p.matchesGame?'<span class="mark mint">in the game now</span>':'')+'</div>'
+      +(p.matchesGame?'<span class="mark mint">'+esc(t('ui.prof.inGame'))+'</span>':'')+'</div>'
       +'<div class="phl">'+Object.keys(p.headline||{}).map(function(k){ return '<span>'+esc(k)+'</span><span>'+esc(p.headline[k])+'</span>'; }).join('')+'</div>'
       +(p.notes?'<div class="muted" style="font-size:12.5px">'+esc(p.notes)+'</div>':'')
       +'<div class="acts">'
-      +(window.EXPORTED?'':'<button class="btn primary" onclick="profileOp({op:&quot;play&quot;,name:'+q+'})" title="Back up your settings, put this profile in, start the game, and put your settings back when it closes">Play with this</button>')
-      +(p.matchesGame?'':'<button class="btn" onclick="profileOp({op:&quot;apply&quot;,name:'+q+'})">Apply to game</button>')
-      +'<button class="btn" onclick="editProfile('+q+')">Edit</button>'
-      +'<button class="btn" onclick="profileOp({op:&quot;save&quot;,name:'+q+'})" title="Replace this profile with what the game is set to now">Update from game</button>'
-      +'<button class="btn" onclick="profileOp({op:&quot;delete&quot;,name:'+q+'})">Delete</button>'
+      +(window.EXPORTED?'':'<button class="btn primary" onclick="profileOp({op:&quot;play&quot;,name:'+q+'})" title="'+esc(t('ui.prof.playTip'))+'">'+esc(t('ui.prof.play'))+'</button>')
+      +(p.matchesGame?'':'<button class="btn" onclick="profileOp({op:&quot;apply&quot;,name:'+q+'})">'+esc(t('ui.prof.apply'))+'</button>')
+      +'<button class="btn" onclick="editProfile('+q+')">'+esc(t('ui.prof.edit'))+'</button>'
+      +'<button class="btn" onclick="profileOp({op:&quot;save&quot;,name:'+q+'})" title="'+esc(t('ui.prof.updateTip'))+'">'+esc(t('ui.prof.update'))+'</button>'
+      +'<button class="btn" onclick="profileOp({op:&quot;delete&quot;,name:'+q+'})">'+esc(t('ui.prof.delete'))+'</button>'
       +'</div></div>';
   });
-  html+='<div class="prof new"><div class="nm" style="font-size:14px">Save the current settings</div>'
-    +'<div class="muted" style="font-size:12.5px">Keeps everything the game is set to now under a name, so you can switch back to it in one click.</div>'
-    +'<input id="prof-name" placeholder="e.g. Quality, Performance, Streaming" maxlength="60" onkeydown="if(event.key===&quot;Enter&quot;)saveProfile()">'
-    +'<div class="acts"><button class="btn primary" onclick="saveProfile()">Save as profile</button></div></div>';
+  html+='<div class="prof new"><div class="nm" style="font-size:14px">'+esc(t('ui.prof.saveCurrent'))+'</div>'
+    +'<div class="muted" style="font-size:12.5px">'+esc(t('ui.prof.saveCurrentHelp'))+'</div>'
+    +'<input id="prof-name" placeholder="'+esc(t('ui.prof.namePlaceholder'))+'" maxlength="60" onkeydown="if(event.key===&quot;Enter&quot;)saveProfile()">'
+    +'<div class="acts"><button class="btn primary" onclick="saveProfile()">'+esc(t('ui.prof.saveAs'))+'</button></div></div>';
   html+='</div>';
   html+='<div class="profbar">'
-    +(r.settingsBackup?'<button class="btn" onclick="profileOp({op:&quot;undo&quot;})">Undo last change</button><span>Your settings from before the last change were backed up '+esc(fmtDate(r.settingsBackup))+'.</span>'
-      :'<span>Play with this backs up your settings, puts the profile in, starts the game, and puts your settings back when it closes. Apply leaves the profile in until you change it, and Undo puts the previous settings back. Only graphics and display settings are touched \u2014 never controls, audio or key bindings.</span>')
+    +(r.settingsBackup?'<button class="btn" onclick="profileOp({op:&quot;undo&quot;})">'+esc(t('ui.prof.undo'))+'</button><span>'+esc(t('ui.prof.backedUp',{when:fmtDate(r.settingsBackup)}))+'</span>'
+      :'<span>'+esc(t('ui.prof.explain'))+'</span>')
     +'</div>';
   host.innerHTML=html;
 }
-function saveProfile(){ var i=document.getElementById('prof-name'); var n=(i&&i.value||'').trim(); if(!n){ toast('Give the profile a name first.',true); if(i) i.focus(); return; } profileOp({op:'save',name:n}); }
+function saveProfile(){ var i=document.getElementById('prof-name'); var n=(i&&i.value||'').trim(); if(!n){ toast(t('ui.prof.nameFirst'),true); if(i) i.focus(); return; } profileOp({op:'save',name:n}); }
 
 function editProfile(name){
   var p=(REPORT.profiles||[]).filter(function(x){return x.name===name;})[0]; if(!p) return;
@@ -1103,22 +1238,24 @@ function saveEdits(){
 function renderGraphics(r,keepScroll){
   var card=document.getElementById('gfx-card'), head=document.getElementById('gfx-h'); if(!card) return;
   var g=gfxOrdered(r.graphics||[]);
+  var plainHead=esc(t('ui.gfx.title'))+' <span class="muted" style="font-size:13px;font-weight:400">· '+esc(t('ui.gfx.now'))+'</span>';
   if(!g.length){   // older report, or no settings file: the plain list is still worth showing
+    head.innerHTML=plainHead;
     var kv='<div class="kv">'; Object.keys(r.settings||{}).forEach(function(k){ kv+='<div class="k">'+esc(k)+'</div><div class="v">'+esc(r.settings[k])+'</div>'; }); card.innerHTML=kv+'</div>'; return;
   }
   var prof=EDITING?(r.profiles||[]).filter(function(x){return x.name===EDITING.name;})[0]:null;
   if(EDITING&&!prof){ EDITING=null; }
-  head.innerHTML=prof?'Editing \u201c'+esc(prof.name)+'\u201d':'Graphics settings <span class="muted" style="font-size:13px;font-weight:400">\u00b7 what the game is set to now</span>';
+  head.innerHTML=prof?esc(t('ui.gfx.editing',{name:prof.name})):plainHead;
   var html='';
   if(prof){
     var n=Object.keys(EDITING.edits).length;
-    html+='<div class="edithead"><input id="edit-name" value="'+esc(prof.name)+'" maxlength="60" title="Profile name">'
-      +'<input id="edit-notes" value="'+esc(prof.notes||'')+'" placeholder="Notes (optional)" style="flex:1">'
-      +'<button class="btn primary" onclick="saveEdits()">Save profile</button><button class="btn" onclick="stopEditing()">Cancel</button>'
-      +'<span class="muted" style="font-size:12.5px">'+(n?n+' unsaved change'+(n===1?'':'s'):'No changes yet')+'. Saving does not change the game \u2014 Apply does.</span></div>';
+    html+='<div class="edithead"><input id="edit-name" value="'+esc(prof.name)+'" maxlength="60" title="'+esc(t('ui.gfx.profileName'))+'">'
+      +'<input id="edit-notes" value="'+esc(prof.notes||'')+'" placeholder="'+esc(t('ui.gfx.notes'))+'" style="flex:1">'
+      +'<button class="btn primary" onclick="saveEdits()">'+esc(t('ui.gfx.saveProfile'))+'</button><button class="btn" onclick="stopEditing()">'+esc(t('ui.gfx.cancel'))+'</button>'
+      +'<span class="muted" style="font-size:12.5px">'+esc((n?tp('ui.gfx.unsaved',n):t('ui.gfx.noChanges'))+SP()+t('ui.gfx.applyNote'))+'</span></div>';
   }
   html+='<div class="gfx'+(prof?'':' view')+'">';
-  if(prof) html+='<div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">Setting</div><div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">In the game now</div><div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">In this profile</div>';
+  if(prof) html+='<div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">'+esc(t('ui.gfx.setting'))+'</div><div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">'+esc(t('ui.gfx.inGame'))+'</div><div class="k" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.08em">'+esc(t('ui.gfx.inProfile'))+'</div>';
   var last='';
   g.forEach(function(o){
     if(o.group!==last){ html+='<div class="gfx-group">'+esc(o.group)+'</div>'; last=o.group; }
@@ -1126,9 +1263,9 @@ function renderGraphics(r,keepScroll){
     var saved=prof.options[o.key], pv=EDITING.edits.hasOwnProperty(o.key)?EDITING.edits[o.key]:(saved?saved.value:o.value);
     var differs=!gsame(pv,o.value), edited=EDITING.edits.hasOwnProperty(o.key), cls=edited?' row-changed':'';
     var ctl;
-    if(!o.editable) ctl='<span class="lock" title="'+esc(o.note||'')+'">'+esc(gshow(pv))+' \u00b7 set in game</span>';
-    else if(o.type==='bool') ctl='<select onchange="setEdit(&quot;'+o.key+'&quot;,this.value)"><option value="true"'+(pv===true?' selected':'')+'>On</option><option value="false"'+(pv===false?' selected':'')+'>Off</option></select>';
-    else if(o.type==='int'||o.type==='float') ctl='<input type="number" min="'+o.min+'" max="'+o.max+'" step="'+(o.step||1)+'" value="'+esc(gshow(pv))+'" onchange="setEdit(&quot;'+o.key+'&quot;,this.value)">';
+    if(!o.editable) ctl='<span class="lock" title="'+esc(o.note||'')+'">'+esc(gshow(pv))+' · '+esc(t('ui.gfx.setInGame'))+'</span>';
+    else if(o.type==='bool') ctl='<select onchange="setEdit(&quot;'+o.key+'&quot;,this.value)"><option value="true"'+(pv===true?' selected':'')+'>'+esc(gfxv('On'))+'</option><option value="false"'+(pv===false?' selected':'')+'>'+esc(gfxv('Off'))+'</option></select>';
+    else if(o.type==='int'||o.type==='float') ctl='<input type="number" min="'+o.min+'" max="'+o.max+'" step="'+(o.step||1)+'" value="'+esc(String(typeof pv==='number'&&!Number.isInteger(pv)?Math.round(pv*100)/100:pv))+'" onchange="setEdit(&quot;'+o.key+'&quot;,this.value)">';
     else ctl='<select onchange="setEdit(&quot;'+o.key+'&quot;,this.value)">'+o.values.map(function(v,i){ return '<option value="'+i+'"'+(gsame(v,pv)?' selected':'')+'>'+esc(gshow(v))+'</option>'; }).join('')+'</select>';
     html+='<div class="k'+cls+'">'+esc(o.label)+'</div><div class="v'+cls+'">'+esc(gshow(o.value))+'</div><div class="'+cls+(differs?' diff':'')+'">'+ctl+'</div>';
   });
@@ -1143,21 +1280,19 @@ function renderSaved(r,s){
   if(!s||!a){ host.innerHTML=''; return; }
   if(e){
     var just=(a.savedThisScan||[]).indexOf(s.id)>=0;
-    host.innerHTML='<div class="saved"><span class="ok">\u2713 Logs '+(just?'saved just now':'saved')+'</span><span>'
-      +(e.logsMissing?'Only the crash report was left \u2014 the session\u2019s own logs had already been rotated away by the game.':'A copy of this crash\u2019s logs is kept, so it can still be compared after the game deletes them.')
-      +' '+fmtBytes(e.bytes)+'.</span><button class="btn" onclick="act(&quot;open:crashlog:'+esc(s.id)+'&quot;)">Show file</button></div>';
+    host.innerHTML='<div class="saved"><span class="ok">✓ '+esc(just?t('ui.saved.justNow'):t('ui.saved.saved'))+'</span><span>'
+      +esc((e.logsMissing?t('ui.saved.onlyReport'):t('ui.saved.copyKept'))+' '+fmtBytes(e.bytes)+'.')+'</span><button class="btn" onclick="act(&quot;open:crashlog:'+esc(s.id)+'&quot;)">'+esc(t('ui.showFile'))+'</button></div>';
   } else if(!a.enabled){
-    host.innerHTML='<div class="saved"><span>Crash logs are not being kept. Turn it on under Settings to save a copy of each crash before the game deletes its logs.</span></div>';
+    host.innerHTML='<div class="saved"><span>'+esc(t('ui.saved.off'))+'</span></div>';
   } else host.innerHTML='';
 }
 function renderArchive(r){
   var host=document.getElementById('archive-card'); if(!host) return; var a=r.archive;
-  if(!a){ host.innerHTML='<span class="muted">Not available in a saved report.</span>'; return; }
+  if(!a){ host.innerHTML='<span class="muted">'+esc(t('ui.notInSaved'))+'</span>'; return; }
   host.innerHTML='<label class="switch"><input type="checkbox"'+(a.enabled?' checked':'')+' onchange="setArchive(this.checked)">'
-    +'<span><b>Keep a copy of every crash\u2019s logs</b><br><span class="muted" style="font-size:13px">The game deletes its logs after a few launches, which is how most crashes end up with nothing left to examine. '
-    +'Crash Doctor zips the crash report and that session\u2019s logs the first time it sees a crash, and keeps the three most recent clean sessions to compare against. It only copies; nothing in the game folder changes.</span></span></label>'
-    +'<div class="saved"><span>'+(a.crashes?a.crashes+' crash'+(a.crashes===1?'':'es'):'No crashes')+' and '+a.clean+' clean session'+(a.clean===1?'':'s')+' kept, '+fmtBytes(a.bytes)+' in total.</span>'
-    +'<button class="btn" onclick="act(&quot;open:crashlogs&quot;)">Open folder</button></div>';
+    +'<span><b>'+esc(t('ui.arch.title'))+'</b><br><span class="muted" style="font-size:13px">'+esc(t('ui.arch.help'))+'</span></span></label>'
+    +'<div class="saved"><span>'+esc(t('ui.arch.kept',{crashes:a.crashes?tp('ui.arch.crashes',a.crashes):t('ui.arch.noCrashes'),clean:tp('ui.arch.clean',a.clean),size:fmtBytes(a.bytes)}))+'</span>'
+    +'<button class="btn" onclick="act(&quot;open:crashlogs&quot;)">'+esc(t('ui.openFolder'))+'</button></div>';
 }
 /* ---------- clear old logs (LogCleaner.cs) ----------
    A clean slate for the next launch. The logs are moved into Crash Doctor's own folder, never deleted, and the last
@@ -1165,27 +1300,26 @@ function renderArchive(r){
 var CLEAR_ARMED=false;
 function renderGameLogs(r){
   var host=document.getElementById('gamelogs-card'); if(!host) return; var l=r.gameLogs;
-  if(!l){ host.innerHTML='<span class="muted">Not available in a saved report.</span>'; return; }
-  host.innerHTML='<b>Clear old logs</b><br><span class="muted" style="font-size:13px">Moves the logs written by the game’s mod frameworks (RED4ext and its plugins, Cyber Engine Tweaks, redscript) out of the game folder, so the next launch starts with fresh ones. '
-    +'Nothing is deleted: they go into Crash Doctor’s own folder and can be put back. Crash reports are left alone. Close the game first.</span>'
-    +'<div class="saved"><span>'+(l.files?l.files+' log'+(l.files===1?'':'s')+' in the game folder, '+fmtBytes(l.bytes)+'.':'No logs in the game folder.')
-    +(l.lastCleared?' Last cleared '+l.lastCleared.replace(/ (\d\d)(\d\d)(\d\d)$/,' $1:$2')+' ('+l.lastFiles+' log'+(l.lastFiles===1?'':'s')+').':'')+'</span>'
-    +'<button class="btn" id="clear-logs"'+(l.files?'':' disabled')+' onclick="clearLogs()">'+(CLEAR_ARMED?'Press again to clear':'Clear old logs')+'</button>'
-    +(l.lastCleared?'<button class="btn" onclick="act(&quot;logs:restore&quot;)">Put them back</button>':'')
-    +'<button class="btn" onclick="act(&quot;open:clearedlogs&quot;)">Open folder</button></div>';
+  if(!l){ host.innerHTML='<span class="muted">'+esc(t('ui.notInSaved'))+'</span>'; return; }
+  host.innerHTML='<b>'+esc(t('ui.logs.title'))+'</b><br><span class="muted" style="font-size:13px">'+esc(t('ui.logs.help')+(r.mods&&r.mods.mo2Instance?SP()+t('ui.logs.mo2'):''))+'</span>'
+    +'<div class="saved"><span>'+esc((l.files?tp('ui.logs.inGame',l.files,{size:fmtBytes(l.bytes)}):t('ui.logs.noneInGame'))
+    +(l.lastCleared?SP()+tp('ui.logs.lastCleared',l.lastFiles,{when:l.lastCleared.replace(/ (\d\d)(\d\d)(\d\d)$/,' $1:$2')}):''))+'</span>'
+    +'<button class="btn" id="clear-logs"'+(l.files?'':' disabled')+' onclick="clearLogs()">'+esc(CLEAR_ARMED?t('ui.logs.again'):t('ui.logs.clear'))+'</button>'
+    +(l.lastCleared?'<button class="btn" onclick="act(&quot;logs:restore&quot;)">'+esc(t('ui.logs.putBack'))+'</button>':'')
+    +'<button class="btn" onclick="act(&quot;open:clearedlogs&quot;)">'+esc(t('ui.openFolder'))+'</button></div>';
 }
 function clearLogs(){
-  if(!hasHost()){ toast('Available in the app.',true); return; }
+  if(!hasHost()){ toast(t('ui.appOnly'),true); return; }
   if(!CLEAR_ARMED){ CLEAR_ARMED=true; renderGameLogs(REPORT); setTimeout(function(){ if(CLEAR_ARMED){ CLEAR_ARMED=false; if(REPORT) renderGameLogs(REPORT); } },6000); return; }
   CLEAR_ARMED=false; act('logs:clear');
 }
-function setArchive(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'archive',enabled:!!on}); else toast('Available in the app.',true); }
+function setArchive(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'archive',enabled:!!on}); else toast(t('ui.appOnly'),true); }
 
 /* ---------- video memory recorded while the game runs ----------
    The engine writes how full the card was only into crash reports, so a session that did not crash leaves no number.
    While the window is open the app samples the Windows GPU counters every few seconds (VramMonitor.cs); each session
    gets its curve here, the live strip shows the reading while the game runs, and Settings has the switch. */
-function vlogLine(v){ return 'peak '+Math.round(v.peak*100)+'% ('+v.peakMB+' of '+v.totalMB+' MB), median '+Math.round(v.median*100)+'%'+(v.minutesAbove90>=1?', '+Math.round(v.minutesAbove90)+' min above 90%':'')+', over '+fmtDur(v.minutes); }
+function vlogLine(v){ return (v.minutesAbove90>=1?t('ui.vlog.lineAbove',{peak:Math.round(v.peak*100),mb:v.peakMB,total:v.totalMB,median:Math.round(v.median*100),min:Math.round(v.minutesAbove90),dur:fmtDur(v.minutes)}):t('ui.vlog.line',{peak:Math.round(v.peak*100),mb:v.peakMB,total:v.totalMB,median:Math.round(v.median*100),dur:fmtDur(v.minutes)})); }
 function sparkline(pts,w,h){
   pts=(pts||[]).slice(); if(pts.length<2) pts=[pts[0]||0,pts[0]||0];
   var n=pts.length, maxY=Math.max(100,Math.max.apply(null,pts));
@@ -1198,35 +1332,33 @@ function renderVramLog(s){
   var v=s&&s.vramLog; if(!v||!v.totalMB||!v.samples){ host.innerHTML=''; return; }
   var peak=Math.round(v.peak*100), med=Math.round(v.median*100);
   var cls=v.peak>=0.95?'full':v.peak>=0.9?'warn':'';
-  var note = v.peak>=1 ? 'It went past what the card holds; the driver spilled into system memory.'
-           : v.peak>=0.95 ? 'It touched the ceiling, which is where texture and mesh allocations start failing.'
-           : v.peak>=0.9 ? 'It came within reach of the ceiling'+(v.minutesAbove90>=1?' for '+Math.round(v.minutesAbove90)+' min':'')+'.'
-           : v.peak>=0.8 ? 'High, with room left the whole time.'
-           : 'Comfortable all session. Video memory was not the constraint.';
-  host.innerHTML='<div class="vram vlog '+cls+'"><div class="lbl"><span>Video memory while you played'+(v.live?' · still recording':'')+'</span><b>peak '+v.peakMB+' / '+v.totalMB+' MB · '+peak+'%</b></div>'
+  var note = v.peak>=1 ? t('ui.vlog.over')
+           : v.peak>=0.95 ? t('ui.vlog.ceiling')
+           : v.peak>=0.9 ? (v.minutesAbove90>=1?t('ui.vlog.closeFor',{min:Math.round(v.minutesAbove90)}):t('ui.vlog.close'))
+           : v.peak>=0.8 ? t('ui.vlog.high')
+           : t('ui.vlog.ok');
+  host.innerHTML='<div class="vram vlog '+cls+'"><div class="lbl"><span>'+esc(t('ui.vlog.title')+(v.live?' · '+t('ui.vlog.recording'):''))+'</span><b>'+esc(t('ui.vlog.peak',{mb:v.peakMB,total:v.totalMB,pct:peak}))+'</b></div>'
     +sparkline(v.points,300,48)
-    +'<div class="note">'+esc(note)+' Median '+med+'%, '+v.samples+' readings over '+esc(fmtDur(v.minutes))+(v.gamePeakMB?'; the game itself peaked at '+v.gamePeakMB+' MB':'')+'. The dotted line is 90%.'
-    +(hasHost()&&!window.EXPORTED?' <button class="btn" style="margin-left:6px" onclick="act(&quot;open:vramlog:'+esc(s.id)+'&quot;)">Show file</button>':'')+'</div></div>';
+    +'<div class="note">'+esc(note+SP()+t('ui.vlog.summary',{median:med,n:v.samples,dur:fmtDur(v.minutes)})+(v.gamePeakMB?SP()+t('ui.vlog.game',{mb:v.gamePeakMB}):'')+SP()+t('ui.vlog.dotted'))
+    +(hasHost()&&!window.EXPORTED?' <button class="btn" style="margin-left:6px" onclick="act(&quot;open:vramlog:'+esc(s.id)+'&quot;)">'+esc(t('ui.showFile'))+'</button>':'')+'</div></div>';
 }
 function renderVramLive(l){
   var host=document.getElementById('vramlive'); if(!host) return;
   if(!l||(!l.recording&&!l.problem)){ host.innerHTML=''; return; }
-  if(!l.recording){ host.innerHTML='<div class="vramlive off"><span>Video memory is not being recorded: '+esc(l.problem)+'</span></div>'; return; }
+  if(!l.recording){ host.innerHTML='<div class="vramlive off"><span>'+esc(t('ui.live.off',{why:l.problem}))+'</span></div>'; return; }
   var pct=l.totalMB?Math.round(l.cardMB/l.totalMB*100):0, peak=l.totalMB?Math.round(l.peakMB/l.totalMB*100):0;
   var cls=pct>=95?'full':pct>=90?'warn':'';
-  host.innerHTML='<div class="vramlive '+cls+'"><span class="dot"></span><b>Recording video memory</b><span>the game has been running '+esc(fmtDur(l.minutes))+'</span><span class="mono">'+l.cardMB+' / '+l.totalMB+' MB · '+pct+'% · peak '+peak+'%'+(l.gameMB?' · the game '+l.gameMB+' MB':'')+'</span></div>';
+  host.innerHTML='<div class="vramlive '+cls+'"><span class="dot"></span><b>'+esc(t('ui.live.recording'))+'</b><span>'+esc(t('ui.live.running',{dur:fmtDur(l.minutes)}))+'</span><span class="mono">'+l.cardMB+' / '+l.totalMB+' MB · '+pct+'% · '+esc(t('ui.live.peak',{pct:peak}))+(l.gameMB?' · '+esc(t('ui.live.game',{mb:l.gameMB})):'')+'</span></div>';
 }
 function renderVramLogCard(r){
   var host=document.getElementById('vramlog-card'); if(!host) return; var v=r.vramLogs;
-  if(!v){ host.innerHTML='<span class="muted">Not available in a saved report.</span>'; return; }
+  if(!v){ host.innerHTML='<span class="muted">'+esc(t('ui.notInSaved'))+'</span>'; return; }
   host.innerHTML='<label class="switch"><input type="checkbox"'+(v.enabled?' checked':'')+' onchange="setVramLog(this.checked)">'
-    +'<span><b>Record video memory while the game runs</b><br><span class="muted" style="font-size:13px">The game only writes how full the card was into crash reports, so a session that did not crash leaves no number at all. '
-    +'While this window is open, Crash Doctor reads the same Windows counters Task Manager uses (NVIDIA, AMD and Intel alike) every 5 seconds and keeps one small file per launch, then shows each session’s peak, median and time above 90%. '
-    +'Nothing runs after the window is closed, and the game is never touched. When the game closes, the scan runs again by itself.</span></span></label>'
-    +'<div class="saved"><span>'+(v.recordings?v.recordings+' session'+(v.recordings===1?'':'s')+' recorded, '+fmtBytes(v.bytes)+'.':'Nothing recorded yet — leave this window open while you play.')+'</span>'
-    +'<button class="btn" onclick="act(&quot;open:vramlogs&quot;)">Open folder</button></div>';
+    +'<span><b>'+esc(t('ui.vcard.title'))+'</b><br><span class="muted" style="font-size:13px">'+esc(t('ui.vcard.help'))+'</span></span></label>'
+    +'<div class="saved"><span>'+esc(v.recordings?tp('ui.vcard.recorded',v.recordings,{size:fmtBytes(v.bytes)}):t('ui.vcard.none'))+'</span>'
+    +'<button class="btn" onclick="act(&quot;open:vramlogs&quot;)">'+esc(t('ui.openFolder'))+'</button></div>';
 }
-function setVramLog(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'vramlog',enabled:!!on}); else toast('Available in the app.',true); }
+function setVramLog(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'vramlog',enabled:!!on}); else toast(t('ui.appOnly'),true); }
 
 /* ---------- the opt-in update check (Updates.cs) ----------
    Off until switched on: "nothing leaves your PC" is a promise the Nexus page makes. When on, it fetches one small
@@ -1234,33 +1366,32 @@ function setVramLog(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'v
 function renderUpdate(r){
   var host=document.getElementById('update'); if(!host) return; var u=r&&r.update;
   if(window.EXPORTED||!u||!u.newer){ host.innerHTML=''; return; }
-  host.innerHTML='<div class="vramlive"><b>Crash Doctor '+esc(u.latest)+' is out</b><span>You have '+esc(u.current)+'.'+(u.notes?' '+esc(u.notes):'')+'</span>'
-    +(u.url?'<a class="btn primary" href="'+esc(u.url)+'" target="_blank" rel="noopener">Open the download page</a>':'')+'</div>';
+  host.innerHTML='<div class="vramlive"><b>'+esc(t('ui.upd.out',{v:u.latest}))+'</b><span>'+esc(t('ui.upd.have',{v:u.current}))+(u.notes?' '+esc(u.notes):'')+'</span>'
+    +(u.url?'<a class="btn primary" href="'+esc(u.url)+'" target="_blank" rel="noopener">'+esc(t('ui.upd.open'))+'</a>':'')+'</div>';
 }
 function renderUpdateCard(r){
   var host=document.getElementById('update-card'); if(!host) return; var u=r.update;
-  if(!u||window.EXPORTED){ host.innerHTML='<span class="muted">Not available in a saved report.</span>'; return; }
-  var line = !u.enabled ? 'Off. Crash Doctor sends nothing anywhere while this is off.'
-    : !u.configured ? 'On, but this build has no address to ask yet, so it cannot check.'
-    : u.problem ? 'Last try'+(u.checked?' '+fmtDate(u.checked):'')+': '+u.problem
-    : u.newer ? 'Version '+u.latest+' is available; you have '+u.current+'.'
-    : u.checked ? 'Checked '+fmtDate(u.checked)+': '+u.current+' is the newest version.'
-    : 'Not checked yet.';
+  if(!u||window.EXPORTED){ host.innerHTML='<span class="muted">'+esc(t('ui.notInSaved'))+'</span>'; return; }
+  var line = !u.enabled ? t('ui.upd.off')
+    : !u.configured ? t('ui.upd.noAddress')
+    : u.problem ? t('ui.upd.lastTry',{when:u.checked?fmtDate(u.checked):'',problem:u.problem})
+    : u.newer ? t('ui.upd.available',{v:u.latest,current:u.current})
+    : u.checked ? t('ui.upd.newest',{when:fmtDate(u.checked),v:u.current})
+    : t('ui.upd.notYet');
   host.innerHTML='<label class="switch"><input type="checkbox"'+(u.enabled?' checked':'')+' onchange="setUpdateCheck(this.checked)">'
-    +'<span><b>Tell me when a newer version is out</b><br><span class="muted" style="font-size:13px">Off by default, because everything else in Crash Doctor stays on your PC. '
-    +'When it is on, the app fetches one small version file at most once a day and compares it with this build ('+esc(u.current)+'). Nothing about you or your install is sent, and it never downloads or installs anything itself: a newer version is a line at the top of the window and a button that opens the download page.</span></span></label>'
-    +'<div class="saved"><span>'+esc(line)+'</span>'+(u.enabled&&u.configured?'<button class="btn" onclick="checkUpdate()">Check now</button>':'')
-    +(u.newer&&u.url?'<a class="btn primary" href="'+esc(u.url)+'" target="_blank" rel="noopener">Open the download page</a>':'')+'</div>';
+    +'<span><b>'+esc(t('ui.upd.title'))+'</b><br><span class="muted" style="font-size:13px">'+esc(t('ui.upd.help',{v:u.current}))+'</span></span></label>'
+    +'<div class="saved"><span>'+esc(line)+'</span>'+(u.enabled&&u.configured?'<button class="btn" onclick="checkUpdate()">'+esc(t('ui.upd.check'))+'</button>':'')
+    +(u.newer&&u.url?'<a class="btn primary" href="'+esc(u.url)+'" target="_blank" rel="noopener">'+esc(t('ui.upd.open'))+'</a>':'')+'</div>';
 }
-function setUpdateCheck(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'update',enabled:!!on}); else toast('Available in the app.',true); }
+function setUpdateCheck(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'update',enabled:!!on}); else toast(t('ui.appOnly'),true); }
 // A game started by "play with this profile" (Launcher.cs): a line at the top while it is on, so it is obvious the
 // settings in the game are not the usual ones and will go back when it closes.
 function renderPlay(p){
   var host=document.getElementById('play'); if(!host) return;
   if(!p){ host.innerHTML=''; return; }
-  host.innerHTML='<div class="vramlive"><span class="dot"></span><b>Playing with “'+esc(p.profile)+'”</b><span>'+(p.running?'The game is running.':'Waiting for the game to start.')+' '+(p.restore?'Your previous settings go back when it closes.':'The game already had these settings, so nothing changes afterwards.')+'</span></div>';
+  host.innerHTML='<div class="vramlive"><span class="dot"></span><b>'+esc(t('ui.play.with',{name:p.profile}))+'</b><span>'+esc((p.running?t('ui.play.running'):t('ui.play.waiting'))+' '+(p.restore?t('ui.play.restore'):t('ui.play.noRestore')))+'</span></div>';
 }
-function checkUpdate(){ if(hasHost()){ toast('Checking…',false); window.chrome.webview.postMessage({cmd:'update',check:true}); } else toast('Available in the app.',true); }
+function checkUpdate(){ if(hasHost()){ toast(t('ui.upd.checking'),false); window.chrome.webview.postMessage({cmd:'update',check:true}); } else toast(t('ui.appOnly'),true); }
 
 /* ---------- crashes you have not seen yet ----------
    A crash that happens while nobody is watching the app is otherwise invisible until someone thinks to look - which
@@ -1272,53 +1403,69 @@ function renderNewCrashes(r){
   if(!ids.length){ host.innerHTML=''; return; }
   var list=ids.map(function(id){ return r.sessions.filter(function(x){return x.id===id;})[0]; }).filter(Boolean);
   var n=list.length;
-  host.innerHTML='<div class="newcrash" role="alert"><div class="hd"><b>'+(n===1?'The game crashed since you last looked':n+' crashes since you last looked')+'</b>'
-    +'<button class="btn" onclick="markSeen()">Dismiss</button></div>'
+  host.innerHTML='<div class="newcrash" role="alert"><div class="hd"><b>'+esc(n===1?t('ui.newc.one'):tp('ui.newc.many',n))+'</b>'
+    +'<button class="btn" onclick="markSeen()">'+esc(t('ui.newc.dismiss'))+'</button></div>'
     +list.slice(0,3).map(function(x){
-      return '<div class="it"><span class="when">'+esc(fmtDate(x.start))+' \u00b7 '+esc(fmtDur(x.minutes,x.durationKnown))+'</span>'
+      return '<div class="it"><span class="when">'+esc(fmtDate(x.start))+' · '+esc(fmtDur(x.minutes,x.durationKnown))+'</span>'
         +'<span class="what">'+esc(x.verdict)+'</span>'
-        +'<button class="btn primary" onclick="openNewCrash(&quot;'+esc(x.id)+'&quot;)">See it</button></div>';
+        +'<button class="btn primary" onclick="openNewCrash(&quot;'+esc(x.id)+'&quot;)">'+esc(t('ui.newc.see'))+'</button></div>';
     }).join('')
-    +(n>3?'<div class="it"><span class="when"></span><span class="what muted">and '+(n-3)+' more \u2014 they are marked new in Sessions.</span><button class="btn" onclick="go(&quot;sessions&quot;)">Sessions</button></div>':'')
+    +(n>3?'<div class="it"><span class="when"></span><span class="what muted">'+esc(tp('ui.newc.more',n-3))+'</span><button class="btn" onclick="go(&quot;sessions&quot;)">'+esc(t('ui.nav.sessions'))+'</button></div>':'')
     +'</div>';
 }
 function markSeen(){ if(REPORT) REPORT.newCrashes=[]; if(hasHost()) window.chrome.webview.postMessage({cmd:'seen'}); renderNewCrashes(REPORT||{}); if(REPORT) renderSessions(REPORT); }
 function openNewCrash(id){ markSeen(); showSession(id); }
 
 function renderSettings(r){
-  renderArchive(r); renderGameLogs(r); renderVramLogCard(r); renderUpdateCard(r);
+  renderLangCard(); renderArchive(r); renderGameLogs(r); renderVramLogCard(r); renderUpdateCard(r);
   renderProfiles(r); renderGraphics(r);
   var notes=document.getElementById('settings-notes'); notes.innerHTML='';
   (r.settingsNotes||[]).forEach(function(n){ notes.innerHTML+='<div class="card" style="margin-bottom:10px;border-left:4px solid var(--'+(n.level==='high'?'signal':n.level==='medium'?'amber':'mint')+')"><b>'+esc(n.title)+'</b><div class="muted" style="margin-top:4px">'+esc(n.detail)+'</div></div>'; });
 }
 
-function renderReport(r){
-  // the privacy line travels with the pasted text too, so a reader knows the mod list may be missing by choice
-
+/* ---------- the copied summary ----------
+   Built in the window's language, or in English when "Copy in English" is ticked: these are pasted into Nexus
+   comments and bug tabs, where the mod authors reading them mostly read English. The English text comes from the
+   engine (or, in a saved report, from the English copy that travels inside it), not from a second translation. */
+function summaryText(r){
   var s=r.latest; var lines=[];
   // the version goes on the first line: this text is what people paste into a help thread, and the first question
   // anyone reading it has to be able to answer is which build produced it
-  lines.push('Crash Doctor '+appVer(r.appVersion)+' report — '+fmtDate(r.generatedAt));
-  lines.push(r.game.name+' '+r.game.version+' ('+r.game.store+') · '+r.system.gpu+' '+r.system.vramGB+' GB · driver '+r.system.driver+' · '+r.system.os);
-  lines.push(modsLine(r)+' · frameworks: '+(r.mods.frameworks||[]).join(', '));
+  lines.push(t('ui.sum.head',{v:appVer(r.appVersion),when:fmtDate(r.generatedAt)}));
+  lines.push(r.game.name+' '+r.game.version+' ('+r.game.store+') · '+r.system.gpu+' '+r.system.vramGB+' GB · '+t('ui.sum.driver',{v:r.system.driver})+' · '+r.system.os);
+  lines.push(modsLine(r)+' · '+t('ui.sum.frameworks',{list:(r.mods.frameworks||[]).join(', ')}));
   if(r.privacy) lines.push(r.privacy);
   lines.push('');
-  if(s){ lines.push('LATEST CRASH  '+fmtDate(s.start)+' · '+fmtDur(s.minutes,s.durationKnown)+(s.district?' · '+s.district:'')); lines.push('  '+s.verdict+' (confidence '+['low','fair','good','high'][s.confidence]+')');
-    if(s.vramUsedMB&&s.vramTotalMB) lines.push('  VIDEO MEMORY  '+s.vramUsedMB+' / '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)'+(s.exception?'   '+s.exception:''));
-    if(s.vramLog&&s.vramLog.totalMB) lines.push('  VIDEO MEMORY RECORDED  '+vlogLine(s.vramLog));
-    if(s.changesNote){ lines.push('  CHANGED SINCE LAST CLEAN SESSION  '+s.changesNote); (s.changes||[]).forEach(function(c){ lines.push('    '+fmtDate(c.at)+'  '+c.text); }); }
+  if(s){ lines.push(t('ui.sum.latest')+'  '+fmtDate(s.start)+' · '+fmtDur(s.minutes,s.durationKnown)+(s.district?' · '+s.district:'')); lines.push('  '+s.verdict+' ('+t('ui.sum.confidence',{c:confLabel(s.confidence)})+')');
+    if(s.symbol) lines.push('  '+t('ui.sum.function')+'  '+s.symbol);
+    if(s.vramUsedMB&&s.vramTotalMB) lines.push('  '+t('ui.sum.vram')+'  '+s.vramUsedMB+' / '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)'+(s.exception?'   '+s.exception:''));
+    if(s.vramLog&&s.vramLog.totalMB) lines.push('  '+t('ui.sum.vramRecorded')+'  '+vlogLine(s.vramLog));
+    if(s.changesNote){ lines.push('  '+t('ui.sum.changed')+'  '+s.changesNote); (s.changes||[]).forEach(function(c){ lines.push('    '+fmtDate(c.at)+'  '+c.text); }); }
     s.evidence.forEach(function(e){ lines.push('  T-'+e.tMinus+'s  ['+e.source+'] '+e.text); });
-    s.suspects.forEach(function(x){ lines.push('  suspect: '+x.mod+' — '+x.why); }); lines.push(''); }
-  lines.push('SESSIONS (newest first)');
-  r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).slice(0,12).forEach(function(x){ lines.push('  '+fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown).padEnd(14)+' '+x.endKind.padEnd(8)+' '+x.verdict+(x.vramLog&&x.vramLog.totalMB?'  [VRAM peak '+Math.round(x.vramLog.peak*100)+'%, median '+Math.round(x.vramLog.median*100)+'%]':'')); });
-  lines.push(''); lines.push('HEALTH');
+    s.suspects.forEach(function(x){ lines.push('  '+t('ui.sum.suspect',{mod:x.mod,why:x.why})); }); lines.push(''); }
+  lines.push(t('ui.sum.sessions'));
+  r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).slice(0,12).forEach(function(x){ lines.push('  '+fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown).padEnd(14)+' '+x.endKind.padEnd(8)+' '+x.verdict+(x.vramLog&&x.vramLog.totalMB?'  ['+t('ui.sum.vramPeak',{peak:Math.round(x.vramLog.peak*100),median:Math.round(x.vramLog.median*100)})+']':'')); });
+  lines.push(''); lines.push(t('ui.sum.health'));
   r.health.forEach(function(h){ lines.push('  ['+h.severity+'] '+h.title+(h.mod?' ('+h.mod+')':'')); });
-  lines.push(''); lines.push('SETTINGS'); Object.keys(r.settings).forEach(function(k){ lines.push('  '+k+': '+r.settings[k]); });
-  document.getElementById('report-pre').textContent=lines.join('\n');
+  lines.push(''); lines.push(t('ui.sum.settings')); Object.keys(r.settings).forEach(function(k){ lines.push('  '+k+': '+r.settings[k]); });
+  return lines.join('\n');
 }
-function copyReport(){ copyText(document.getElementById('report-pre').textContent,'Copied.'); }
-function copyForAi(){ copyText(buildAiPrompt(REPORT),'Copied — paste it into Claude, ChatGPT or whatever you use.'); }
-function copyText(t,ok){ var m=document.getElementById('report-msg'); if(navigator.clipboard){ navigator.clipboard.writeText(t).then(function(){ m.textContent=ok; setTimeout(function(){m.textContent='';},4000); },function(){ m.textContent='Could not reach the clipboard. Select the text below and copy it.'; }); } else { m.textContent='Select the text and copy it.'; } }
+function wantEnglish(){ var c=document.getElementById('copy-en'); return LANG.code!=='en'&&c&&c.checked; }
+// hands fn the report and words to use for copying: the window's own, or English
+function withCopyLanguage(fn){
+  if(!wantEnglish()){ fn(REPORT); return; }
+  if(window.EXPORTED){ if(window.EXPORTED_EN) inLang(window.EXPORTED_LANG_EN,'en',function(){ fn(window.EXPORTED_EN); }); else fn(REPORT); return; }
+  if(!hasHost()){ fn(REPORT); return; }
+  ENGLISH_WAIT=function(rep,dict){ inLang(dict,'en',function(){ fn(rep); }); };
+  window.chrome.webview.postMessage({cmd:'english'});
+}
+function renderReport(r){
+  if(!r) return;
+  withCopyLanguage(function(rep){ document.getElementById('report-pre').textContent=summaryText(rep); });
+}
+function copyReport(){ copyText(document.getElementById('report-pre').textContent,t('ui.copied')); }
+function copyForAi(){ withCopyLanguage(function(rep){ var txt=buildAiPrompt(rep); copyText(txt,t('ui.copiedAi')); }); }
+function copyText(txt,ok){ var m=document.getElementById('report-msg'); if(navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ m.textContent=ok; setTimeout(function(){m.textContent='';},4000); },function(){ m.textContent=t('ui.noClipboard'); }); } else { m.textContent=t('ui.selectCopy'); } }
 
 // Hand the evidence to an assistant the user already has.
 //
@@ -1333,98 +1480,96 @@ function copyText(t,ok){ var m=document.getElementById('report-msg'); if(navigat
 // ruled out and why will not spend three replies suggesting it.
 function buildAiPrompt(r){
   if(!r) return '';
-  var L=[], s=r.latest;
-  function add(x){ L.push(x); }
-  function head(x){ L.push(''); L.push(x); }
+  var Ls=[], s=r.latest;
+  function add(x){ Ls.push(x); }
+  function head(x){ Ls.push(''); Ls.push(x); }
 
-  add('You are helping me work out why my heavily modded Cyberpunk 2077 keeps crashing.');
+  add(t('ui.ai.intro1'));
   add('');
-  add('Everything below was measured by a tool called Crash Doctor, which reads the crash dumps, the mod loaders’');
-  add('logs and the Windows event log on this PC. It is evidence rather than my recollection, so the numbers and');
-  add('timings are accurate and you can reason from them directly.');
+  add(t('ui.ai.intro2'));
 
-  head('## This machine');
-  add('Game: '+r.game.name+' '+(r.game.version||'?')+' ('+r.game.store+'), build '+(r.game.fileVersion||'?'));
-  add('GPU: '+r.system.gpu+', '+r.system.vramGB+' GB, driver '+r.system.driver);
-  add('RAM: '+r.system.ramGB+' GB. OS: '+r.system.os);
-  add('Mods: '+modsLine(r));
-  if((r.mods.frameworks||[]).length) add('Frameworks: '+r.mods.frameworks.join(', '));
+  head('## '+t('ui.ai.machine'));
+  add(t('ui.ai.game',{game:r.game.name+' '+(r.game.version||'?'),store:r.game.store,build:r.game.fileVersion||'?'}));
+  add(t('ui.ai.gpu',{gpu:r.system.gpu,gb:r.system.vramGB,driver:r.system.driver}));
+  add(t('ui.ai.ram',{gb:r.system.ramGB,os:r.system.os}));
+  add(t('ui.ai.mods',{line:modsLine(r)}));
+  if((r.mods.frameworks||[]).length) add(t('ui.ai.frameworks',{list:r.mods.frameworks.join(', ')}));
+  if(r.game.previousVersion) add(t('ui.ai.updated',{from:r.game.previousVersion,to:r.game.version,when:fmtDate(r.game.updatedAt)}));
 
   if(s){
-    head('## The crash I am asking about');
-    add('When: '+fmtDate(s.start)+', ran '+fmtDur(s.minutes,s.durationKnown)+(s.district?', in '+s.district:'')+(s.quest?', tracked quest '+s.quest:''));
-    add('What the tool concluded: '+s.verdict);
-    add('Its confidence: '+['low','fair','good','high'][s.confidence]+' out of high');
-    if(s.fault) add('Faulting instruction: '+s.fault+(s.build?' (game build '+s.build+')':''));
-    if(s.exception) add('Exception: '+s.exception);
-    if(s.vramUsedMB&&s.vramTotalMB) add('Video memory in use at the crash: '+s.vramUsedMB+' of '+s.vramTotalMB+' MB ('+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%)');
-    if(s.vramLog&&s.vramLog.totalMB) add('Video memory recorded by the tool through the whole session: '+vlogLine(s.vramLog));
-    if(s.position) add('Player position: '+s.position);
-    if(s.changesNote){ head('## What changed between the last session that ended normally and this crash'); add(s.changesNote); (s.changes||[]).forEach(function(c){ add('- '+fmtDate(c.at)+': '+c.text); }); add('Treat these as the first things to test, not as culprits.'); }
+    head('## '+t('ui.ai.crash'));
+    add(t('ui.ai.when',{when:fmtDate(s.start),dur:fmtDur(s.minutes,s.durationKnown)})+(s.district?', '+s.district:'')+(s.quest?', '+s.quest:''));
+    add(t('ui.ai.concluded',{verdict:s.verdict}));
+    add(t('ui.ai.confidence',{c:confLabel(s.confidence)}));
+    if(s.fault) add(t('ui.ai.fault',{fault:s.fault+(s.build?' (build '+s.build+')':'')}));
+    if(s.symbol) add(t('ui.ai.function',{fn:s.symbol}));
+    if(s.exception) add(t('ui.ai.exception',{ex:s.exception}));
+    if(s.vramUsedMB&&s.vramTotalMB) add(t('ui.ai.vram',{used:s.vramUsedMB,total:s.vramTotalMB,pct:Math.round(s.vramUsedMB/s.vramTotalMB*100)}));
+    if(s.vramLog&&s.vramLog.totalMB) add(t('ui.ai.vramRecorded',{line:vlogLine(s.vramLog)}));
+    if(s.position) add(t('ui.ai.position',{pos:s.position}));
+    if(s.changesNote){ head('## '+t('ui.ai.changed')); add(s.changesNote); (s.changes||[]).forEach(function(c){ add('- '+fmtDate(c.at)+': '+c.text); }); add(t('ui.ai.changedNote')); }
 
     if((s.evidence||[]).length){
-      head('## What the logs show in the seconds before it');
+      head('## '+t('ui.ai.evidence'));
       s.evidence.forEach(function(e){ add('T-'+e.tMinus+'s  ['+e.source+'] '+e.text); });
     }
     if((s.ruledOut||[]).length){
-      head('## Already ruled out — please do not suggest these');
-      add('Each of these was checked against sessions that ended normally, and does the same thing there:');
+      head('## '+t('ui.ai.ruledOut'));
+      add(t('ui.ai.ruledOutNote'));
       s.ruledOut.forEach(function(x){ add('- '+x.mod+': '+x.why); });
     }
     if((s.suspects||[]).length){
-      head('## What the tool currently suspects');
-      s.suspects.forEach(function(x){ add('- '+x.mod+' ('+x.level+'): '+x.why); });
+      head('## '+t('ui.ai.suspects'));
+      s.suspects.forEach(function(x){ add('- '+x.mod+' ('+levelLabel(x.level)+'): '+x.why); });
     }
   }
 
   if((r.crashGroups||[]).length){
-    head('## Distinct faults across all my crashes');
-    add('Crashes at the same instruction are the same bug. These are the groups:');
+    head('## '+t('ui.ai.groups'));
+    add(t('ui.ai.groupsNote'));
     r.crashGroups.slice(0,8).forEach(function(g){
-      add('- '+g.fault+' ×'+g.count+', '+fmtDate(g.firstSeen)+' to '+fmtDate(g.lastSeen)+(g.exception?', '+g.exception:'')+(g.current?' — still happening since my last clean session':' — not seen since my last clean session'));
+      add('- '+g.fault+(g.symbol?' ('+g.symbol+')':'')+' ×'+g.count+', '+fmtDate(g.firstSeen)+' – '+fmtDate(g.lastSeen)+(g.exception?', '+g.exception:'')+' — '+(g.current?t('ui.ai.still'):t('ui.ai.notSince')));
     });
   }
 
   if((r.knowledge||[]).length){
-    head('## What those log lines are known to mean');
-    add('From the tool’s knowledge base, for context — not a diagnosis of my install:');
-    r.knowledge.forEach(function(h){ add('- '+h.title+' ('+h.confidence+'): '+h.says); });
+    head('## '+t('ui.ai.kb'));
+    add(t('ui.ai.kbNote'));
+    r.knowledge.forEach(function(h){ add('- '+h.title+' ('+t('ui.kb.'+h.confidence,null,h.confidence)+'): '+h.says); });
   }
 
   var flagged=(r.modsList||[]).filter(function(m){return (m.flags||[]).length;});
   if(flagged.length){
-    head('## Mods the tool has flagged');
+    head('## '+t('ui.ai.flagged'));
     flagged.slice(0,15).forEach(function(m){ add('- '+m.name+' '+(m.version||'')+' — '+m.flags.map(function(f){return f.label;}).join(', ')); });
-    add('(There are '+(r.modsList||[]).length+(modsCounted(r)?' mod files and folders':' mods')+' installed in total. Ask and I can paste the whole list.)');
+    add(tp(modsCounted(r)?'ui.ai.totalPieces':'ui.ai.totalMods',(r.modsList||[]).length));
   }
 
   var bad=(r.health||[]).filter(function(h){return h.severity==='high'||h.severity==='medium';});
   if(bad.length){
-    head('## Standing problems found before any crash');
-    bad.slice(0,12).forEach(function(h){ add('- ['+h.severity+'] '+h.title+(h.mod?' ('+h.mod+')':'')); });
+    head('## '+t('ui.ai.standing'));
+    bad.slice(0,12).forEach(function(h){ add('- ['+sevLabel(h.severity)+'] '+h.title+(h.mod?' ('+h.mod+')':'')); });
   }
 
-  head('## How each of my recent sessions ended');
+  head('## '+t('ui.ai.sessions'));
   r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).slice(0,14)
-    .forEach(function(x){ add(fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown)+'  '+x.endKind); });
+    .forEach(function(x){ add(fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown)+'  '+kindLabel(x.endKind)); });
 
-  head('## How I would like you to answer');
-  add('- Do not invent mod names, versions or file paths. If you name a mod, it has to be one that appears above.');
-  add('- If the evidence does not support a conclusion, say so plainly. "I do not know, here is what would tell us"');
-  add('  is a useful answer; a confident guess is not.');
-  add('- Correlation is not cause. If something appears in my crashes but also in the sessions that ended normally,');
-  add('  it has been ruled out above and is noise.');
-  add('- Prefer one concrete next test over a list of possibilities, and tell me what result would confirm it and');
-  add('  what result would rule it out.');
-  add('- I can disable mods, change settings and reinstall things. I cannot recompile anything.');
+  head('## '+t('ui.ai.how'));
+  add('- '+t('ui.ai.rule1'));
+  add('- '+t('ui.ai.rule2'));
+  add('- '+t('ui.ai.rule3'));
+  add('- '+t('ui.ai.rule4'));
+  add('- '+t('ui.ai.rule5'));
+  if(LANG.code!=='en') add('- '+t('ui.ai.answerIn',{lang:(LANG.list.filter(function(l){return l.code===LANG.code;})[0]||{}).english||LANG.code}));
 
-  head('My question: based on this evidence, what is the most likely cause, and what single thing should I test next?');
+  head(t('ui.ai.question'));
 
   // Belt and braces: the Windows account name is often a real name, and nothing here needs it.
-  return L.join('\n').replace(/[A-Za-z]:[\\\/]Users[\\\/][^\\\/\s"']+/g,'%USERPROFILE%');
+  return Ls.join('\n').replace(/[A-Za-z]:[\\\/]Users[\\\/][^\\\/\s"']+/g,'%USERPROFILE%');
 }
-function exportReport(){ if(hasHost()) window.chrome.webview.postMessage({cmd:'export'}); else alert('Available in the app.'); }
-function act(id){ if(hasHost()) window.chrome.webview.postMessage({cmd:'action',id:id}); else alert('Action: '+id+' (available in the app)'); }
+function exportReport(){ if(hasHost()) window.chrome.webview.postMessage({cmd:'export'}); else alert(t('ui.appOnly')); }
+function act(id){ if(hasHost()) window.chrome.webview.postMessage({cmd:'action',id:id}); else alert(t('ui.appOnly')); }
 
 // "0.5.1+745f2d419ba7..." -> "0.5.1 (745f2d4)". The whole sha stays in the JSON for anyone who needs to check out
 // that commit; forty characters of it in a line someone pastes into a forum is just noise.
@@ -1432,40 +1577,33 @@ function appVer(v){ if(!v) return '?'; var p=String(v).split('+'); return p.leng
 
 
 /* ---------- themes ---------- */
-var THEMES=[
-  {id:'system',name:'Match Windows',desc:'Light or dark, following your Windows setting.'},
-  {id:'instrument',name:'Instrument',desc:'Calm, light, easy to read for long.'},
-  {id:'instrument-dark',name:'Instrument dark',desc:'The same layout on a dark ground.'},
-  {id:'terminal',name:'Terminal',desc:'The computers you jack into in Night City.'},
-  {id:'pause',name:'Neon',desc:'The default. Red and cyan on dark glass, corners cut away.'}
-];
+var THEMES=['system','instrument','instrument-dark','terminal','pause'];
 function themeChoice(){ try{ return localStorage.getItem('cd.theme')||'pause'; }catch(e){ return 'pause'; } }   // Neon by default (Gary, 14 Sep); a saved choice wins
 function resolveTheme(id){ return id==='system' ? (window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches?'instrument-dark':'instrument') : id; }
 function applyTheme(id){
   try{ localStorage.setItem('cd.theme',id); }catch(e){}
-  var t=resolveTheme(id); document.documentElement.setAttribute('data-theme',t);
+  var th=resolveTheme(id); document.documentElement.setAttribute('data-theme',th);
   // tell the window around the page, so its title bar and the frame behind the page match
   if(hasHost()){ var cs=getComputedStyle(document.documentElement);
-    window.chrome.webview.postMessage({cmd:'theme',dark:cs.colorScheme==='dark'||t!=='instrument',
+    window.chrome.webview.postMessage({cmd:'theme',dark:cs.colorScheme==='dark'||th!=='instrument',
       paper:cs.getPropertyValue('--paper').trim(),caption:cs.getPropertyValue('--bezel-bg').trim()}); }
   renderThemes();
 }
 function renderThemes(){
   var host=document.getElementById('themes'); if(!host) return; var cur=themeChoice();
   var mini='<i class="b"></i><i class="r"></i><i class="c"></i><i class="t1"></i><i class="t2"></i><i class="a1"></i><i class="a2"></i><i class="a3"></i>';
-  host.innerHTML=THEMES.map(function(t){
-    var pv = t.id==='system'
+  host.innerHTML=THEMES.map(function(id){
+    var pv = id==='system'
       ? '<span class="pv half"><span data-theme="instrument">'+mini+'</span><span data-theme="instrument-dark">'+mini+'</span></span>'
-      : '<span class="pv" data-theme="'+t.id+'">'+mini+'</span>';
-    return '<button class="theme'+(t.id===cur?' on':'')+'" onclick="applyTheme(&quot;'+t.id+'&quot;)" aria-pressed="'+(t.id===cur)+'">'+pv
-      +'<span class="nm">'+esc(t.name)+'</span><span class="ds">'+esc(t.desc)+'</span></button>';
+      : '<span class="pv" data-theme="'+id+'">'+mini+'</span>';
+    return '<button class="theme'+(id===cur?' on':'')+'" onclick="applyTheme(&quot;'+id+'&quot;)" aria-pressed="'+(id===cur)+'">'+pv
+      +'<span class="nm">'+esc(t('ui.theme.'+id+'.name'))+'</span><span class="ds">'+esc(t('ui.theme.'+id+'.desc'))+'</span></button>';
   }).join('');
 }
 // follow Windows live when "Match Windows" is chosen
 try{ matchMedia('(prefers-color-scheme: dark)').addEventListener('change',function(){ if(themeChoice()==='system') applyTheme('system'); }); }catch(e){}
 
-function go(v){ document.querySelectorAll('.view').forEach(function(x){x.classList.toggle('on',x.id==='v-'+v);}); document.querySelectorAll('.rail button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')===v);}); }
-
+function go(v){ closeLangMenu(); document.querySelectorAll('.view').forEach(function(x){x.classList.toggle('on',x.id==='v-'+v);}); document.querySelectorAll('.rail button').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-view')===v);}); }
 /* ---------- sample data (from a real machine, Sep 2026) for browser preview ---------- */
 var SAMPLE={
  generatedAt:'2026-09-06T13:30:00',
@@ -1517,13 +1655,22 @@ var SAMPLE={
  settingsNotes:[{level:'low',title:'This combination fits in 8 GB',detail:'Frame gen off with ray tracing at Medium ran for 3 h 52 min without a GPU fault.'}]
 };
 SAMPLE.latest=SAMPLE.sessions[6];
+// say which build made a saved report and what it does and does not contain, for whoever ends up reading it
+function exportFoot(r){ document.getElementById('foot').textContent=t('ui.exportFoot',{v:appVer(r.appVersion)})+' '+(r.privacy?r.privacy+' ':'')+t('ui.exportScan'); }
 document.addEventListener('DOMContentLoaded', function(){
   renderThemes(); if(hasHost()) applyTheme(themeChoice());
-  if(window.EXPORTED){ load(window.EXPORTED); document.getElementById('btn-scan').style.display='none';
-    // say which build made this and what it does and does not contain, for whoever ends up reading it
-    document.getElementById('foot').textContent='Crash Doctor '+appVer(window.EXPORTED.appVersion)+'. '
-      +(window.EXPORTED.privacy?window.EXPORTED.privacy+' ':'')+'Open Crash Doctor to scan again.'; }
-  else if(!hasHost()){ load(SAMPLE); }
+  if(window.EXPORTED){
+    // a saved report: its own language, and English when it was saved in another one
+    var code=window.EXPORTED_CODE||'en', list=[{code:code,name:(window.EXPORTED_LANG||{})['_lang.name']||code,english:(window.EXPORTED_LANG||{})['_lang.english']||code,rtl:(window.EXPORTED_LANG||{})['_lang.dir']==='rtl'}];
+    if(code!=='en'&&window.EXPORTED_EN) list.unshift({code:'en',name:'English',english:'English'});
+    useLang({code:code,dict:window.EXPORTED_LANG,en:window.EXPORTED_LANG_EN||window.EXPORTED_LANG,rtl:list[list.length-1].rtl,languages:list});
+    load(window.EXPORTED); document.getElementById('btn-scan').style.display='none'; exportFoot(window.EXPORTED);
+  }
+  else if(!hasHost()){
+    // browser preview with the sample data: the words come from lang\en.json when the page is served over http
+    var go2=function(){ applyStatic(); renderLangMenu(); load(SAMPLE); };
+    try{ fetch('lang/en.json').then(function(x){return x.json();}).then(function(d){ useLang({code:'en',dict:d,en:d}); go2(); },go2); }catch(e){ go2(); }
+  }
   else { window.chrome.webview.postMessage({cmd:'ready'}); }
 });
 </script>

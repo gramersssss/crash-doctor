@@ -14,47 +14,66 @@ public static class RequirementsCheck
         var red = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault();
         string? PluginVer(string name) => red?.PluginsLoaded.FirstOrDefault(p => p.name.Equals(name, StringComparison.OrdinalIgnoreCase)).version;
         List<string> NeededBy(string fw) => inv.Mods.Where(m => m.Status != "removed" && inv.Needs(m, fw)).Select(m => m.Name).ToList();
+        // after a game update, a framework whose own log refused the new build is out of date whatever its file says
+        FrameworkCheck? Update(string name) => d.FrameworkChecks.FirstOrDefault(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && f.State is "refused" or "errors" or "notStarted");
+        string AfterUpdate(string status, string name) => Update(name) != null && status == "ok" ? "outdated" : status;
+        string Detail(string detail, string name) => Update(name) is { } u ? L.Cat(detail, u.Text) : detail;
 
-        // RED4ext
-        var red4 = File.Exists(Path.Combine(g.Red4extPlugins, "..", "RED4ext.dll")) || File.Exists(Path.Combine(g.Bin, "winmm.dll")) || Directory.Exists(Path.Combine(g.GameDir, "red4ext"));
+        // RED4ext (all reads go through GamePaths, so a framework installed as a Mod Organizer 2 mod is found too)
+        var red4 = g.Exists(@"red4ext\RED4ext.dll") || g.Exists(@"bin\x64\winmm.dll") || g.DirExists("red4ext");
         var needRed = inv.Mods.Where(m => inv.Needs(m, "red4ext")).Select(m => m.Name).ToList();
-        list.Add(Req("red4ext", "RED4ext", red?.Red4extVersion, red4 ? "ok" : needRed.Count > 0 ? "missing" : "optional", red4 ? $"Loader for native plugins. {inv.Red4extPlugins} plugin folders installed." : "Loader for native plugins (ArchiveXL, TweakXL, Codeware and many more need it).", needRed, "https://www.nexusmods.com/cyberpunk2077/mods/2380"));
+        list.Add(Req("red4ext", "RED4ext", red?.Red4extVersion, AfterUpdate(red4 ? "ok" : needRed.Count > 0 ? "missing" : "optional", "RED4ext"),
+            Detail(red4 ? L.P("req.red4ext.ok", inv.Red4extPlugins) : L.T("req.red4ext.missing"), "RED4ext"), needRed, "https://www.nexusmods.com/cyberpunk2077/mods/2380"));
         // redscript
-        var rs = File.Exists(Path.Combine(g.GameDir, "engine", "tools", "scc.exe")) || File.Exists(Path.Combine(g.GameDir, "engine", "tools", "scc_lib.dll"));
+        var rs = g.Exists(@"engine\tools\scc.exe") || g.Exists(@"engine\tools\scc_lib.dll");
         var needRs = NeededBy("redscript");
-        list.Add(Req("redscript", "redscript", null, rs ? "ok" : needRs.Count > 0 ? "missing" : "optional", rs ? $"Compiles .reds script mods. {inv.RedsFolders} script folders installed." + (d.RedscriptErrors.Count > 0 ? $" {d.RedscriptErrors.Count} compile errors in the last run." : "") : "Compiles .reds script mods.", needRs, "https://www.nexusmods.com/cyberpunk2077/mods/1511"));
+        list.Add(Req("redscript", "redscript", null, AfterUpdate(rs ? "ok" : needRs.Count > 0 ? "missing" : "optional", "redscript"),
+            Detail(rs ? L.Cat(L.P("req.redscript.ok", inv.RedsFolders), d.RedscriptErrors.Count > 0 ? L.P("req.redscript.errors", d.RedscriptErrors.Count) : "") : L.T("req.redscript.missing"), "redscript"),
+            needRs, "https://www.nexusmods.com/cyberpunk2077/mods/1511"));
         // CET
-        var cet = File.Exists(Path.Combine(g.Bin, "plugins", "cyber_engine_tweaks.asi"));
+        var cet = g.Exists(@"bin\x64\plugins\cyber_engine_tweaks.asi");
         var needCet = NeededBy("cet");
-        var cetStatus = !cet ? (needCet.Count > 0 ? "missing" : "optional") : (!string.IsNullOrEmpty(d.CetGameVersion) && red != null && !string.IsNullOrEmpty(red.FileVersion) && d.CetGameVersion != red.FileVersion ? "outdated" : "ok");
-        list.Add(Req("cet", "Cyber Engine Tweaks", d.CetVersion, cetStatus, cet ? $"Runs Lua mods. {inv.CetMods} CET mods installed." + (cetStatus == "outdated" ? $" Built for game {d.CetGameVersion}, game is {red!.FileVersion}." : "") : "Runs Lua mods.", needCet, "https://www.nexusmods.com/cyberpunk2077/mods/107"));
+        var cetStatus = !cet ? (needCet.Count > 0 ? "missing" : "optional") : (!string.IsNullOrEmpty(d.CetGameVersion) && red != null && !string.IsNullOrEmpty(red.FileVersion) && d.CetGameVersion != red.FileVersion && d.CetGameVersion.Count(c => c == '.') == red.FileVersion.Count(c => c == '.') ? "outdated" : "ok");
+        list.Add(Req("cet", "Cyber Engine Tweaks", d.CetVersion, AfterUpdate(cetStatus, "Cyber Engine Tweaks"),
+            Detail(cet ? L.Cat(L.P("req.cet.ok", inv.CetMods), cetStatus == "outdated" ? L.T("req.cet.builtFor", d.CetGameVersion, red!.FileVersion) : "") : L.T("req.cet.missing"), "Cyber Engine Tweaks"),
+            needCet, "https://www.nexusmods.com/cyberpunk2077/mods/107"));
         // ArchiveXL / TweakXL / Codeware
         foreach (var (id, name, nexus, fw, detail) in new[] {
-            ("archivexl", "ArchiveXL", "4198", "archivexl", $"Loads .xl resource and world patches. {inv.XlFiles} .xl files installed."),
-            ("tweakxl", "TweakXL", "4197", "tweakxl", $"Applies .yaml tweak records. {inv.TweakFiles} tweak files installed."),
+            ("archivexl", "ArchiveXL", "4198", "archivexl", L.P("req.archivexl", inv.XlFiles)),
+            ("tweakxl", "TweakXL", "4197", "tweakxl", L.P("req.tweakxl", inv.TweakFiles)),
         })
         {
-            var present = Directory.Exists(Path.Combine(g.Red4extPlugins, name)) && Directory.EnumerateFiles(Path.Combine(g.Red4extPlugins, name), "*.dll").Any();
+            var present = g.FilesIn(Path.Combine(GamePaths.RelRed4extPlugins, name), "*.dll").Count > 0;
             var need = NeededBy(fw);
             var loaded = PluginVer(name);
             var status = !present ? (need.Count > 0 ? "missing" : "optional") : (red != null && red.Incompatible.Any(i => i.StartsWith(name)) ? "outdated" : "ok");
-            list.Add(Req(id, name, loaded, status, detail, need, $"https://www.nexusmods.com/cyberpunk2077/mods/{nexus}"));
+            list.Add(Req(id, name, loaded, AfterUpdate(status, name), Detail(detail, name), need, $"https://www.nexusmods.com/cyberpunk2077/mods/{nexus}"));
         }
-        var cw = Directory.Exists(Path.Combine(g.Red4extPlugins, "Codeware"));
+        var cw = g.DirExists(Path.Combine(GamePaths.RelRed4extPlugins, "Codeware"));
         var needCw = inv.Mods.Where(m => m.Files.Any(f => f.EndsWith(".reds", StringComparison.OrdinalIgnoreCase)) && m.Name != "Codeware").Select(m => m.Name).ToList();
-        list.Add(Req("codeware", "Codeware", PluginVer("Codeware"), cw ? "ok" : needCw.Count > 0 ? "unknown" : "optional", cw ? "Script library many mods import." : "Script library many mods import. Install it if a mod's page lists it.", cw ? needCw : new(), "https://www.nexusmods.com/cyberpunk2077/mods/7780"));
+        list.Add(Req("codeware", "Codeware", PluginVer("Codeware"), AfterUpdate(cw ? "ok" : needCw.Count > 0 ? "unknown" : "optional", "Codeware"),
+            Detail(cw ? L.T("req.codeware.ok") : L.T("req.codeware.missing"), "Codeware"), cw ? needCw : new(), "https://www.nexusmods.com/cyberpunk2077/mods/7780"));
         // Equipment-EX if clothing mods present
-        var eqx = Directory.Exists(Path.Combine(g.Scripts, "EquipmentEx")); if (eqx) list.Add(Req("equipmentex", "Equipment-EX", null, "ok", "Outfit system used by clothing and wardrobe mods.", new(), "https://www.nexusmods.com/cyberpunk2077/mods/6945"));
+        var eqx = g.DirExists(Path.Combine(GamePaths.RelScripts, "EquipmentEx")); if (eqx) list.Add(Req("equipmentex", "Equipment-EX", null, "ok", L.T("req.equipmentex"), new(), "https://www.nexusmods.com/cyberpunk2077/mods/6945"));
+        // Advanced Crash Reporter (Akiway): optional, never bundled. With it, a crash names the function it died in and
+        // whose code was running there (AdvancedCrashReporter.cs).
+        var acrReports = d.AcrReports.Count;
+        list.Add(new Requirement
+        {
+            Id = "acr", Name = "Advanced Crash Reporter", Status = d.AcrDir != null ? "ok" : "optional",
+            Detail = d.AcrDir != null ? L.Cat(L.T("req.acr.ok"), L.P("req.acr.reports", acrReports)) : L.T("req.acr.missing"),
+            Url = AdvancedCrashReporter.NexusUrl,
+        });
         // Microsoft runtimes
         var wv = WebView2Version();
-        list.Add(new Requirement { Id = "webview2", Name = "Microsoft WebView2 runtime", Version = wv, Status = wv != null ? "ok" : "missing", Detail = "Used by Crash Doctor itself to draw this window.", DirectInstall = true, Url = WebView2Url });
+        list.Add(new Requirement { Id = "webview2", Name = "Microsoft WebView2 runtime", Version = wv, Status = wv != null ? "ok" : "missing", Detail = L.T("req.webview2"), DirectInstall = true, Url = WebView2Url });
         var vc = VcRedistInstalled();
-        list.Add(new Requirement { Id = "vcredist", Name = "Visual C++ 2015-2022 runtime (x64)", Status = vc ? "ok" : "missing", Detail = "Needed by RED4ext, Cyber Engine Tweaks and most native plugins.", NeededBy = new List<string> { "RED4ext", "Cyber Engine Tweaks" }.Where(n => list.Any(x => x.Name == n && x.Status != "optional")).ToList(), DirectInstall = true, Url = VcRedistUrl });
+        list.Add(new Requirement { Id = "vcredist", Name = "Visual C++ 2015-2022 runtime (x64)", Status = vc ? "ok" : "missing", Detail = L.T("req.vcredist"), NeededBy = new List<string> { "RED4ext", "Cyber Engine Tweaks" }.Where(n => list.Any(x => x.Name == n && x.Status != "optional")).ToList(), DirectInstall = true, Url = VcRedistUrl });
         // DSX for DualSense mod
         if (inv.Mods.Any(m => m.Name.Contains("DualSense", StringComparison.OrdinalIgnoreCase)))
         {
             var dsx = Process.GetProcessesByName("DSX").Length > 0 || Directory.Exists(@"C:\Program Files (x86)\Steam\steamapps\common\DSX");
-            list.Add(new Requirement { Id = "dsx", Name = "DSX (DualSense on PC)", Status = dsx ? "ok" : "optional", Detail = "Only needed by Enhanced DualSense Support. Steam app 1812620. Must be running while you play.", NeededBy = inv.Mods.Where(m => m.Name.Contains("DualSense", StringComparison.OrdinalIgnoreCase)).Select(m => m.Name).ToList(), Url = "https://store.steampowered.com/app/1812620/DSX/" });
+            list.Add(new Requirement { Id = "dsx", Name = "DSX (DualSense on PC)", Status = dsx ? "ok" : "optional", Detail = L.T("req.dsx"), NeededBy = inv.Mods.Where(m => m.Name.Contains("DualSense", StringComparison.OrdinalIgnoreCase)).Select(m => m.Name).ToList(), Url = "https://store.steampowered.com/app/1812620/DSX/" });
         }
         foreach (var q in list) q.NeededByCount = q.NeededBy.Count;
         return list;

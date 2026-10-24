@@ -152,3 +152,22 @@ Keyboard: rail is a list of buttons; sessions are focusable rows.
 - Graphics profiles write the game's settings file, the second sanctioned write after known fixes. Same contract:
   only when asked, confirmed natively, backed up first, read back after, one-click undo, and never while the game runs.
 - Numbered steps in the diagnosis: rejected unless the actions truly must happen in order (they usually don't).
+
+## Languages (0.8.0)
+Every sentence is a key in `ui/lang/en.json`, English being the reference, translated into the 18 languages the game
+ships. The engine never writes finished text: it writes tokens (key + arguments, `src/Engine/Lang.cs`) and the words
+are chosen only when something is shown, so remembered sessions, the bisect plan and a language switch all stay right
+without a rescan. Copy rules apply to every language equally: a translation may not soften "correlation, not a cause",
+drop a count, or turn a lead into a finding. Switching must be impossible to get stuck in: the language button is
+always in the bezel, with a globe and each language in its own name; English is first and marked; Ctrl+L goes back to
+English from anywhere. The command line stays English unless asked (`--lang`). Pasted summaries can be copied in
+English whatever the window shows, because the people answering them mostly read English.
+
+## Mod Organizer 2, Advanced Crash Reporter, game updates (0.8.0)
+- MO2 is read, never driven: the instance, the profile's `modlist.txt` and every mod folder are merged the way MO2
+  would merge them over the game folder (`GamePaths.Dirs/Find/FilesIn`), and every collector reads through that merge.
+- Advanced Crash Reporter's reports are evidence from another tool: read by landmarks because its layout changes,
+  matched to the crash by process id, and its verdict quoted as its reading. A mod's own code on the faulting thread
+  is a direct observation and may be a high suspect; on a frozen thread it is a lead (medium), an overlay a low one.
+- After a game update the answer is usually "your frameworks do not support this version yet". Crash Doctor says so
+  from what each framework's log wrote on the new build, and keeps no table of versions it cannot verify.
