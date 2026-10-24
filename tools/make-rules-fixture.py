@@ -184,6 +184,12 @@ io.open(os.path.join(fx, "LocalAppData", "REDEngine", "CrashReporter.log"), "w")
 # log carries RED4ext's own crash block rather than just stopping - a log that simply ends is a session of unknown
 # length, which the rule deliberately ignores.
 PLUGINS = [("ArchiveXL", "1.27.2"), ("Codeware", "1.20.3"), ("TweakXL", "1.11.4")]
+# the loader and its plugins as files, the way a real install has them (Requirements reads the files, not the folders)
+os.makedirs(os.path.join(game, "red4ext"), exist_ok=True)
+io.open(os.path.join(game, "red4ext", "RED4ext.dll"), "w").write("dll")
+for name, _ in PLUGINS:
+    os.makedirs(os.path.join(game, "red4ext", "plugins", name), exist_ok=True)
+    io.open(os.path.join(game, "red4ext", "plugins", name, name + ".dll"), "w").write("dll")
 for day, secs in ((3, 71), (2, 48), (1, 96)):
     start = (NOW - datetime.timedelta(days=day)).replace(microsecond=0)
     t = lambda d, ms=0: (start + datetime.timedelta(seconds=d)).strftime("%Y-%m-%d %H:%M:%S") + ".%03d" % ms
@@ -302,6 +308,21 @@ REDSCRIPT_LOG = [
     r"[ERROR] At r6\scripts\WeaponWheel\wheel.reds:12:3:",
     "  expected a value of type Int32, found String",
 ]
+# ScriptsWrittenForTheOldInventoryFilters: a mod still wrapping the no-argument UpdateAvailableItems that game 2.5
+# replaced (the shape of More Weapon Filters' break, 22 Oct 2026). The error text does not name the method, as
+# redscript's own message does not; the rule has to read the line it points at in the script itself.
+REDSCRIPT_LOG += [
+    r"[ERROR] At r6\scripts\MoreWeaponFilters\MoreWeaponFilters.reds:41:1:",
+    "  could not find a method with a matching signature for the wrapMethod annotation",
+]
+MWF = ["// More Weapon Filters (fixture stand-in)"] + ["// line %d" % i for i in range(2, 41)] + [
+    "@wrapMethod(InventoryItemModeLogicController)",
+    "protected final func UpdateAvailableItems() -> Void {",
+    "  wrappedMethod();",
+    "}",
+]
+os.makedirs(os.path.join(game, "r6", "scripts", "MoreWeaponFilters"), exist_ok=True)
+io.open(os.path.join(game, "r6", "scripts", "MoreWeaponFilters", "MoreWeaponFilters.reds"), "w", encoding="utf-8").write("\n".join(MWF) + "\n")
 io.open(os.path.join(game, "r6", "logs", "redscript_rCURRENT.log"), "w", encoding="utf-8").write(
     "\n".join(REDSCRIPT_LOG) + "\n")
 
@@ -325,7 +346,7 @@ for what, msg in done.items():
     print("  %-6s %s" % (what, msg))
 print("  startup crash sessions: 3")
 print("  vortex manifest: %d files, %d of them missing" % (len(present) + len(absent), len(absent)))
-print("  redscript: 1 error, 1 annotation overwrite")
+print("  redscript: 2 errors (one the 2.5 inventory-filter break in MoreWeaponFilters), 1 annotation overwrite")
 print("  red4ext: 1 incompatible plugin; archivexl: 2 startup errors")
 print("  cet: 21 identical errors from one mod; scripts: 1 file bundled twice")
 print("  video memory recording: 1 session, 30 readings climbing to 97%")

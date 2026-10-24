@@ -283,7 +283,6 @@
   "update.adviceBad": "Modları yeniden kurmak ya da tek tek devre dışı bırakmak yerine, reddeden ya da başlamayan framework'lerin {version} için bir sürüm yayımlamasını bekleyin (Nexus sayfaları ne zaman olacağını yazar). O zamana kadar modsuz oynamak güvenli seçimdir.",
   "update.adviceWaiting": "Oyunu bir kez başlatın ve yeniden tarayın: her framework, yeni sürümde çalışıp çalışmadığını kendi log'una yazar.",
   "update.adviceFine": "Crash Doctor'ın bulduğu her framework yeni sürümde sorunsuz çalıştı.",
-  "update.honest": "Crash Doctor hangi framework sürümünün hangi oyun sürümünü desteklediğine dair bir liste tutmaz, çünkü böyle bir listeyi doğrulayamazdı. Yalnızca her framework'ün kendi log'una yazdıklarını bildirir.",
   "word.nMore": {
     "one": "{n} tane daha",
     "other": "{n} tane daha"
@@ -1392,5 +1391,21 @@
   "verdict.repeatHang": {
     "one": "Oyun {from} ile {to} arasında bu şekilde {n} kez dondu.",
     "other": "Oyun {from} ile {to} arasında bu şekilde {n} kez dondu. Motorun watchdog'u her donmayı aynı yerde sonlandırır, bu yüzden bu, oyunun donmaya devam ettiğini söyler; her donmanın aynı nedeni olduğunu değil."
-  }
+  },
+  "known.old": "{name} {installed}, oyun {game} için ilk {name} sürümü olan {needed} sürümünden eski ({date}). {needed} veya daha yenisine güncelleyin.",
+  "known.oldNoDate": "{name} {installed}, oyun {game} için ilk {name} sürümü olan {needed} sürümünden eski. {needed} veya daha yenisine güncelleyin.",
+  "known.noRelease": "{name} {installed}, oyun {built} için derlendi ve Crash Doctor'ın bu sürümü hazırlandığında ({date}) {game} için henüz bir {name} sürümü yoktu; ne zaman çıkacağını Nexus sayfası söyler.",
+  "plugin.refusedPlain": "Kısacası: {name} {version}, oyun yapısı {runtime} için derlendi ve RED4ext bir eklentiyi derlenmediği bir oyun yapısında başlatmaz. Yazarı oyununuz için bir sürüm çıkarana kadar kapalıdır, bozuk değildir.",
+  "update.fw.pluginDiedLoading": "Oyun, RED4ext {name} eklentisini yüklerken kapandı: RED4ext günlüğü \"Loading plugin … {name}.dll\" satırında bitiyor, sonrasında hiçbir şey yok. Eski bir oyun sürümü için derlenmiş yerel bir eklenti, yeni sürümde oyunu açılıştan saniyeler sonra böyle çökertebilir.",
+  "update.adviceKnown": "Yukarıda adı geçen ve {version} için sürümü çıkmış çerçeveleri güncelleyin. Diğerleri için modları tek tek yeniden kurmak ya da kapatmak yerine sürümlerini bekleyin; o zamana kadar modsuz oynamak güvenli seçimdir.",
+  "update.sources": "Her çerçevenin kendi günlüğüne yazdığı şey önce gelir. Burada adı geçen sürümler çerçevelerin kendi sürüm notlarından alınmıştır ve {date} tarihine kadar kontrol edilmiştir; o zamandan beri daha yeni bir sürüm çıkmış olabilir.",
+  "update.leadRecent": "Oyununuz {version} sürümünde; bu güncelleme {date} tarihinde çıktı.",
+  "verdict.diedLoading": "Oyun, açıldıktan {secs} sn sonra, RED4ext yerel eklenti {name} yüklenirken kapandı: RED4ext günlüğü \"Loading plugin … {name}.dll\" satırında bitiyor ve sonrasında hiçbir şey yok; yani oyun bu eklentinin başlatılması sırasında çöktü.",
+  "verdict.diedLoadingNoReport": "Oyunun kendi çökme raporlayıcısı bunun için rapor yazmadı; bu kadar erken bir çökmede bu sık görülür.",
+  "verdict.winUnknown": "Windows çökmeyi kaydetti ama bir modül adı veremedi: oyun, yüklü kod olmayan bir adrese atladı. Taşınmış ya da bellekten kaldırılmış koda yapılan bir çağrı böyle görünür.",
+  "ev.diedLoading": "günlük \"Loading plugin … {name}.dll\" satırında bitiyor, sonrası yok",
+  "suspect.diedLoading": "Oyun bu eklenti başlarken çöktü: RED4ext günlüğü \"Loading plugin … {name}.dll\" satırında bitiyor.",
+  "rule.rs25.title": "{mod} eski bir oyun sürümü için yazılmış ve hiçbir betik modunun yüklenmesine izin vermiyor",
+  "rule.rs25.detail": "redscript onu derleyemedi. 2.5 güncellemesi InventoryItemModeLogicController.{method} yöntemine bir parametre ekledi; {mod} ise hâlâ parametresiz eski sürüme bağlanıyor. Bir betik derlenemediği sürece redscript hiçbirini yüklemez; bu düzelene kadar tüm redscript modlarınız kapalıdır. {mod} modunu 2.5 için yapılmış bir sürüme güncelleyin ya da böyle bir sürüm çıkana kadar kaldırın. redscript'in yazdığı:",
+  "fmt.date.dmy": "d MMM yyyy"
 }

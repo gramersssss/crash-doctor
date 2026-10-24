@@ -1,0 +1,43 @@
+{
+  "_about": "Framework releases checked by hand against each framework's own release notes. Read by src/Engine/KnownReleases.cs. Builds are matched exactly (a hotfix gets its own line once its build is known). Only facts that stay true go here: which release first supports a game version, and which release was the newest one (and what game it was built for) on the asOf date. Crash Doctor states the asOf date whenever it uses 'latest', because a newer release can come out the next day. Update asOf and the entries together, never one without the other.",
+  "asOf": "2026-10-24",
+  "games": [
+    { "build": "3.0.88.46235", "version": "2.5", "released": "2026-10-22" },
+    { "build": "3.0.80.51928", "version": "2.31" }
+  ],
+  "frameworks": [
+    {
+      "name": "RED4ext", "nexus": "2380",
+      "for": [ { "game": "2.5", "from": "1.31.0", "released": "2026-10-24" } ],
+      "latest": "1.31.0",
+      "source": "RED4ext 1.31.0 release notes: the minimum supported game version is now patch 2.5"
+    },
+    {
+      "name": "Cyber Engine Tweaks", "nexus": "107",
+      "for": [ { "game": "2.5", "from": "1.38.0", "released": "2026-10-22" } ],
+      "latest": "1.38.0",
+      "source": "CET 1.38.0 (Nexus file 'Game version 2.5', game build 3.0.88)"
+    },
+    {
+      "name": "RedFileSystem", "nexus": "13378",
+      "for": [ { "game": "2.5", "from": "0.16.0" } ],
+      "latest": "0.16.0",
+      "source": "RedFileSystem 0.16.0 release notes (needs RED4ext 1.31.0 or newer)"
+    },
+    {
+      "name": "ArchiveXL", "nexus": "4198",
+      "latest": "1.27.5", "latestFor": "2.31",
+      "source": "ArchiveXL 1.27.5 (19 Oct 2026), built for 2.31; no release for 2.5 by 24 Oct 2026"
+    },
+    {
+      "name": "TweakXL", "nexus": "4197",
+      "latest": "1.11.5", "latestFor": "2.31",
+      "source": "TweakXL 1.11.5 (19 Oct 2026), built for 2.31; no release for 2.5 by 24 Oct 2026"
+    },
+    {
+      "name": "Codeware", "nexus": "7780",
+      "latest": "1.20.6", "latestFor": "2.31",
+      "source": "Codeware 1.20.6 (19 Oct 2026), built for 2.31; no release for 2.5 by 24 Oct 2026"
+    }
+  ]
+}

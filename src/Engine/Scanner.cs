@@ -24,6 +24,9 @@ public static class Scanner
         // a game update since the last scan, and what each framework's own log says about the new build (GameUpdate.cs)
         try
         {
+            // the release table (KnownReleases.cs): which installed framework is behind this game version
+            d.GameVersion = KnownReleases.GameKey(fv, r.Game.Version);
+            d.KnownChecks = KnownReleases.All(d, d.GameVersion);
             d.GameChange = GameUpdate.Detect(d, r.Game, remember: true);
             if (d.GameChange != null)
             {

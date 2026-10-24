@@ -24,6 +24,10 @@ public sealed class GameVersionChange
     public string? ToBuild { get; set; }
     public DateTime At { get; set; }             // when the exe was rewritten (or first seen changed)
     public bool Newer { get; set; } = true;      // false = the build went back (a Steam beta switch, a rollback)
+    // Not seen changing on this PC: the release table knows this build came out recently (KnownReleases.cs). A new
+    // Crash Doctor user, or one whose 2.31 logs have already rotated away, still has to hear about the update.
+    public bool Inferred { get; set; }
+    public DateTime? ReleasedAt { get; set; }    // the table's release date for that build
 }
 
 public sealed class FrameworkCheck
@@ -31,6 +35,7 @@ public sealed class FrameworkCheck
     public string Name { get; set; } = "";
     public string State { get; set; } = "";      // ran | refused | errors | notStarted | notRun
     public string Text { get; set; } = "";       // token
+    public string? Known { get; set; }           // what the release table said: old | noRelease (KnownReleases.cs)
 }
 
 public static class GameUpdate
@@ -44,10 +49,11 @@ public static class GameUpdate
         if (!string.IsNullOrWhiteSpace(productVersion)) return productVersion.Trim();
         // a log only speaks for the build it was written by
         var red = d.Red4ext.OrderByDescending(x => x.Start).FirstOrDefault(x => fileVersion.Length == 0 || x.FileVersion == fileVersion);
-        if (!string.IsNullOrEmpty(red?.ProductVersion)) return red!.ProductVersion;
+        // RED4ext writes "2.50" for what the game and CDPR call 2.5
+        if (!string.IsNullOrEmpty(red?.ProductVersion)) return KnownReleases.Normalise(red!.ProductVersion);
         var patch = d.CrashReports.OrderByDescending(c => c.At).Select(c => c.GamePatch).FirstOrDefault(p => !string.IsNullOrEmpty(p));
         if (patch != null && fileVersion.Length == 0) return patch;
-        return fileVersion switch { var v when v.StartsWith("3.0.80.51928") => "2.31", "" => "", _ => fileVersion };
+        return KnownReleases.GameOfBuild(fileVersion) ?? fileVersion;
     }
 
     /// <summary>
@@ -64,7 +70,7 @@ public static class GameUpdate
         if (nowBuild.Length == 0 && exeTime != null)
         {
             var after = d.Red4ext.Where(x => x.Start >= exeTime && x.FileVersion.Length > 0).OrderByDescending(x => x.Start).FirstOrDefault();
-            if (after != null) { nowBuild = after.FileVersion; if (nowVersion.Length == 0 || nowVersion == game.FileVersion) nowVersion = after.ProductVersion; }
+            if (after != null) { nowBuild = after.FileVersion; if (nowVersion.Length == 0 || nowVersion == game.FileVersion) nowVersion = KnownReleases.Normalise(after.ProductVersion); }
         }
         GameVersionChange? change = null;
 
@@ -77,9 +83,11 @@ public static class GameUpdate
             // first scan since Crash Doctor was installed or its settings were reset: the sessions before the exe changed
             var before = d.Red4ext.Where(x => x.Start < exeTime && x.FileVersion.Length > 0).OrderByDescending(x => x.Start).FirstOrDefault();
             if (before != null && before.FileVersion != nowBuild)
-                change = new GameVersionChange { From = before.ProductVersion, FromBuild = before.FileVersion, To = nowVersion, ToBuild = nowBuild, At = exeTime.Value };
+                change = new GameVersionChange { From = KnownReleases.Normalise(before.ProductVersion), FromBuild = before.FileVersion, To = nowVersion, ToBuild = nowBuild, At = exeTime.Value };
         }
-        if (change != null)
+        if (change == null && nowBuild.Length > 0 && Recent(nowBuild) is { } rel)
+            change = new GameVersionChange { To = nowVersion.Length > 0 ? nowVersion : rel.Version, ToBuild = nowBuild, At = exeTime is { } et && et > rel.At ? et : rel.At, Inferred = true, ReleasedAt = rel.At };
+        if (change != null && !change.Inferred)
         {
             change.Newer = !(System.Version.TryParse(change.FromBuild, out var a) && System.Version.TryParse(change.ToBuild, out var b) && b < a);
             if (string.IsNullOrEmpty(change.To)) change.To = change.ToBuild;
@@ -91,7 +99,7 @@ public static class GameUpdate
             var changed = cfg.LastGameFileVersion is { Length: > 0 } lb && lb != nowBuild;
             if (changed) { cfg.PreviousGameFileVersion = cfg.LastGameFileVersion; cfg.PreviousGameVersion = cfg.LastGameVersion; cfg.GameVersionChangedAt = change?.At ?? DateTime.Now; }
             // a change found in the logs is remembered too, so it is still known after those logs rotate away
-            else if (change != null && cfg.PreviousGameFileVersion != change.FromBuild)
+            else if (change != null && !change.Inferred && cfg.PreviousGameFileVersion != change.FromBuild)
             { cfg.PreviousGameFileVersion = change.FromBuild; cfg.PreviousGameVersion = change.From; cfg.GameVersionChangedAt = change.At; changed = true; }
             if (changed || cfg.LastGameFileVersion != nowBuild || cfg.LastGameVersion != nowVersion)
             {
@@ -102,7 +110,19 @@ public static class GameUpdate
         return change;
     }
 
-    /// <summary>What each framework's own log says about the build it found after the change.</summary>
+    /// <summary>A build the release table says came out in the last 30 days, with its version and date.</summary>
+    static (string Version, DateTime At)? Recent(string build)
+    {
+        var g = KnownReleases.Data.Games.FirstOrDefault(x => x.Build.Length > 0 && build.StartsWith(x.Build, StringComparison.Ordinal));
+        if (g?.Released == null || !DateTime.TryParse(g.Released, out var at)) return null;
+        return at > DateTime.Now.AddDays(-30) && at <= DateTime.Now.AddDays(1) ? (g.Version, at) : null;
+    }
+
+    /// <summary>
+    /// What each framework's own log says about the build it found after the change, plus what the release table
+    /// (KnownReleases.cs) adds for the version installed now. Only frameworks whose own file is installed now are
+    /// listed: after a purge the logs of the last modded launch are still on disk, and they are history, not state.
+    /// </summary>
     public static List<FrameworkCheck> Frameworks(CollectedData d, GameVersionChange c)
     {
         var g = d.Paths; var list = new List<FrameworkCheck>();
@@ -111,40 +131,61 @@ public static class GameUpdate
         var gameRan = d.Red4ext.Any(x => x.Start >= since) || d.CetStarts.Any(x => x.at >= since) || d.CrashReports.Any(x => x.At >= since);
         string Missing(string name) => gameRan ? L.T("update.fw.notStarted", name) : L.T("update.fw.notRun", name);
         var MissingState = gameRan ? "notStarted" : "notRun";
-
-        var red = d.Red4ext.Where(x => x.Start >= since).OrderByDescending(x => x.Start).FirstOrDefault();
-        var hasRed = g.Exists(@"red4ext\RED4ext.dll") || g.Exists(@"bin\x64\winmm.dll") || g.DirExists("red4ext");
-        if (hasRed)
+        var known = d.KnownChecks;
+        // the table's word on a framework, added to whatever its log said; "old" outranks a log that saw nothing wrong
+        void Add(string name, string state, string text)
         {
-            if (red == null) list.Add(new FrameworkCheck { Name = "RED4ext", State = MissingState, Text = Missing("RED4ext") });
-            else if (red.Errors.Count > 0) list.Add(new FrameworkCheck { Name = "RED4ext", State = "errors", Text = L.T("update.fw.red4extErrors", red.Red4extVersion, L.Date(red.Start, "dmt"), red.Errors[0]) });
-            else list.Add(new FrameworkCheck { Name = "RED4ext", State = "ran", Text = L.P("update.fw.red4extRan", red.PluginsLoaded.Count, red.Red4extVersion, red.ProductVersion.Length > 0 ? red.ProductVersion : red.FileVersion) });
-
-            foreach (var plugin in new[] { "ArchiveXL", "TweakXL", "Codeware" })
-            {
-                if (!g.DirExists(Path.Combine(GamePaths.RelRed4extPlugins, plugin))) continue;
-                if (red == null) { list.Add(new FrameworkCheck { Name = plugin, State = MissingState, Text = Missing(plugin) }); continue; }
-                var refused = red.Incompatible.FirstOrDefault(i => i.StartsWith(plugin, StringComparison.OrdinalIgnoreCase));
-                var loaded = red.PluginsLoaded.FirstOrDefault(p => p.name.Equals(plugin, StringComparison.OrdinalIgnoreCase));
-                if (refused != null) list.Add(new FrameworkCheck { Name = plugin, State = "refused", Text = L.T("update.fw.pluginRefused", plugin, refused) });
-                else if (loaded.name != null) list.Add(new FrameworkCheck { Name = plugin, State = "ran", Text = L.T("update.fw.pluginLoaded", plugin, loaded.version) });
-                else list.Add(new FrameworkCheck { Name = plugin, State = "errors", Text = L.T("update.fw.pluginAbsent", plugin) });
-            }
-            // every other native plugin RED4ext turned away on the new build, counted in one line
-            if (red != null)
-            {
-                var others = red.Incompatible.Select(i => Regex.Match(i, @"^(.+?) \(version").Groups[1].Value).Where(n => n.Length > 0 && !new[] { "ArchiveXL", "TweakXL", "Codeware" }.Contains(n, StringComparer.OrdinalIgnoreCase)).Distinct().ToList();
-                if (others.Count > 0) list.Add(new FrameworkCheck { Name = "plugins", State = "refused", Text = L.P("update.fw.otherPlugins", others.Count, L.List(others.Take(6).ToList())) });
-            }
+            var k = known.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+            if (k != null && state is "ran" or "notRun") state = "old";
+            list.Add(new FrameworkCheck { Name = name, State = state, Text = k != null ? L.Cat(text, k.Text) : text, Known = k?.Kind });
         }
 
-        if (g.Exists(@"bin\x64\plugins\cyber_engine_tweaks.asi") || d.CetLog != null)
+        var red = d.Red4ext.Where(x => x.Start >= since).OrderByDescending(x => x.Start).FirstOrDefault();
+        if (KnownReleases.Installed(d, "RED4ext"))
+        {
+            if (red == null) Add("RED4ext", MissingState, Missing("RED4ext"));
+            else if (red.Errors.Count > 0) Add("RED4ext", "errors", L.T("update.fw.red4extErrors", red.Red4extVersion, L.Date(red.Start, "dmt"), red.Errors[0]));
+            else Add("RED4ext", "ran", L.P("update.fw.red4extRan", red.PluginsLoaded.Count, red.Red4extVersion, red.ProductVersion.Length > 0 ? red.ProductVersion : red.FileVersion));
+
+            var main = new[] { "ArchiveXL", "TweakXL", "Codeware" };
+            foreach (var plugin in main)
+            {
+                if (!KnownReleases.Installed(d, plugin)) continue;
+                if (red == null) { Add(plugin, MissingState, Missing(plugin)); continue; }
+                var refused = red.Incompatible.FirstOrDefault(i => i.StartsWith(plugin, StringComparison.OrdinalIgnoreCase));
+                var loaded = red.PluginsLoaded.FirstOrDefault(p => p.name.Equals(plugin, StringComparison.OrdinalIgnoreCase));
+                if (red.DiedLoading != null && red.DiedLoading.Equals(plugin, StringComparison.OrdinalIgnoreCase)) Add(plugin, "errors", L.T("update.fw.pluginDiedLoading", plugin));
+                else if (refused != null) Add(plugin, "refused", L.Cat(L.T("update.fw.pluginRefused", plugin, refused), RefusedPlain(refused)));
+                else if (loaded.name != null) Add(plugin, "ran", L.T("update.fw.pluginLoaded", plugin, loaded.version));
+                // RED4ext never reached it: the game went down on an earlier plugin
+                else if (red.DiedLoading != null) Add(plugin, MissingState, Missing(plugin));
+                else Add(plugin, "errors", L.T("update.fw.pluginAbsent", plugin));
+            }
+            if (red != null)
+            {
+                // another native plugin the game died loading is the most important line of all
+                if (red.DiedLoading != null && !main.Contains(red.DiedLoading, StringComparer.OrdinalIgnoreCase))
+                    list.Add(new FrameworkCheck { Name = red.DiedLoading, State = "errors", Text = L.T("update.fw.pluginDiedLoading", red.DiedLoading) });
+                // every other native plugin RED4ext turned away on the new build, counted in one line
+                var others = red.Incompatible.Select(i => Regex.Match(i, @"^(.+?) \(version").Groups[1].Value).Where(n => n.Length > 0 && !main.Contains(n, StringComparer.OrdinalIgnoreCase)).Distinct().ToList();
+                if (others.Count > 0)
+                {
+                    var first = red.Incompatible.First(i => i.StartsWith(others[0], StringComparison.OrdinalIgnoreCase));
+                    list.Add(new FrameworkCheck { Name = "plugins", State = "refused", Text = L.Cat(L.P("update.fw.otherPlugins", others.Count, L.List(others.Take(6).ToList())), RefusedPlain(first)) });
+                }
+            }
+            // a table entry for a plugin not covered above (RedFileSystem needs RED4ext 1.31.0, for one)
+            foreach (var k in known.Where(k => k.Name != "RED4ext" && k.Name != "Cyber Engine Tweaks" && !list.Any(f => f.Name.Equals(k.Name, StringComparison.OrdinalIgnoreCase))))
+                list.Add(new FrameworkCheck { Name = k.Name, State = "old", Text = k.Text, Known = k.Kind });
+        }
+
+        if (KnownReleases.Installed(d, "Cyber Engine Tweaks"))
         {
             var refused = d.CetRefused.Where(x => x.at >= since).Select(x => Regex.Replace(x.line, @"^(\[[^\]]*\]\s*)+", "")).FirstOrDefault();
             var start = d.CetStarts.Where(x => x.at >= since).OrderByDescending(x => x.at).FirstOrDefault();
-            if (refused != null) list.Add(new FrameworkCheck { Name = "Cyber Engine Tweaks", State = "refused", Text = L.T("update.fw.cetRefused", refused) });
-            else if (start.gameVersion != null) list.Add(new FrameworkCheck { Name = "Cyber Engine Tweaks", State = "ran", Text = L.T("update.fw.cetRan", d.CetVersion, start.gameVersion) });
-            else list.Add(new FrameworkCheck { Name = "Cyber Engine Tweaks", State = MissingState, Text = Missing("Cyber Engine Tweaks") });
+            if (refused != null) Add("Cyber Engine Tweaks", "refused", L.T("update.fw.cetRefused", refused));
+            else if (start.gameVersion != null) Add("Cyber Engine Tweaks", "ran", L.T("update.fw.cetRan", d.CetVersion, start.gameVersion));
+            else Add("Cyber Engine Tweaks", MissingState, Missing("Cyber Engine Tweaks"));
         }
 
         if (g.Exists(@"engine\tools\scc.exe") || g.Exists(@"engine\tools\scc_lib.dll"))
@@ -157,10 +198,22 @@ public static class GameUpdate
         return list;
     }
 
+    /// <summary>
+    /// RED4ext's "is incompatible with the current patch. The requested runtime of the plugin is 3.0.80.51928", in
+    /// plain words: the plugin was built for that game build and RED4ext will not start it on another one.
+    /// </summary>
+    public static string RefusedPlain(string line)
+    {
+        var m = Regex.Match(line, @"^(.+?) \(version: ([^,)]+)\).*?requested runtime(?: of the plugin is)? ([\d.]+\d)");
+        return m.Success ? L.T("plugin.refusedPlain", m.Groups[1].Value.Trim(), m.Groups[2].Value.Trim(), KnownReleases.BuildLabel(m.Groups[3].Value)) : "";
+    }
+
     /// <summary>The Health item for a game update, or null when there is nothing to say any more.</summary>
     public static HealthItem? Health(GameVersionChange c, List<FrameworkCheck> fw)
     {
-        var bad = fw.Where(f => f.State is "refused" or "errors" or "notStarted").ToList();
+        // known only from the release table, with no framework installed: nothing worth a line in Health
+        if (c.Inferred && fw.Count == 0) return null;
+        var bad = fw.Where(f => f.State is "refused" or "errors" or "notStarted" or "old").ToList();
         var waiting = fw.Where(f => f.State == "notRun").ToList();
         if (bad.Count == 0 && waiting.Count == 0 && c.At < DateTime.Now.AddDays(-QuietDays)) return null;
         // a month on, a framework that still refuses is its own standing problem (Rules: NativePluginsRefusingToLoad),
@@ -168,17 +221,20 @@ public static class GameUpdate
         if (c.At < DateTime.Now.AddDays(-30)) return null;
         var title = !c.Newer ? L.T("update.titleChanged", c.To, c.From)
                   : bad.Count > 0 ? L.T("update.titleProblems", c.To)
-                  : waiting.Count > 0 ? L.T("update.titleWaiting", c.To)
+                  : waiting.Count > 0 || fw.Count == 0 ? L.T("update.titleWaiting", c.To)
                   : L.T("update.titleFine", c.To);
-        var lead = L.T("update.lead", c.From, c.To, L.Date(c.At, "dm"));
+        var lead = c.Inferred ? L.T("update.leadRecent", c.To, L.Date(c.ReleasedAt ?? c.At, "dm")) : L.T("update.lead", c.From, c.To, L.Date(c.At, "dm"));
         var why = L.T("update.why", c.To);
         var said = fw.Count == 0 ? L.T("update.noFrameworks") : L.T("update.said", string.Join(" ", fw.Select(f => f.Text)));
-        var advice = bad.Count > 0 ? L.T("update.adviceBad", c.To) : waiting.Count > 0 ? L.T("update.adviceWaiting") : L.T("update.adviceFine");
+        // a release for the new version exists for some of them: "update these" comes before "wait for the rest"
+        var advice = fw.Any(f => f.Known == "old") ? L.T("update.adviceKnown", c.To)
+                   : bad.Count > 0 ? L.T("update.adviceBad", c.To) : waiting.Count > 0 ? L.T("update.adviceWaiting") : fw.Count == 0 ? "" : L.T("update.adviceFine");
+        var sources = DateTime.TryParse(KnownReleases.Data.AsOf, out var asOf) ? L.T("update.sources", L.Date(asOf, "dmy")) : "";
         return new HealthItem
         {
             Severity = bad.Count > 0 ? "high" : waiting.Count > 0 ? "medium" : "info",
             Title = title,
-            Detail = lead + " " + why + " " + said + " " + advice + " " + L.T("update.honest"),
+            Detail = L.Cat(lead, fw.Count == 0 ? "" : why, said, advice, fw.Count == 0 ? "" : sources),
             Flag = null,
             Action = new UiAction("req", L.T("act.seeRequirements")),
         };

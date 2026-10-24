@@ -57,8 +57,15 @@ ended is shown as a freeze rather than a crash. ACR's own verdict is shown as it
 
 **After a game update.** When the game's build changes, Health says so first, and lists what each framework's own log
 said the first time the game ran on the new build: RED4ext and the plugins it refused, Cyber Engine Tweaks, redscript.
-Frameworks usually need their own update after a game patch; Crash Doctor does not keep a table of which versions
-support which game version, it reports what the logs say.
+Frameworks usually need their own update after a game patch. What the logs say comes first; on top of that Crash
+Doctor carries a small, dated list of framework releases checked against their own release notes (for patch 2.5:
+RED4ext 1.31.0, Cyber Engine Tweaks 1.38.0 and RedFileSystem 0.16.0 are the first releases for it; ArchiveXL,
+TweakXL and Codeware had none yet on 24 Oct 2026), so it can say "update RED4ext to 1.31.0" or "ArchiveXL 1.27.5 was
+built for 2.31" even when the game died before a framework could write anything. When the game closes while RED4ext is
+loading a plugin - its log stops at "Loading plugin ... X.dll" - that plugin is named, because the game died inside its
+start-up. A script mod that no longer compiles because 2.5 changed two inventory filter methods it hooks
+is named too, since one such error switches off every redscript mod. Not yet: mods installed through the game's own
+in-game mod menu (mod.io, new in 2.5) are not listed among your mods.
 
 **Your language.** The window, the diagnosis and the saved report are available in English and the 18 languages the
 game itself ships (Arabic, Chinese simplified and traditional, Czech, French, German, Hungarian, Italian, Japanese,

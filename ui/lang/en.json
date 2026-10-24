@@ -283,7 +283,6 @@
   "update.adviceBad": "Wait for the frameworks that refused or have not started to release a version for {version} (their Nexus pages say when), rather than reinstalling or disabling mods one by one. Playing without mods until then is the safe choice.",
   "update.adviceWaiting": "Start the game once and scan again: each framework writes in its log whether it runs on the new version.",
   "update.adviceFine": "Every framework Crash Doctor found has run on the new version without complaint.",
-  "update.honest": "Crash Doctor does not keep a list of which framework versions support which game version, because it could not check one. It only reports what each framework wrote in its own log.",
   "word.nMore": {
     "one": "{n} more",
     "other": "{n} more"
@@ -1392,5 +1391,21 @@
   "verdict.repeatHang": {
     "one": "The game has frozen this way {n} time between {from} and {to}.",
     "other": "The game has frozen this way {n} times between {from} and {to}. The engine's watchdog ends every freeze at the same place, so this says the game keeps freezing, not that every freeze has the same cause."
-  }
+  },
+  "known.old": "{name} {installed} is older than {needed}, the first {name} release for game {game} ({date}). Update it to {needed} or newer.",
+  "known.oldNoDate": "{name} {installed} is older than {needed}, the first {name} release for game {game}. Update it to {needed} or newer.",
+  "known.noRelease": "{name} {installed} was built for game {built}, and there was no {name} release for {game} yet when this version of Crash Doctor was made ({date}); its Nexus page says when there is one.",
+  "plugin.refusedPlain": "In plain words: {name} {version} was built for game build {runtime}, and RED4ext does not start a plugin on a game build it was not built for. It is switched off, not broken, until its author releases a version for your game.",
+  "update.fw.pluginDiedLoading": "The game closed while RED4ext was loading {name}: RED4ext's log stops at \"Loading plugin … {name}.dll\" with nothing after it. A native plugin built for an older game version can take the game down like this on a new one, seconds after it starts.",
+  "update.adviceKnown": "Update the frameworks that already have a release for {version}, named above. For the others, wait for their releases rather than reinstalling or disabling mods one by one; playing without mods until then is the safe choice.",
+  "update.sources": "What each framework wrote in its own log comes first. The release versions named here come from the frameworks' own release notes, checked up to {date}; a newer release may be out since.",
+  "update.leadRecent": "Your game is {version}, the update released on {date}.",
+  "verdict.diedLoading": "The game closed {secs} s after it started, while RED4ext was loading the native plugin {name}: RED4ext's log stops at \"Loading plugin … {name}.dll\" with nothing after it, so the game went down inside that plugin's start-up.",
+  "verdict.diedLoadingNoReport": "The game's own crash reporter wrote no report for it, which is common for a crash this early in start-up.",
+  "verdict.winUnknown": "Windows recorded the crash but could not name a module: the game jumped to an address where no code was loaded. That is what a call into code that has moved or been unloaded looks like.",
+  "ev.diedLoading": "log stops at \"Loading plugin … {name}.dll\", nothing after it",
+  "suspect.diedLoading": "The game went down while this plugin was starting: RED4ext's log stops at \"Loading plugin … {name}.dll\".",
+  "rule.rs25.title": "{mod} was written for an older game version, and it keeps every script mod from loading",
+  "rule.rs25.detail": "redscript could not compile it. Game update 2.5 added a parameter to InventoryItemModeLogicController.{method}, and {mod} still hooks the old version without it. While one script fails to compile, redscript loads none of them, so all your redscript mods are off until this is fixed. Update {mod} to a version made for 2.5, or remove it until there is one. What redscript wrote:",
+  "fmt.date.dmy": "d MMM yyyy"
 }

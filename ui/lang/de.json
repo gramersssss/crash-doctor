@@ -283,7 +283,6 @@
   "update.adviceBad": "Warte, bis die Frameworks, die abgelehnt haben oder nicht gestartet sind, eine Version für {version} veröffentlichen (ihre Nexus-Seiten sagen, wann), statt Mods neu zu installieren oder einzeln zu deaktivieren. Bis dahin ohne Mods zu spielen, ist die sichere Wahl.",
   "update.adviceWaiting": "Starte das Spiel einmal und scanne erneut: Jedes Framework schreibt in sein Log, ob es auf der neuen Version läuft.",
   "update.adviceFine": "Jedes Framework, das Crash Doctor gefunden hat, ist auf der neuen Version ohne Beanstandung gelaufen.",
-  "update.honest": "Crash Doctor führt keine Liste, welche Framework-Versionen welche Spielversion unterstützen, weil es so eine Liste nicht überprüfen könnte. Es meldet nur, was jedes Framework in sein eigenes Log geschrieben hat.",
   "word.nMore": {
     "one": "{n} weiterer",
     "other": "{n} weitere"
@@ -1392,5 +1391,21 @@
   "verdict.repeatHang": {
     "one": "Das Spiel ist zwischen {from} und {to} {n}-mal auf diese Weise eingefroren.",
     "other": "Das Spiel ist zwischen {from} und {to} {n}-mal auf diese Weise eingefroren. Der Watchdog der Engine beendet jeden Freeze an derselben Stelle, das heißt also, dass das Spiel immer wieder einfriert, nicht dass jeder Freeze dieselbe Ursache hat."
-  }
+  },
+  "known.old": "{name} {installed} ist älter als {needed}, die erste {name}-Version für Spielversion {game} ({date}). Aktualisiere auf {needed} oder neuer.",
+  "known.oldNoDate": "{name} {installed} ist älter als {needed}, die erste {name}-Version für Spielversion {game}. Aktualisiere auf {needed} oder neuer.",
+  "known.noRelease": "{name} {installed} wurde für Spielversion {built} gebaut, und als diese Version von Crash Doctor erstellt wurde ({date}), gab es noch keine {name}-Version für {game}; die Nexus-Seite sagt, wann es eine gibt.",
+  "plugin.refusedPlain": "Einfach gesagt: {name} {version} wurde für Spiel-Build {runtime} gebaut, und RED4ext startet kein Plugin auf einem Build, für den es nicht gebaut wurde. Es ist abgeschaltet, nicht kaputt, bis sein Autor eine Version für dein Spiel veröffentlicht.",
+  "update.fw.pluginDiedLoading": "Das Spiel wurde beendet, während RED4ext {name} lud: Das RED4ext-Log endet bei „Loading plugin … {name}.dll“, danach kommt nichts mehr. Ein natives Plugin, das für eine ältere Spielversion gebaut wurde, kann das Spiel auf einer neuen so Sekunden nach dem Start abstürzen lassen.",
+  "update.adviceKnown": "Aktualisiere die oben genannten Frameworks, für die es schon eine Version für {version} gibt. Auf die anderen warte, statt Mods neu zu installieren oder einzeln zu deaktivieren; bis dahin ohne Mods zu spielen, ist die sichere Wahl.",
+  "update.sources": "Was jedes Framework in sein eigenes Log geschrieben hat, zählt zuerst. Die hier genannten Versionen stammen aus den Versionshinweisen der Frameworks, geprüft bis {date}; inzwischen kann es eine neuere geben.",
+  "update.leadRecent": "Dein Spiel ist {version}, das Update vom {date}.",
+  "verdict.diedLoading": "Das Spiel wurde {secs} s nach dem Start beendet, während RED4ext das native Plugin {name} lud: Das RED4ext-Log endet bei „Loading plugin … {name}.dll“, danach kommt nichts mehr – das Spiel ist also beim Start dieses Plugins abgestürzt.",
+  "verdict.diedLoadingNoReport": "Der eigene Absturzberichter des Spiels hat dazu keinen Bericht geschrieben, was bei einem so frühen Absturz häufig ist.",
+  "verdict.winUnknown": "Windows hat den Absturz erfasst, konnte aber kein Modul nennen: Das Spiel ist an eine Adresse gesprungen, an der kein Code geladen war. So sieht ein Aufruf in Code aus, der verschoben oder entladen wurde.",
+  "ev.diedLoading": "Log endet bei „Loading plugin … {name}.dll“, danach nichts",
+  "suspect.diedLoading": "Das Spiel ist abgestürzt, während dieses Plugin startete: Das RED4ext-Log endet bei „Loading plugin … {name}.dll“.",
+  "rule.rs25.title": "{mod} wurde für eine ältere Spielversion geschrieben und verhindert, dass irgendein Skript-Mod lädt",
+  "rule.rs25.detail": "redscript konnte es nicht kompilieren. Das Spielupdate 2.5 hat InventoryItemModeLogicController.{method} einen Parameter hinzugefügt, und {mod} hängt sich noch an die alte Version ohne ihn. Solange ein Skript nicht kompiliert, lädt redscript keines davon – alle deine redscript-Mods sind aus, bis das behoben ist. Aktualisiere {mod} auf eine Version für 2.5 oder entferne es, bis es eine gibt. Was redscript geschrieben hat:",
+  "fmt.date.dmy": "d. MMM yyyy"
 }

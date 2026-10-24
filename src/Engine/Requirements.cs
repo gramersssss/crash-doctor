@@ -15,14 +15,18 @@ public static class RequirementsCheck
         string? PluginVer(string name) => red?.PluginsLoaded.FirstOrDefault(p => p.name.Equals(name, StringComparison.OrdinalIgnoreCase)).version;
         List<string> NeededBy(string fw) => inv.Mods.Where(m => m.Status != "removed" && inv.Needs(m, fw)).Select(m => m.Name).ToList();
         // after a game update, a framework whose own log refused the new build is out of date whatever its file says
-        FrameworkCheck? Update(string name) => d.FrameworkChecks.FirstOrDefault(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && f.State is "refused" or "errors" or "notStarted");
-        string AfterUpdate(string status, string name) => Update(name) != null && status == "ok" ? "outdated" : status;
-        string Detail(string detail, string name) => Update(name) is { } u ? L.Cat(detail, u.Text) : detail;
+        FrameworkCheck? Update(string name) => d.FrameworkChecks.FirstOrDefault(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && f.State is "refused" or "errors" or "notStarted" or "old");
+        // the release table (KnownReleases.cs): a version known to be behind this game is out of date with or without an update notice
+        KnownCheck? Known(string name) => d.KnownChecks.FirstOrDefault(k => k.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        string AfterUpdate(string status, string name) => (Update(name) != null || Known(name) != null) && status == "ok" ? "outdated" : status;
+        string Detail(string detail, string name) => Update(name) is { } u ? L.Cat(detail, u.Text) : Known(name) is { } k ? L.Cat(detail, k.Text) : detail;
+        string? Ver(string? fromLog, string name) => !string.IsNullOrEmpty(fromLog) ? fromLog : KnownReleases.InstalledVersion(d, name);
 
         // RED4ext (all reads go through GamePaths, so a framework installed as a Mod Organizer 2 mod is found too)
-        var red4 = g.Exists(@"red4ext\RED4ext.dll") || g.Exists(@"bin\x64\winmm.dll") || g.DirExists("red4ext");
+        // its own files, not the folder: after a purge red4ext\ still holds the old logs
+        var red4 = KnownReleases.Installed(d, "RED4ext");
         var needRed = inv.Mods.Where(m => inv.Needs(m, "red4ext")).Select(m => m.Name).ToList();
-        list.Add(Req("red4ext", "RED4ext", red?.Red4extVersion, AfterUpdate(red4 ? "ok" : needRed.Count > 0 ? "missing" : "optional", "RED4ext"),
+        list.Add(Req("red4ext", "RED4ext", red4 ? KnownReleases.InstalledVersion(d, "RED4ext") ?? red?.Red4extVersion : null, AfterUpdate(red4 ? "ok" : needRed.Count > 0 ? "missing" : "optional", "RED4ext"),
             Detail(red4 ? L.P("req.red4ext.ok", inv.Red4extPlugins) : L.T("req.red4ext.missing"), "RED4ext"), needRed, "https://www.nexusmods.com/cyberpunk2077/mods/2380"));
         // redscript
         var rs = g.Exists(@"engine\tools\scc.exe") || g.Exists(@"engine\tools\scc_lib.dll");
@@ -34,7 +38,7 @@ public static class RequirementsCheck
         var cet = g.Exists(@"bin\x64\plugins\cyber_engine_tweaks.asi");
         var needCet = NeededBy("cet");
         var cetStatus = !cet ? (needCet.Count > 0 ? "missing" : "optional") : (!string.IsNullOrEmpty(d.CetGameVersion) && red != null && !string.IsNullOrEmpty(red.FileVersion) && d.CetGameVersion != red.FileVersion && d.CetGameVersion.Count(c => c == '.') == red.FileVersion.Count(c => c == '.') ? "outdated" : "ok");
-        list.Add(Req("cet", "Cyber Engine Tweaks", d.CetVersion, AfterUpdate(cetStatus, "Cyber Engine Tweaks"),
+        list.Add(Req("cet", "Cyber Engine Tweaks", cet ? Ver(d.CetVersion, "Cyber Engine Tweaks") : null, AfterUpdate(cetStatus, "Cyber Engine Tweaks"),
             Detail(cet ? L.Cat(L.P("req.cet.ok", inv.CetMods), cetStatus == "outdated" ? L.T("req.cet.builtFor", d.CetGameVersion, red!.FileVersion) : "") : L.T("req.cet.missing"), "Cyber Engine Tweaks"),
             needCet, "https://www.nexusmods.com/cyberpunk2077/mods/107"));
         // ArchiveXL / TweakXL / Codeware
@@ -47,11 +51,11 @@ public static class RequirementsCheck
             var need = NeededBy(fw);
             var loaded = PluginVer(name);
             var status = !present ? (need.Count > 0 ? "missing" : "optional") : (red != null && red.Incompatible.Any(i => i.StartsWith(name)) ? "outdated" : "ok");
-            list.Add(Req(id, name, loaded, AfterUpdate(status, name), Detail(detail, name), need, $"https://www.nexusmods.com/cyberpunk2077/mods/{nexus}"));
+            list.Add(Req(id, name, present ? Ver(loaded, name) : null, AfterUpdate(status, name), Detail(detail, name), need, $"https://www.nexusmods.com/cyberpunk2077/mods/{nexus}"));
         }
-        var cw = g.DirExists(Path.Combine(GamePaths.RelRed4extPlugins, "Codeware"));
+        var cw = g.FilesIn(Path.Combine(GamePaths.RelRed4extPlugins, "Codeware"), "*.dll").Count > 0;
         var needCw = inv.Mods.Where(m => m.Files.Any(f => f.EndsWith(".reds", StringComparison.OrdinalIgnoreCase)) && m.Name != "Codeware").Select(m => m.Name).ToList();
-        list.Add(Req("codeware", "Codeware", PluginVer("Codeware"), AfterUpdate(cw ? "ok" : needCw.Count > 0 ? "unknown" : "optional", "Codeware"),
+        list.Add(Req("codeware", "Codeware", cw ? Ver(PluginVer("Codeware"), "Codeware") : null, AfterUpdate(cw ? "ok" : needCw.Count > 0 ? "unknown" : "optional", "Codeware"),
             Detail(cw ? L.T("req.codeware.ok") : L.T("req.codeware.missing"), "Codeware"), cw ? needCw : new(), "https://www.nexusmods.com/cyberpunk2077/mods/7780"));
         // Equipment-EX if clothing mods present
         var eqx = g.DirExists(Path.Combine(GamePaths.RelScripts, "EquipmentEx")); if (eqx) list.Add(Req("equipmentex", "Equipment-EX", null, "ok", L.T("req.equipmentex"), new(), "https://www.nexusmods.com/cyberpunk2077/mods/6945"));

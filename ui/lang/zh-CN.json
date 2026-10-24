@@ -261,7 +261,6 @@
   "update.adviceBad": "请等待那些拒绝加载或尚未启动的框架发布支持 {version} 的版本（它们的 Nexus 页面会说明何时发布），不要重装模组或逐个禁用模组。在此之前不加载模组游玩是稳妥的选择。",
   "update.adviceWaiting": "启动一次游戏，然后再扫描：每个框架都会在自己的日志里写明它是否能在新版本上运行。",
   "update.adviceFine": "Crash Doctor 找到的每个框架都已在新版本上运行，没有报告问题。",
-  "update.honest": "Crash Doctor 不维护“哪个框架版本支持哪个游戏版本”的列表，因为它无法核实这样的列表。它只报告每个框架在自己日志里写的内容。",
   "word.nMore": {
     "other": "另外 {n} 个"
   },
@@ -1272,5 +1271,21 @@
   "flag.fixAvailable": "有已知修复",
   "verdict.repeatHang": {
     "other": "游戏在 {from} 到 {to} 之间以这种方式卡死了 {n} 次。引擎的看门狗每次都在同一个地方结束卡死，所以这说明游戏一直在卡死，而不是说每次卡死的原因都相同。"
-  }
+  },
+  "known.old": "{name} {installed} 早于 {needed}，后者是适用于游戏 {game} 的第一个 {name} 版本（{date}）。请更新到 {needed} 或更高版本。",
+  "known.oldNoDate": "{name} {installed} 早于 {needed}，后者是适用于游戏 {game} 的第一个 {name} 版本。请更新到 {needed} 或更高版本。",
+  "known.noRelease": "{name} {installed} 是为游戏 {built} 构建的；在制作此版 Crash Doctor 时（{date}），还没有适用于 {game} 的 {name} 版本。何时发布请看它的 Nexus 页面。",
+  "plugin.refusedPlain": "简单地说：{name} {version} 是为游戏构建 {runtime} 制作的，而 RED4ext 不会在非目标构建上启动插件。在作者为你的游戏发布新版本之前，它只是被关闭，并没有损坏。",
+  "update.fw.pluginDiedLoading": "游戏在 RED4ext 加载 {name} 时关闭了：RED4ext 日志停在“Loading plugin … {name}.dll”，之后再无内容。为旧版游戏构建的原生插件可能会这样让新版游戏在启动几秒后崩溃。",
+  "update.adviceKnown": "请更新上面列出的、已经有 {version} 版本的框架。其余的请等待它们发布新版本，而不要逐个重装或禁用模组；在那之前不带模组游玩最稳妥。",
+  "update.sources": "以各框架写入自身日志的内容为准。这里列出的版本来自各框架的发布说明，核对截至 {date}；之后可能已有更新的版本。",
+  "update.leadRecent": "你的游戏版本是 {version}，即 {date} 发布的更新。",
+  "verdict.diedLoading": "游戏在启动 {secs} 秒后关闭，当时 RED4ext 正在加载原生插件 {name}：RED4ext 日志停在“Loading plugin … {name}.dll”，之后再无内容，所以游戏是在该插件启动时崩溃的。",
+  "verdict.diedLoadingNoReport": "游戏自带的崩溃报告器没有为此写报告，这种启动早期的崩溃常常如此。",
+  "verdict.winUnknown": "Windows 记录了这次崩溃，但无法指出模块：游戏跳转到了一个没有加载代码的地址。调用已被移动或卸载的代码时就会这样。",
+  "ev.diedLoading": "日志停在“Loading plugin … {name}.dll”，之后没有内容",
+  "suspect.diedLoading": "游戏在这个插件启动时崩溃：RED4ext 日志停在“Loading plugin … {name}.dll”。",
+  "rule.rs25.title": "{mod} 是为旧版游戏编写的，它让所有脚本模组都无法加载",
+  "rule.rs25.detail": "redscript 无法编译它。游戏更新 2.5 给 InventoryItemModeLogicController.{method} 增加了一个参数，而 {mod} 仍在挂接没有该参数的旧版本。只要有一个脚本编译失败，redscript 就一个都不加载，因此在修好之前你所有的 redscript 模组都处于关闭状态。请把 {mod} 更新到适用于 2.5 的版本，或在有新版本之前将其移除。redscript 写下的内容：",
+  "fmt.date.dmy": "yyyy年M月d日"
 }

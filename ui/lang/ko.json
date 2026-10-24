@@ -261,7 +261,6 @@
   "update.adviceBad": "모드를 다시 설치하거나 하나씩 끄기보다는, 거부했거나 시작되지 않은 프레임워크가 {version}용 버전을 내놓을 때까지 기다리세요(Nexus 페이지에 일정이 나옵니다). 그때까지는 모드 없이 플레이하는 것이 안전합니다.",
   "update.adviceWaiting": "게임을 한 번 실행한 뒤 다시 검사하세요. 각 프레임워크는 새 버전에서 작동하는지 로그에 기록합니다.",
   "update.adviceFine": "Crash Doctor가 찾은 모든 프레임워크가 새 버전에서 문제없이 실행되었습니다.",
-  "update.honest": "Crash Doctor는 어떤 프레임워크 버전이 어떤 게임 버전을 지원하는지 목록을 두지 않습니다. 그런 목록을 검증할 수 없기 때문입니다. 각 프레임워크가 자체 로그에 쓴 내용만 보고합니다.",
   "word.nMore": {
     "other": "외 {n}개"
   },
@@ -1272,5 +1271,21 @@
   "flag.fixAvailable": "알려진 수정 있음",
   "verdict.repeatHang": {
     "other": "{from}부터 {to}까지 게임이 이런 식으로 {n}번 멈췄습니다. 엔진의 워치독은 모든 프리징을 같은 지점에서 끝내므로, 이는 게임이 계속 멈춘다는 뜻이지 모든 프리징의 원인이 같다는 뜻은 아닙니다."
-  }
+  },
+  "known.old": "{name} {installed}은(는) 게임 {game}용 첫 {name} 릴리스인 {needed}보다 오래된 버전입니다({date}). {needed} 이상으로 업데이트하세요.",
+  "known.oldNoDate": "{name} {installed}은(는) 게임 {game}용 첫 {name} 릴리스인 {needed}보다 오래된 버전입니다. {needed} 이상으로 업데이트하세요.",
+  "known.noRelease": "{name} {installed}은(는) 게임 {built}용으로 빌드되었고, 이 버전의 Crash Doctor를 만들 때({date})는 {game}용 {name} 릴리스가 아직 없었습니다. 출시 시기는 Nexus 페이지에서 확인할 수 있습니다.",
+  "plugin.refusedPlain": "쉽게 말해 {name} {version}은(는) 게임 빌드 {runtime}용으로 만들어졌고, RED4ext는 대상이 아닌 빌드에서는 플러그인을 시작하지 않습니다. 제작자가 사용 중인 게임용 버전을 낼 때까지 고장 난 것이 아니라 꺼져 있을 뿐입니다.",
+  "update.fw.pluginDiedLoading": "RED4ext가 {name}을(를) 불러오는 중에 게임이 종료되었습니다. RED4ext 로그는 \"Loading plugin … {name}.dll\"에서 끝나고 그 뒤에는 아무것도 없습니다. 이전 게임 버전용 네이티브 플러그인은 새 버전에서 시작 몇 초 만에 이렇게 게임을 멈추게 할 수 있습니다.",
+  "update.adviceKnown": "위에 적힌, {version}용 릴리스가 이미 있는 프레임워크를 업데이트하세요. 나머지는 모드를 하나씩 재설치하거나 끄는 대신 릴리스를 기다리세요. 그때까지는 모드 없이 플레이하는 것이 안전합니다.",
+  "update.sources": "각 프레임워크가 자체 로그에 쓴 내용이 우선입니다. 여기 적힌 버전은 각 프레임워크의 릴리스 노트에서 가져와 {date}까지 확인한 것이며, 그 이후 더 새로운 릴리스가 나왔을 수 있습니다.",
+  "update.leadRecent": "게임 버전은 {version}입니다({date}에 출시된 업데이트).",
+  "verdict.diedLoading": "게임이 시작 {secs}초 후, RED4ext가 네이티브 플러그인 {name}을(를) 불러오는 중에 종료되었습니다. RED4ext 로그는 \"Loading plugin … {name}.dll\"에서 끝나고 그 뒤에는 아무것도 없으므로, 게임은 이 플러그인이 시작하는 도중에 멈췄습니다.",
+  "verdict.diedLoadingNoReport": "게임 자체의 충돌 보고기는 보고서를 쓰지 않았습니다. 이렇게 이른 충돌에서는 흔한 일입니다.",
+  "verdict.winUnknown": "Windows가 충돌을 기록했지만 모듈 이름을 알 수 없었습니다. 게임이 코드가 불러와지지 않은 주소로 점프했습니다. 옮겨졌거나 언로드된 코드를 호출하면 이렇게 보입니다.",
+  "ev.diedLoading": "로그가 \"Loading plugin … {name}.dll\"에서 끝나고 그 뒤로 아무것도 없음",
+  "suspect.diedLoading": "이 플러그인이 시작하는 도중 게임이 멈췄습니다. RED4ext 로그는 \"Loading plugin … {name}.dll\"에서 끝납니다.",
+  "rule.rs25.title": "{mod}은(는) 이전 게임 버전용으로 작성되어 모든 스크립트 모드가 불러와지지 못하게 합니다",
+  "rule.rs25.detail": "redscript가 이를 컴파일하지 못했습니다. 게임 업데이트 2.5에서 InventoryItemModeLogicController.{method}에 매개변수가 추가되었는데, {mod}은(는) 아직 매개변수가 없는 이전 버전에 연결합니다. 스크립트 하나라도 컴파일에 실패하면 redscript는 하나도 불러오지 않으므로, 이 문제가 해결될 때까지 모든 redscript 모드가 꺼져 있습니다. {mod}을(를) 2.5용 버전으로 업데이트하거나, 그런 버전이 나올 때까지 제거하세요. redscript가 쓴 내용:",
+  "fmt.date.dmy": "yyyy년 MMM d일"
 }

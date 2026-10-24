@@ -170,4 +170,11 @@ English whatever the window shows, because the people answering them mostly read
   matched to the crash by process id, and its verdict quoted as its reading. A mod's own code on the faulting thread
   is a direct observation and may be a high suspect; on a frozen thread it is a lead (medium), an overlay a low one.
 - After a game update the answer is usually "your frameworks do not support this version yet". Crash Doctor says so
-  from what each framework's log wrote on the new build, and keeps no table of versions it cannot verify.
+  from what each framework's log wrote on the new build first. Patch 2.5 (22 Oct 2026) showed the limit of logs alone:
+  RED4ext 1.30.0 started on 2.5 without a word of complaint though 1.31.0 is the release for 2.5, and ArchiveXL took
+  the game down before it could log anything. So since 0.8.0 there is a small table (`knowledge\releases\frameworks.json`,
+  `KnownReleases.cs`) holding only checkable facts: the first release that supports a game version, and the newest
+  release on a stated date with the game it was built for - always shown with that date. A version newer than the
+  table knows is never flagged. It still keeps no guess about what a future release will support.
+- A RED4ext log whose last line is "Loading plugin from '...X.dll'" ended inside X's start-up: that is an observation,
+  like ACR seeing a mod's code on the faulting thread, so X is a high suspect for that crash.

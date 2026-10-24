@@ -62,6 +62,7 @@ for m in MODS_REDS:
     W(os.path.join(game, "r6", "scripts", m, m + ".reds"), "// " + m + "\n")
 for name, _ in PLUGINS:
     W(os.path.join(game, "red4ext", "plugins", name, name + ".dll"), "dll")
+W(os.path.join(game, "red4ext", "RED4ext.dll"), "dll")   # Crash Doctor 0.8.0 checks the loader's own file, not the folder
 
 # three sessions, every one of them quit through the menu
 SESSIONS = [

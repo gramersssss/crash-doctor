@@ -261,7 +261,6 @@
   "update.adviceBad": "MODを再インストールしたり1つずつ無効にしたりするのではなく、拒否された、またはまだ起動していないフレームワークが{version}対応版を出すのを待ってください（時期は各Nexusページに書かれています）。それまではMODなしでプレイするのが安全です。",
   "update.adviceWaiting": "ゲームを一度起動してから、もう一度スキャンしてください。各フレームワークは、新しいバージョンで動作するかどうかをログに書き込みます。",
   "update.adviceFine": "Crash Doctorが見つけたすべてのフレームワークが、新しいバージョンで問題なく動作しました。",
-  "update.honest": "Crash Doctorは、どのフレームワークのバージョンがどのゲームバージョンに対応しているかのリストを持っていません。それを確認する手段がないためです。各フレームワークが自身のログに書いた内容を報告しているだけです。",
   "word.nMore": {
     "other": "ほか{n}件"
   },
@@ -1272,5 +1271,21 @@
   "flag.fixAvailable": "既知の修正あり",
   "verdict.repeatHang": {
     "other": "{from}から{to}までに、ゲームはこの形で{n}回フリーズしています。エンジンのウォッチドッグはどのフリーズも同じ場所で終了させるため、これはゲームがフリーズを繰り返していることを示すだけで、すべてのフリーズの原因が同じだという意味ではありません。"
-  }
+  },
+  "known.old": "{name} {installed} は、ゲーム {game} 向けの最初の {name} リリースである {needed} より古いバージョンです（{date}）。{needed} 以降に更新してください。",
+  "known.oldNoDate": "{name} {installed} は、ゲーム {game} 向けの最初の {name} リリースである {needed} より古いバージョンです。{needed} 以降に更新してください。",
+  "known.noRelease": "{name} {installed} はゲーム {built} 向けにビルドされたもので、このバージョンの Crash Doctor を作成した時点（{date}）では {game} 向けの {name} はまだリリースされていませんでした。リリース時期は Nexus のページで確認できます。",
+  "plugin.refusedPlain": "簡単に言うと、{name} {version} はゲームのビルド {runtime} 向けに作られており、RED4ext は対象外のビルドではプラグインを起動しません。作者があなたのゲーム向けのバージョンを出すまで、壊れているのではなく無効になっているだけです。",
+  "update.fw.pluginDiedLoading": "RED4ext が {name} を読み込んでいる最中にゲームが終了しました。RED4ext のログは「Loading plugin … {name}.dll」で途切れ、その後には何もありません。古いゲームバージョン向けのネイティブプラグインは、新しいバージョンで起動数秒後にこのようにゲームを落とすことがあります。",
+  "update.adviceKnown": "上に挙げた、{version} 向けのリリースがすでにあるフレームワークを更新してください。それ以外は、MOD を一つずつ入れ直したり無効にしたりせず、リリースを待ってください。それまでは MOD なしで遊ぶのが安全です。",
+  "update.sources": "各フレームワークが自身のログに書いた内容が最優先です。ここで挙げたバージョンは各フレームワークのリリースノートに基づき、{date} までに確認したものです。その後、より新しいリリースが出ている可能性があります。",
+  "update.leadRecent": "お使いのゲームは {version}（{date} にリリースされたアップデート）です。",
+  "verdict.diedLoading": "ゲームは起動から {secs} 秒後、RED4ext がネイティブプラグイン {name} を読み込んでいる最中に終了しました。RED4ext のログは「Loading plugin … {name}.dll」で途切れ、その後には何もないため、ゲームはこのプラグインの起動中に落ちています。",
+  "verdict.diedLoadingNoReport": "ゲーム自身のクラッシュレポーターはレポートを書いていません。起動直後のクラッシュではよくあることです。",
+  "verdict.winUnknown": "Windows はクラッシュを記録しましたが、モジュールを特定できませんでした。ゲームはコードが読み込まれていないアドレスにジャンプしています。移動またはアンロードされたコードを呼び出すと、このように見えます。",
+  "ev.diedLoading": "ログは「Loading plugin … {name}.dll」で途切れ、その後は何もない",
+  "suspect.diedLoading": "このプラグインの起動中にゲームが落ちました。RED4ext のログは「Loading plugin … {name}.dll」で途切れています。",
+  "rule.rs25.title": "{mod} は古いゲームバージョン向けに書かれており、すべてのスクリプト MOD の読み込みを止めています",
+  "rule.rs25.detail": "redscript はこれをコンパイルできませんでした。アップデート 2.5 で InventoryItemModeLogicController.{method} に引数が追加されましたが、{mod} は引数のない古いバージョンにまだフックしています。スクリプトが一つでもコンパイルに失敗すると redscript はどれも読み込まないため、これが直るまで redscript の MOD はすべて無効です。{mod} を 2.5 向けのバージョンに更新するか、それが出るまで外してください。redscript の出力:",
+  "fmt.date.dmy": "yyyy年M月d日"
 }

@@ -62,6 +62,7 @@ public static class Rules
         // what the mod loaders reported this launch
         NativePluginsRefusingToLoad,
         ArchiveXlStartupProblems,
+        ScriptsWrittenForTheOldInventoryFilters,
         RedscriptProblems,
         ScriptErrorSpam,
         DuplicatedScripts,
@@ -398,7 +399,7 @@ public static class Rules
             {
                 Severity = "medium",
                 Title = L.T("rule.plugin.title", name),
-                Detail = L.T("rule.plugin.detail", inc),
+                Detail = L.Cat(L.T("rule.plugin.detail", inc), GameUpdate.RefusedPlain(inc)),
                 Mod = owner,
                 Flag = L.T("flag.pluginNotLoading"),
                 Action = Analyzer.NexusAction(d, owner),
@@ -443,6 +444,52 @@ public static class Rules
         return hits;
     }
 
+    // Game update 2.5 (22 Oct 2026) gave InventoryItemModeLogicController.UpdateAvailableItems and RefreshAvailableItems
+    // an optional Bool parameter. A mod that wraps or replaces the old no-argument versions (More Weapon Filters, for
+    // one) no longer compiles - and while one script fails, redscript loads none of them, so every script mod is off.
+    // It fires only on a redscript error that is about those methods: the error text names them, or the line it points
+    // at is the annotation on one of them in that very file. The mod is named from the file's path.
+    static readonly Regex OldFilterHook = new(@"@(?:wrapMethod|replaceMethod)\(\s*InventoryItemModeLogicController\s*\)[^{;]*?func\s+(UpdateAvailableItems|RefreshAvailableItems)\s*\(\s*\)", RegexOptions.Singleline);
+    internal static List<(string mod, string method, string line)> OldInventoryFilterHooks(CollectedData d)
+    {
+        var list = new List<(string, string, string)>();
+        foreach (var (file, text) in d.RedscriptErrorBlocks)
+        {
+            string? method = null;
+            if (text.Contains("InventoryItemModeLogicController", StringComparison.Ordinal))
+                method = Regex.Match(text, @"\b(UpdateAvailableItems|RefreshAvailableItems)\b") is { Success: true } mm ? mm.Groups[1].Value : null;
+            if (method == null && file != null && File.Exists(file) && new FileInfo(file).Length < 1_000_000
+                && Regex.Match(text.Split('\n')[0], @"\.reds:(\d+)") is { Success: true } lm)
+            {
+                var errLine = int.Parse(lm.Groups[1].Value);
+                var src = Files.ReadAllTextShared(file);
+                foreach (Match m in OldFilterHook.Matches(src))
+                {
+                    var at = src[..m.Index].Count(c => c == '\n') + 1;                       // the annotation's line
+                    var funcLine = src[..(m.Index + m.Length)].Count(c => c == '\n') + 1;   // the func line
+                    if (errLine >= at - 1 && errLine <= funcLine + 1) { method = m.Groups[1].Value; break; }
+                }
+            }
+            if (method == null) continue;
+            var owner = (file != null ? Analyzer.GuessOwnerFromText(d, file) : null) ?? Analyzer.GuessOwnerFromText(d, text)
+                        ?? (file != null ? Path.GetFileNameWithoutExtension(file) : "a script mod");
+            var first = text.Split('\n').Select(x => x.Trim()).Where(x => x.Length > 0).ToList();
+            var shown = string.Join(" ", first.Take(4)).Replace(d.Paths.GameDir, "");
+            list.Add((owner, method, shown.Length > 300 ? shown[..300] + "…" : shown));
+        }
+        return list.GroupBy(x => x.Item1).Select(g => g.First()).ToList();
+    }
+    static IEnumerable<RuleHit> ScriptsWrittenForTheOldInventoryFilters(CollectedData d, Report r) =>
+        OldInventoryFilterHooks(d).Select(x => new RuleHit
+        {
+            Severity = "high",
+            Title = L.T("rule.rs25.title", x.mod),
+            Detail = L.Cat(L.T("rule.rs25.detail", x.method, x.mod), x.line),
+            Mod = x.mod,
+            Flag = L.T("flag.doesNotCompile"),
+            Action = Analyzer.NexusAction(d, x.mod),
+        });
+
     // redscript compiles every .reds file at launch. An error means a script mod is not running at all; a warning
     // about a replaced annotation means two mods are fighting over the same method, which is the shape behind a
     // good share of script crashes.
@@ -461,7 +508,8 @@ public static class Rules
                 Flag = overwrite ? L.T("flag.scriptOverridden") : L.T("flag.redscriptWarning"),
             });
         }
-        foreach (var e in d.RedscriptErrors.Take(6))
+        var explained = OldInventoryFilterHooks(d).Select(x => x.mod).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        foreach (var e in d.RedscriptErrors.Where(e => !(Analyzer.GuessOwnerFromText(d, e) is { } o && explained.Contains(o))).Take(6))
             hits.Add(new RuleHit
             {
                 Severity = "high",

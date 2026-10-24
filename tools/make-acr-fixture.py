@@ -36,7 +36,10 @@ io.open(os.path.join(game, "bin", "x64", "plugins", "AdvancedCrashReporter.asi")
 io.open(os.path.join(game, "bin", "x64", "plugins", "cyber_engine_tweaks.asi"), "w").write("asi")
 acr = os.path.join(game, "bin", "x64", "plugins", "AdvancedCrashReporter")
 os.makedirs(os.path.join(acr, "reports"), exist_ok=True)
-shutil.copy2(os.path.join(ACR_REAL, "config.ini"), os.path.join(acr, "config.ini"))
+if os.path.exists(os.path.join(ACR_REAL, "config.ini")):
+    shutil.copy2(os.path.join(ACR_REAL, "config.ini"), os.path.join(acr, "config.ini"))
+else:   # ACR purged by the mod manager: its reports stay behind, its config does not
+    io.open(os.path.join(acr, "config.ini"), "w").write("[general]\n")
 for d in ("TrainerBridge", "ArchiveXL"):
     os.makedirs(os.path.join(game, "red4ext", "plugins", d), exist_ok=True)
     io.open(os.path.join(game, "red4ext", "plugins", d, d + ".dll"), "w").write("dll")

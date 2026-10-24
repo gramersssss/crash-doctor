@@ -283,7 +283,6 @@
   "update.adviceBad": "Espera a que los frameworks que se han negado a cargar o que no se han iniciado publiquen una versión para {version} (sus páginas de Nexus dicen cuándo), en lugar de reinstalar o desactivar mods uno a uno. Hasta entonces, jugar sin mods es la opción segura.",
   "update.adviceWaiting": "Inicia el juego una vez y vuelve a analizar: cada framework escribe en su registro si funciona en la nueva versión.",
   "update.adviceFine": "Todos los frameworks que encontró Crash Doctor han funcionado en la nueva versión sin quejarse.",
-  "update.honest": "Crash Doctor no mantiene una lista de qué versiones de los frameworks son compatibles con qué versión del juego, porque no podría verificarla. Solo informa de lo que cada framework ha escrito en su propio registro.",
   "word.nMore": {
     "one": "{n} más",
     "other": "{n} más"
@@ -1392,5 +1391,21 @@
   "verdict.repeatHang": {
     "one": "El juego se ha colgado de esta forma {n} vez entre el {from} y el {to}.",
     "other": "El juego se ha colgado de esta forma {n} veces entre el {from} y el {to}. El watchdog del motor termina todos los cuelgues en el mismo punto, así que esto indica que el juego se sigue colgando, no que todos los cuelgues tengan la misma causa."
-  }
+  },
+  "known.old": "{name} {installed} es anterior a {needed}, la primera versión de {name} para el juego {game} ({date}). Actualízalo a {needed} o posterior.",
+  "known.oldNoDate": "{name} {installed} es anterior a {needed}, la primera versión de {name} para el juego {game}. Actualízalo a {needed} o posterior.",
+  "known.noRelease": "{name} {installed} se creó para el juego {built}, y aún no había una versión de {name} para {game} cuando se hizo esta versión de Crash Doctor ({date}); su página de Nexus dirá cuándo la haya.",
+  "plugin.refusedPlain": "Dicho claro: {name} {version} se creó para la compilación {runtime} del juego, y RED4ext no inicia un plugin en una compilación para la que no se hizo. Está desactivado, no roto, hasta que su autor publique una versión para tu juego.",
+  "update.fw.pluginDiedLoading": "El juego se cerró mientras RED4ext cargaba {name}: el registro de RED4ext termina en «Loading plugin … {name}.dll» sin nada después. Un plugin nativo creado para una versión anterior del juego puede tumbarlo así en una nueva, segundos después de arrancar.",
+  "update.adviceKnown": "Actualiza los frameworks que ya tienen versión para {version}, citados arriba. Para los demás, espera a sus versiones en lugar de reinstalar o desactivar mods uno a uno; jugar sin mods hasta entonces es lo seguro.",
+  "update.sources": "Lo que cada framework escribió en su propio registro va primero. Las versiones citadas aquí salen de las notas de versión de cada framework, comprobadas hasta el {date}; puede haber salido una más nueva desde entonces.",
+  "update.leadRecent": "Tu juego es la versión {version}, la actualización publicada el {date}.",
+  "verdict.diedLoading": "El juego se cerró {secs} s después de arrancar, mientras RED4ext cargaba el plugin nativo {name}: el registro de RED4ext termina en «Loading plugin … {name}.dll» sin nada después, así que el juego cayó durante el arranque de ese plugin.",
+  "verdict.diedLoadingNoReport": "El propio informador de fallos del juego no escribió ningún informe, algo habitual en un fallo tan temprano.",
+  "verdict.winUnknown": "Windows registró el fallo pero no pudo nombrar un módulo: el juego saltó a una dirección donde no había código cargado. Así se ve una llamada a código que se ha movido o descargado.",
+  "ev.diedLoading": "el registro termina en «Loading plugin … {name}.dll», nada después",
+  "suspect.diedLoading": "El juego cayó mientras este plugin arrancaba: el registro de RED4ext termina en «Loading plugin … {name}.dll».",
+  "rule.rs25.title": "{mod} se escribió para una versión anterior del juego e impide que se cargue cualquier mod de script",
+  "rule.rs25.detail": "redscript no pudo compilarlo. La actualización 2.5 añadió un parámetro a InventoryItemModeLogicController.{method}, y {mod} aún se engancha a la versión antigua sin él. Mientras un script no compile, redscript no carga ninguno, así que todos tus mods de redscript están desactivados hasta que se arregle. Actualiza {mod} a una versión para 2.5 o quítalo hasta que la haya. Lo que escribió redscript:",
+  "fmt.date.dmy": "d MMM yyyy"
 }

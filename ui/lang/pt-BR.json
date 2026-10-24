@@ -283,7 +283,6 @@
   "update.adviceBad": "Espere os frameworks que recusaram ou não iniciaram lançarem uma versão para {version} (as páginas deles no Nexus dizem quando), em vez de reinstalar ou desativar mods um por um. Jogar sem mods até lá é a escolha segura.",
   "update.adviceWaiting": "Inicie o jogo uma vez e analise de novo: cada framework escreve no próprio log se roda na nova versão.",
   "update.adviceFine": "Todos os frameworks que o Crash Doctor encontrou rodaram na nova versão sem reclamar.",
-  "update.honest": "O Crash Doctor não mantém uma lista de quais versões de framework suportam qual versão do jogo, porque não teria como conferi-la. Ele só relata o que cada framework escreveu no próprio log.",
   "word.nMore": {
     "one": "mais {n}",
     "other": "mais {n}"
@@ -1392,5 +1391,21 @@
   "verdict.repeatHang": {
     "one": "O jogo travou desta forma {n} vez entre {from} e {to}.",
     "other": "O jogo travou desta forma {n} vezes entre {from} e {to}. O watchdog da engine encerra todo travamento no mesmo ponto, então isto indica que o jogo continua travando, não que todos os travamentos têm a mesma causa."
-  }
+  },
+  "known.old": "{name} {installed} é anterior a {needed}, a primeira versão do {name} para o jogo {game} ({date}). Atualize para {needed} ou mais recente.",
+  "known.oldNoDate": "{name} {installed} é anterior a {needed}, a primeira versão do {name} para o jogo {game}. Atualize para {needed} ou mais recente.",
+  "known.noRelease": "{name} {installed} foi feito para o jogo {built}, e ainda não havia versão do {name} para {game} quando esta versão do Crash Doctor foi feita ({date}); a página dele no Nexus dirá quando houver.",
+  "plugin.refusedPlain": "Em resumo: {name} {version} foi feito para a build {runtime} do jogo, e o RED4ext não inicia um plugin numa build para a qual ele não foi feito. Ele está desligado, não quebrado, até o autor lançar uma versão para o seu jogo.",
+  "update.fw.pluginDiedLoading": "O jogo fechou enquanto o RED4ext carregava {name}: o log do RED4ext para em \"Loading plugin … {name}.dll\" sem nada depois. Um plugin nativo feito para uma versão mais antiga do jogo pode derrubá-lo assim numa nova, segundos depois de iniciar.",
+  "update.adviceKnown": "Atualize os frameworks que já têm versão para {version}, citados acima. Para os outros, espere as versões deles em vez de reinstalar ou desativar mods um por um; jogar sem mods até lá é a escolha segura.",
+  "update.sources": "O que cada framework escreveu no próprio log vem primeiro. As versões citadas aqui vêm das notas de versão dos frameworks, conferidas até {date}; pode ter saído uma mais nova desde então.",
+  "update.leadRecent": "Seu jogo está na versão {version}, a atualização lançada em {date}.",
+  "verdict.diedLoading": "O jogo fechou {secs} s depois de iniciar, enquanto o RED4ext carregava o plugin nativo {name}: o log do RED4ext para em \"Loading plugin … {name}.dll\" sem nada depois, então o jogo caiu durante a inicialização desse plugin.",
+  "verdict.diedLoadingNoReport": "O próprio relator de falhas do jogo não escreveu relatório, o que é comum numa falha tão cedo na inicialização.",
+  "verdict.winUnknown": "O Windows registrou a falha, mas não conseguiu nomear um módulo: o jogo saltou para um endereço onde não havia código carregado. É assim que aparece uma chamada para código que foi movido ou descarregado.",
+  "ev.diedLoading": "o log para em \"Loading plugin … {name}.dll\", nada depois",
+  "suspect.diedLoading": "O jogo caiu enquanto este plugin iniciava: o log do RED4ext para em \"Loading plugin … {name}.dll\".",
+  "rule.rs25.title": "{mod} foi escrito para uma versão mais antiga do jogo e impede que qualquer mod de script carregue",
+  "rule.rs25.detail": "O redscript não conseguiu compilá-lo. A atualização 2.5 acrescentou um parâmetro a InventoryItemModeLogicController.{method}, e {mod} ainda se prende à versão antiga sem ele. Enquanto um script não compila, o redscript não carrega nenhum, então todos os seus mods de redscript ficam desligados até isso ser resolvido. Atualize {mod} para uma versão feita para a 2.5 ou remova-o até haver uma. O que o redscript escreveu:",
+  "fmt.date.dmy": "d 'de' MMM 'de' yyyy"
 }

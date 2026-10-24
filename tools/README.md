@@ -80,7 +80,8 @@ that they go wrong on other people's machines. What it manufactures:
   code rewritten to a stack overflow, and the engine's own out-of-memory flag flipped on in the telemetry
 - three RED4ext logs for sessions that each die about a minute in, one of which also names a native plugin the
   loader refused, and an ArchiveXL log with a failing world-sector patch and a missing resource
-- a redscript log with one script that does not compile and one method two mods both replace
+- a redscript log with one script that does not compile and one method two mods both replace, plus a mod still hooking the
+  no-argument `UpdateAvailableItems` that game 2.5 changed (ScriptsWrittenForTheOldInventoryFilters)
 - a CET mod log with twenty-one identical errors, and one script bundled byte-for-byte by two mods
 - graphics settings with frame generation, ray tracing and path tracing all on
 - a Vortex deployment manifest listing five files, three of which are not on disk
@@ -216,3 +217,24 @@ checks that every key the engine (`L.T`, `L.P`, `L.TF`) and the page (`t`, `tp`,
 that every engine call passes as many arguments as the English text has placeholders, and that each translation has
 the same keys, the same placeholders, the plural forms its language needs and the same `<b>` tags. Run it after any
 wording change; 0 problems is the bar.
+
+## make-update25-fixture.py
+
+    python tools/make-update25-fixture.py C:\temp\fixtures
+    set CRASHDOCTOR_TEST_ROOT=C:\temp\fixtures\updated25        (or ...\updated25-new)
+
+Gary's launches of 22 Oct 2026, rebuilt: game 2.5 (3.0.88.46235) with the 2.31-era frameworks. RED4ext 1.30.0 refuses
+AppearanceRuntimePlugin ("requested runtime ... 3.0.80.51928"), starts loading ArchiveXL 1.27.5, and the log stops
+there; the first launch has an Advanced Crash Reporter report (synthetic, the real one's landmarks), the second has
+nothing (Windows' own crash record cannot be faked). Expected in `updated25`: the high update item first in Health,
+naming RED4ext 1.30.0 < 1.31.0 and CET 1.37.1 < 1.38.0 (update them), RedFileSystem 0.15.1 < 0.16.0, ArchiveXL /
+TweakXL / Codeware built for 2.31 with no 2.5 release on 24 Oct 2026, AppearanceRuntimePlugin refused "in plain
+words", and the "update these, wait for the rest" advice; those six "outdated" in Requirements; both 2.5 sessions
+"closed 3 s after it started, while RED4ext was loading the native plugin ArchiveXL" with ArchiveXL the high suspect.
+Scan it twice; the second scan must say the same. `updated25-new` has no 2.31 session at all (a new user, or the old
+logs rotated away): the update item must still appear, led by "Your game is 2.5, the update released on 22 Oct" -
+from the release table (`knowledge\releases\frameworks.json`), and only until 30 days after that date.
+
+Notes (24 Oct 2026): `make-acr-fixture.py` writes a stand-in `config.ini` when ACR itself has been purged (its reports
+stay behind). `make-twobuild-fixture.py` needs the two 6 Sep 2026 crash folders, which the game has since rotated out
+of this PC's ReportQueue, so it cannot be rebuilt here any more.

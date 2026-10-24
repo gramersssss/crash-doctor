@@ -327,7 +327,6 @@
   "update.adviceBad": "Počkej, až frameworky, které odmítly nebo se nespustily, vydají verzi pro {version} (jejich stránky na Nexusu řeknou kdy), místo přeinstalování nebo vypínání modů jednoho po druhém. Hrát do té doby bez modů je bezpečná volba.",
   "update.adviceWaiting": "Jednou spusť hru a znovu spusť sken: každý framework zapíše do svého logu, jestli na nové verzi běží.",
   "update.adviceFine": "Každý framework, který Crash Doctor našel, na nové verzi běžel bez stížností.",
-  "update.honest": "Crash Doctor nevede seznam, které verze frameworků podporují kterou verzi hry, protože by ho nedokázal ověřit. Hlásí jen to, co každý framework zapsal do vlastního logu.",
   "word.nMore": {
     "one": "ještě {n}",
     "few": "ještě {n}",
@@ -1632,5 +1631,21 @@
     "few": "Hra takto zamrzla mezi {from} a {to} {n}×. Watchdog enginu ukončí každé zamrznutí na stejném místě, takže to říká, že hra opakovaně zamrzá, ne že má každé zamrznutí stejnou příčinu.",
     "many": "Hra takto zamrzla mezi {from} a {to} {n}×. Watchdog enginu ukončí každé zamrznutí na stejném místě, takže to říká, že hra opakovaně zamrzá, ne že má každé zamrznutí stejnou příčinu.",
     "other": "Hra takto zamrzla mezi {from} a {to} {n}×. Watchdog enginu ukončí každé zamrznutí na stejném místě, takže to říká, že hra opakovaně zamrzá, ne že má každé zamrznutí stejnou příčinu."
-  }
+  },
+  "known.old": "{name} {installed} je starší než {needed}, první vydání {name} pro hru {game} ({date}). Aktualizuj na {needed} nebo novější.",
+  "known.oldNoDate": "{name} {installed} je starší než {needed}, první vydání {name} pro hru {game}. Aktualizuj na {needed} nebo novější.",
+  "known.noRelease": "{name} {installed} byl sestaven pro hru {built} a v době vzniku této verze Crash Doctoru ({date}) ještě neexistovalo vydání {name} pro {game}; jeho stránka na Nexusu řekne, kdy bude.",
+  "plugin.refusedPlain": "Jednoduše řečeno: {name} {version} byl sestaven pro build hry {runtime} a RED4ext nespustí plugin na buildu, pro který nebyl sestaven. Je vypnutý, ne rozbitý, dokud jeho autor nevydá verzi pro tvou hru.",
+  "update.fw.pluginDiedLoading": "Hra se zavřela, zatímco RED4ext načítal {name}: log RED4ext končí na „Loading plugin … {name}.dll“ a nic po něm není. Nativní plugin sestavený pro starší verzi hry ji takto může na nové verzi shodit pár sekund po startu.",
+  "update.adviceKnown": "Aktualizuj frameworky, které už mají vydání pro {version} (uvedené výše). Na ostatní počkej, místo abys přeinstalovával nebo vypínal mody jeden po druhém; do té doby je hraní bez modů bezpečná volba.",
+  "update.sources": "Na prvním místě je to, co každý framework zapsal do vlastního logu. Zde uvedené verze pocházejí z poznámek k vydání frameworků, ověřených do {date}; od té doby mohla vyjít novější.",
+  "update.leadRecent": "Tvoje hra je ve verzi {version}, aktualizace vydané {date}.",
+  "verdict.diedLoading": "Hra se zavřela {secs} s po startu, zatímco RED4ext načítal nativní plugin {name}: log RED4ext končí na „Loading plugin … {name}.dll“ a nic po něm není, takže hra spadla při startu tohoto pluginu.",
+  "verdict.diedLoadingNoReport": "Vlastní hlásič pádů hry k tomu nezapsal žádnou zprávu, což je u tak časného pádu běžné.",
+  "verdict.winUnknown": "Windows pád zaznamenal, ale nedokázal určit modul: hra skočila na adresu, kde nebyl načtený žádný kód. Tak vypadá volání kódu, který byl přesunut nebo uvolněn.",
+  "ev.diedLoading": "log končí na „Loading plugin … {name}.dll“, nic po něm",
+  "suspect.diedLoading": "Hra spadla při startu tohoto pluginu: log RED4ext končí na „Loading plugin … {name}.dll“.",
+  "rule.rs25.title": "{mod} byl napsán pro starší verzi hry a brání načtení všech skriptových modů",
+  "rule.rs25.detail": "redscript ho nedokázal zkompilovat. Aktualizace 2.5 přidala parametr do InventoryItemModeLogicController.{method} a {mod} se stále napojuje na starou verzi bez něj. Dokud se jeden skript nezkompiluje, redscript nenačte žádný, takže všechny tvoje redscript mody jsou vypnuté, dokud se to nevyřeší. Aktualizuj {mod} na verzi pro 2.5, nebo ho odstraň, dokud nebude. Co zapsal redscript:",
+  "fmt.date.dmy": "d. MMM yyyy"
 }

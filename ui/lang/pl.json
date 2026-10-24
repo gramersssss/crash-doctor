@@ -327,7 +327,6 @@
   "update.adviceBad": "Zaczekaj, aż frameworki, które odmówiły działania lub się nie uruchomiły, wydadzą wersję dla {version} (ich strony na Nexusie podają, kiedy), zamiast przeinstalowywać lub wyłączać mody jeden po drugim. Do tego czasu bezpiecznym wyborem jest gra bez modów.",
   "update.adviceWaiting": "Uruchom grę raz i zeskanuj ponownie: każdy framework zapisuje w swoim logu, czy działa w nowej wersji.",
   "update.adviceFine": "Każdy framework, który znalazł Crash Doctor, działał w nowej wersji bez zastrzeżeń.",
-  "update.honest": "Crash Doctor nie prowadzi listy tego, które wersje frameworków obsługują którą wersję gry, bo nie byłby w stanie jej sprawdzić. Podaje tylko to, co każdy framework zapisał we własnym logu.",
   "word.nMore": {
     "one": "jeszcze {n}",
     "few": "jeszcze {n}",
@@ -1632,5 +1631,21 @@
     "few": "Gra zawiesiła się w ten sposób {n} razy między {from} a {to}. Watchdog silnika kończy każde zawieszenie w tym samym miejscu, więc oznacza to, że gra ciągle się zawiesza, a nie że każde zawieszenie ma tę samą przyczynę.",
     "many": "Gra zawiesiła się w ten sposób {n} razy między {from} a {to}. Watchdog silnika kończy każde zawieszenie w tym samym miejscu, więc oznacza to, że gra ciągle się zawiesza, a nie że każde zawieszenie ma tę samą przyczynę.",
     "other": "Gra zawiesiła się w ten sposób {n} razy między {from} a {to}. Watchdog silnika kończy każde zawieszenie w tym samym miejscu, więc oznacza to, że gra ciągle się zawiesza, a nie że każde zawieszenie ma tę samą przyczynę."
-  }
+  },
+  "known.old": "{name} {installed} jest starszy niż {needed}, pierwsze wydanie {name} dla gry {game} ({date}). Zaktualizuj do {needed} lub nowszego.",
+  "known.oldNoDate": "{name} {installed} jest starszy niż {needed}, pierwsze wydanie {name} dla gry {game}. Zaktualizuj do {needed} lub nowszego.",
+  "known.noRelease": "{name} {installed} zbudowano dla gry {built}, a gdy powstawała ta wersja Crash Doctora ({date}), nie było jeszcze wydania {name} dla {game}; jego strona na Nexusie poda, kiedy się pojawi.",
+  "plugin.refusedPlain": "Mówiąc prosto: {name} {version} zbudowano dla wersji gry {runtime}, a RED4ext nie uruchamia wtyczki na wersji, dla której jej nie zbudowano. Jest wyłączona, nie zepsuta, dopóki autor nie wyda wersji dla twojej gry.",
+  "update.fw.pluginDiedLoading": "Gra zamknęła się, gdy RED4ext wczytywał {name}: log RED4ext kończy się na „Loading plugin … {name}.dll” i nic po nim nie ma. Natywna wtyczka zbudowana dla starszej wersji gry może tak wyłożyć nową wersję kilka sekund po starcie.",
+  "update.adviceKnown": "Zaktualizuj frameworki, które mają już wydanie dla {version} (wymienione wyżej). Na pozostałe poczekaj, zamiast przeinstalowywać lub wyłączać mody jeden po drugim; do tego czasu gra bez modów to bezpieczny wybór.",
+  "update.sources": "Najważniejsze jest to, co każdy framework zapisał we własnym logu. Wymienione tu wersje pochodzą z informacji o wydaniach frameworków, sprawdzonych do {date}; od tego czasu mogło wyjść nowsze wydanie.",
+  "update.leadRecent": "Twoja gra to wersja {version}, aktualizacja wydana {date}.",
+  "verdict.diedLoading": "Gra zamknęła się {secs} s po starcie, gdy RED4ext wczytywał natywną wtyczkę {name}: log RED4ext kończy się na „Loading plugin … {name}.dll” i nic po nim nie ma, więc gra padła podczas uruchamiania tej wtyczki.",
+  "verdict.diedLoadingNoReport": "Własny reporter awarii gry nie zapisał raportu, co przy tak wczesnej awarii jest częste.",
+  "verdict.winUnknown": "Windows zarejestrował awarię, ale nie potrafił wskazać modułu: gra skoczyła pod adres, pod którym nie było wczytanego kodu. Tak wygląda wywołanie kodu, który został przeniesiony lub zwolniony.",
+  "ev.diedLoading": "log kończy się na „Loading plugin … {name}.dll”, nic po nim",
+  "suspect.diedLoading": "Gra padła podczas uruchamiania tej wtyczki: log RED4ext kończy się na „Loading plugin … {name}.dll”.",
+  "rule.rs25.title": "{mod} napisano dla starszej wersji gry i blokuje on wczytanie wszystkich modów skryptowych",
+  "rule.rs25.detail": "redscript nie mógł go skompilować. Aktualizacja 2.5 dodała parametr do InventoryItemModeLogicController.{method}, a {mod} wciąż podpina się pod starą wersję bez niego. Dopóki jeden skrypt się nie kompiluje, redscript nie wczytuje żadnego, więc wszystkie twoje mody redscript są wyłączone, dopóki to nie zostanie naprawione. Zaktualizuj {mod} do wersji dla 2.5 albo usuń go, dopóki takiej nie będzie. Co zapisał redscript:",
+  "fmt.date.dmy": "d MMM yyyy"
 }

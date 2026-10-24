@@ -283,7 +283,6 @@
   "update.adviceBad": "Várd meg, amíg az elutasított vagy el sem indult keretrendszerek kiadnak egy {version} verzióhoz készült változatot (a Nexus-oldalukon szerepel, mikor), ahelyett hogy egyenként újratelepítenéd vagy kikapcsolnád a modokat. Addig a modok nélküli játék a biztonságos választás.",
   "update.adviceWaiting": "Indítsd el egyszer a játékot, és futtasd újra a vizsgálatot: minden keretrendszer beírja a naplójába, hogy fut-e az új verzión.",
   "update.adviceFine": "Minden keretrendszer, amelyet a Crash Doctor talált, panasz nélkül lefutott az új verzión.",
-  "update.honest": "A Crash Doctor nem vezet listát arról, hogy melyik keretrendszer-verzió melyik játékverziót támogatja, mert egy ilyet nem tudna ellenőrizni. Csak azt jelenti, amit az egyes keretrendszerek a saját naplójukba írtak.",
   "word.nMore": {
     "one": "még {n}",
     "other": "még {n}"
@@ -1392,5 +1391,21 @@
   "verdict.repeatHang": {
     "one": "A játék {n} alkalommal fagyott le így {from} és {to} között.",
     "other": "A játék {n} alkalommal fagyott le így {from} és {to} között. A motor watchdogja minden lefagyást ugyanott zár le, így ez azt mutatja, hogy a játék rendszeresen lefagy, nem azt, hogy minden lefagyásnak ugyanaz az oka."
-  }
+  },
+  "known.old": "A(z) {name} {installed} régebbi, mint a(z) {needed}, az első {name}-kiadás a(z) {game} játékverzióhoz ({date}). Frissítsd {needed} vagy újabb verzióra.",
+  "known.oldNoDate": "A(z) {name} {installed} régebbi, mint a(z) {needed}, az első {name}-kiadás a(z) {game} játékverzióhoz. Frissítsd {needed} vagy újabb verzióra.",
+  "known.noRelease": "A(z) {name} {installed} a(z) {built} játékverzióhoz készült, és amikor a Crash Doctor ezen verziója készült ({date}), még nem volt {name}-kiadás a(z) {game} verzióhoz; a Nexus-oldala jelzi, ha lesz.",
+  "plugin.refusedPlain": "Egyszerűen: a(z) {name} {version} a(z) {runtime} játékbuildhez készült, és a RED4ext nem indít el olyan buildön plugint, amelyhez nem készült. Ki van kapcsolva, nem hibás, amíg a szerzője ki nem ad egy verziót a játékodhoz.",
+  "update.fw.pluginDiedLoading": "A játék bezárult, miközben a RED4ext a(z) {name} pluginot töltötte: a RED4ext naplója a „Loading plugin … {name}.dll” sorral ér véget, utána semmi. Egy régebbi játékverzióhoz készült natív plugin így döntheti le az új verziót, másodpercekkel az indítás után.",
+  "update.adviceKnown": "Frissítsd azokat a fent felsorolt keretrendszereket, amelyeknek már van kiadása a(z) {version} verzióhoz. A többire várj, ahelyett hogy egyenként újratelepítenéd vagy kikapcsolnád a modokat; addig a modok nélküli játék a biztos választás.",
+  "update.sources": "Elsődleges az, amit az egyes keretrendszerek a saját naplójukba írtak. Az itt megnevezett verziók a keretrendszerek kiadási megjegyzéseiből származnak, {date}-ig ellenőrizve; azóta újabb is megjelenhetett.",
+  "update.leadRecent": "A játékod verziója {version}, a(z) {date}-án megjelent frissítés.",
+  "verdict.diedLoading": "A játék {secs} másodperccel az indítás után bezárult, miközben a RED4ext a(z) {name} natív plugint töltötte: a RED4ext naplója a „Loading plugin … {name}.dll” sorral ér véget, utána semmi, vagyis a játék ennek a pluginnak az indulása közben omlott össze.",
+  "verdict.diedLoadingNoReport": "A játék saját hibajelentője nem írt róla jelentést, ami egy ilyen korai összeomlásnál gyakori.",
+  "verdict.winUnknown": "A Windows rögzítette az összeomlást, de nem tudott modult megnevezni: a játék olyan címre ugrott, ahol nem volt betöltött kód. Így néz ki egy hívás olyan kódba, amely elmozdult vagy ki lett töltve.",
+  "ev.diedLoading": "a napló a „Loading plugin … {name}.dll” sorral ér véget, utána semmi",
+  "suspect.diedLoading": "A játék e plugin indulása közben omlott össze: a RED4ext naplója a „Loading plugin … {name}.dll” sorral ér véget.",
+  "rule.rs25.title": "A(z) {mod} egy régebbi játékverzióhoz készült, és megakadályozza, hogy bármelyik szkriptmod betöltődjön",
+  "rule.rs25.detail": "A redscript nem tudta lefordítani. A 2.5-ös frissítés egy paramétert adott az InventoryItemModeLogicController.{method} metódushoz, a(z) {mod} viszont még a régi, paraméter nélküli változatra kapcsolódik. Amíg egy szkript nem fordul le, a redscript egyiket sem tölti be, így minden redscript modod ki van kapcsolva, amíg ez nincs megoldva. Frissítsd a(z) {mod} modot egy 2.5-höz készült verzióra, vagy távolítsd el, amíg nincs ilyen. Amit a redscript írt:",
+  "fmt.date.dmy": "yyyy. MMM d."
 }

@@ -261,7 +261,6 @@
   "update.adviceBad": "請等待那些拒絕載入或尚未啟動的框架推出支援 {version} 的版本（它們的 Nexus 頁面會說明時間），而不是重新安裝模組或一個一個停用。在那之前不使用模組遊玩是安全的選擇。",
   "update.adviceWaiting": "請先啟動一次遊戲，再重新掃描：每個框架都會在自己的日誌中寫下它是否能在新版本上執行。",
   "update.adviceFine": "Crash Doctor 找到的每個框架都已在新版本上執行，沒有任何問題。",
-  "update.honest": "Crash Doctor 沒有保存「哪個框架版本支援哪個遊戲版本」的清單，因為它無法查證這樣的清單。它只會回報每個框架在自己日誌中寫下的內容。",
   "word.nMore": {
     "other": "另外 {n} 個"
   },
@@ -1272,5 +1271,21 @@
   "flag.fixAvailable": "有已知修正",
   "verdict.repeatHang": {
     "other": "遊戲在 {from} 到 {to} 之間以這種方式凍結了 {n} 次。引擎的監視程式每次都在同一個地方結束凍結，所以這只說明遊戲一直凍結，而不是說每次凍結的原因都相同。"
-  }
+  },
+  "known.old": "{name} {installed} 早於 {needed}，後者是適用於遊戲 {game} 的第一個 {name} 版本（{date}）。請更新到 {needed} 或更新版本。",
+  "known.oldNoDate": "{name} {installed} 早於 {needed}，後者是適用於遊戲 {game} 的第一個 {name} 版本。請更新到 {needed} 或更新版本。",
+  "known.noRelease": "{name} {installed} 是為遊戲 {built} 建置的；在製作此版 Crash Doctor 時（{date}），還沒有適用於 {game} 的 {name} 版本。何時推出請看它的 Nexus 頁面。",
+  "plugin.refusedPlain": "簡單來說：{name} {version} 是為遊戲建置 {runtime} 製作的，而 RED4ext 不會在非目標建置上啟動外掛。在作者為你的遊戲推出新版本之前，它只是被關閉，並沒有損壞。",
+  "update.fw.pluginDiedLoading": "遊戲在 RED4ext 載入 {name} 時關閉了：RED4ext 記錄停在「Loading plugin … {name}.dll」，之後再無內容。為舊版遊戲建置的原生外掛可能會這樣讓新版遊戲在啟動幾秒後當掉。",
+  "update.adviceKnown": "請更新上面列出、已經有 {version} 版本的框架。其餘的請等待它們推出新版本，而不要逐一重裝或停用模組；在那之前不帶模組遊玩最穩妥。",
+  "update.sources": "以各框架寫入自身記錄的內容為準。這裡列出的版本來自各框架的發行說明，核對截至 {date}；之後可能已有更新的版本。",
+  "update.leadRecent": "你的遊戲版本是 {version}，即 {date} 推出的更新。",
+  "verdict.diedLoading": "遊戲在啟動 {secs} 秒後關閉，當時 RED4ext 正在載入原生外掛 {name}：RED4ext 記錄停在「Loading plugin … {name}.dll」，之後再無內容，所以遊戲是在該外掛啟動時當掉的。",
+  "verdict.diedLoadingNoReport": "遊戲本身的當機回報器沒有為此寫報告，這種啟動早期的當機常常如此。",
+  "verdict.winUnknown": "Windows 記錄了這次當機，但無法指出模組：遊戲跳到了一個沒有載入程式碼的位址。呼叫已被移動或卸載的程式碼時就會這樣。",
+  "ev.diedLoading": "記錄停在「Loading plugin … {name}.dll」，之後沒有內容",
+  "suspect.diedLoading": "遊戲在這個外掛啟動時當掉：RED4ext 記錄停在「Loading plugin … {name}.dll」。",
+  "rule.rs25.title": "{mod} 是為舊版遊戲撰寫的，它讓所有腳本模組都無法載入",
+  "rule.rs25.detail": "redscript 無法編譯它。遊戲更新 2.5 為 InventoryItemModeLogicController.{method} 增加了一個參數，而 {mod} 仍在掛接沒有該參數的舊版本。只要有一個腳本編譯失敗，redscript 就一個都不載入，因此在修好之前你所有的 redscript 模組都處於關閉狀態。請把 {mod} 更新到適用於 2.5 的版本，或在有新版本之前將其移除。redscript 寫下的內容：",
+  "fmt.date.dmy": "yyyy年M月d日"
 }

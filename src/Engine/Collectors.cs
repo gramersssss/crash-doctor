@@ -24,6 +24,11 @@ public sealed class Red4extSession
     public List<(string name, string version)> PluginsLoaded { get; set; } = new();
     public List<string> Incompatible { get; set; } = new();  // raw warning lines
     public List<string> Errors { get; set; } = new();        // RED4ext's own [error]/[critical] lines, e.g. a game version it cannot run on
+    public DateTime LastLineAt { get; set; }                 // the time on the last line the log has
+    // The plugin RED4ext was loading when the log stopped: its last line is "Loading plugin from '...\X.dll'..." with
+    // nothing after it. The game died inside that plugin's start-up (22 Oct 2026: ArchiveXL 1.27.5, built for 2.31,
+    // on game 2.5 - c0000005 three seconds after launch, no engine crash report).
+    public string? DiedLoading { get; set; }
 }
 
 // ArchiveXL logs every world sector it patches as it streams in, and names each .xl file applied to it. That makes it
@@ -69,6 +74,7 @@ public sealed class CollectedData
     public string? AcrDir { get; set; }                        // where ACR is installed, when it is
     public List<string> RedscriptWarnings { get; } = new();
     public List<string> RedscriptErrors { get; } = new();
+    public List<(string? file, string text)> RedscriptErrorBlocks { get; } = new();   // full path of the .reds file + up to 8 lines, for rules that read the script
     public List<string> Warnings { get; } = new();          // "could not read X"
     public SystemInfo System { get; set; } = new();
     public ModInventory Mods { get; set; } = new();
@@ -87,6 +93,8 @@ public sealed class CollectedData
     // a change of game build, and what each framework's log says about the new one (GameUpdate.cs)
     public GameVersionChange? GameChange { get; set; }
     public List<FrameworkCheck> FrameworkChecks { get; set; } = new();
+    public string GameVersion { get; set; } = "";                 // "2.5", normalised for the release table
+    public List<KnownCheck> KnownChecks { get; set; } = new();     // frameworks installed now that the table says are behind this game
 }
 
 public static class Collectors
@@ -142,10 +150,14 @@ public static class Collectors
             var s = new Red4extSession { File = f, LastWrite = fi.LastWriteTime };
             string[] lines; try { lines = Files.ReadAllLinesShared(f); } catch { continue; }
             bool inCrash = false;
+            string? loading = null;
             foreach (var line in lines)
             {
                 if (!TryTs(line, out var at)) continue;
                 if (s.Start == default) s.Start = at;
+                s.LastLineAt = at;
+                var lp = Regex.Match(line, @"Loading plugin from '([^']+)'");
+                loading = lp.Success ? Path.GetFileNameWithoutExtension(lp.Groups[1].Value) : null;
                 if (line.Contains("RED4ext (v")) { var m = Regex.Match(line, @"RED4ext \(v([\d.]+)\)"); if (m.Success) s.Red4extVersion = m.Groups[1].Value; }
                 else if (line.Contains("Product version:")) s.ProductVersion = line[(line.IndexOf("Product version:") + 16)..].Trim();
                 else if (line.Contains("File version:")) s.FileVersion = line[(line.IndexOf("File version:") + 13)..].Trim();
@@ -157,6 +169,7 @@ public static class Collectors
                 else if (inCrash && line.Contains("Message:")) { s.CrashMessage = line[(line.IndexOf("Message:") + 8)..].Trim(); inCrash = false; }
                 else if (!inCrash && s.CrashAt == null && (line.Contains("[error") || line.Contains("[critical")) && s.Errors.Count < 8) s.Errors.Add(Regex.Replace(line, @"^\[[^\]]+\]\s*\[[^\]]+\]\s*\[\s*\d+\]\s*", "").Trim());
             }
+            if (loading != null && s.CleanShutdown == null && s.CrashAt == null) s.DiedLoading = loading;
             if (s.Start != default) d.Red4ext.Add(s);
         }
     }
@@ -303,6 +316,15 @@ public static class Collectors
                 var block = new List<string> { lines[i] }; for (int j = i + 1; j < Math.Min(lines.Length, i + 5) && !lines[j].StartsWith("["); j++) block.Add(lines[j].Trim());
                 var txt = string.Join(" ", block.Where(x => x.Length > 0)).Replace(d.Paths.GameDir, "").Trim();
                 (lines[i].StartsWith("[ERROR") ? d.RedscriptErrors : d.RedscriptWarnings).Add(txt.Length > 300 ? txt[..300] + "…" : txt);
+                if (lines[i].StartsWith("[ERROR") && d.RedscriptErrorBlocks.Count < 40)
+                {
+                    var big = new List<string> { lines[i] }; for (int j = i + 1; j < Math.Min(lines.Length, i + 9) && !lines[j].StartsWith("["); j++) big.Add(lines[j].Trim());
+                    var fm = Regex.Match(lines[i], @"At (.+?\.reds)(?::\d+)*:?\s*$");
+                    if (!fm.Success) fm = Regex.Match(lines[i], @"At (.+?\.reds)");
+                    string? file = fm.Success ? fm.Groups[1].Value.Trim() : null;
+                    if (file != null && !Path.IsPathRooted(file)) file = Path.Combine(d.Paths.GameDir, file);
+                    d.RedscriptErrorBlocks.Add((file, string.Join("\n", big)));
+                }
             }
         }
     }

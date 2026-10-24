@@ -137,6 +137,21 @@ public static class Analyzer
     }
 
     // ---------- sessions ----------
+    /// <summary>A crash Windows or Advanced Crash Reporter recorded within a minute of a RED4ext log's last line.</summary>
+    static DateTime? DeathNear(CollectedData d, Red4extSession x)
+    {
+        var from = x.LastLineAt.AddSeconds(-5); var to = x.LastLineAt.AddSeconds(60);
+        var times = d.Events.Where(e => e.Kind == "appcrash" && e.At >= from && e.At <= to).Select(e => e.At)
+                     .Concat(d.AcrReports.Where(a => a.Kind == "crash" && a.At >= from && a.At <= to).Select(a => a.At)).ToList();
+        return times.Count > 0 ? times.Min() : null;
+    }
+
+    /// <summary>The version a plugin announced in its own log at the start of a session ("ArchiveXL 1.27.5 is starting...").</summary>
+    static string? StartingVersion(CollectedData d, string plugin, DateTime from, DateTime to) =>
+        d.Events.Where(e => e.At >= from.AddSeconds(-5) && e.At <= to.AddSeconds(5))
+                .Select(e => Regex.Match(e.Text, "^" + Regex.Escape(plugin) + @" v?(\d+\.\d+(?:\.\d+)?) is starting", RegexOptions.IgnoreCase))
+                .FirstOrDefault(m => m.Success)?.Groups[1].Value;
+
     static List<Session> BuildSessions(CollectedData d)
     {
         var list = new List<Session>();
@@ -152,6 +167,10 @@ public static class Analyzer
             {
                 var cr = d.CrashReporterTimes.Where(t => t >= x.Start && (next == null || t < next)).OrderBy(t => t).FirstOrDefault();
                 if (cr != default) { s.End = cr; s.CrashTime = cr; s.EndKind = EndKind.Unknown; }
+                // the log stops while RED4ext loads a plugin, and Windows or Advanced Crash Reporter recorded a crash
+                // seconds later: the game died in that plugin's start-up (22 Oct 2026, ArchiveXL 1.27.5 on game 2.5)
+                else if (x.DiedLoading != null && !(i == red.Count - 1 && gameRunning) && DeathNear(d, x) is DateTime died)
+                { s.End = died; s.CrashTime = died; s.EndKind = EndKind.Unknown; }
                 else if (i == red.Count - 1 && gameRunning) { s.EndKind = EndKind.Running; }
                 else if (LastActivity(d, x.Start, next) is DateTime seen && seen > x.LastWrite.AddSeconds(30))
                 {
@@ -159,7 +178,8 @@ public static class Analyzer
                     // 0.2-minute sessions (28 Sep); the other logs kept going until the game went away.
                     s.End = seen; s.EndKind = EndKind.Unknown; s.EndFromActivity = true;
                 }
-                else { s.End = x.LastWrite; s.EndKind = EndKind.Unknown; s.DurationKnown = false; }
+                // a log that stops on "Loading plugin ..." ended at its last line, whenever the file itself was last touched
+                else { s.End = x.DiedLoading != null && x.LastLineAt != default ? x.LastLineAt : x.LastWrite; s.EndKind = EndKind.Unknown; s.DurationKnown = false; }
             }
             var end = s.End ?? DateTime.Now;
             s.Minutes = Math.Max(0, (end - s.Start).TotalMinutes);
@@ -246,7 +266,8 @@ public static class Analyzer
         }
         // Advanced Crash Reporter's report for this crash, when it is installed (AdvancedCrashReporter.cs): the name of the
         // function that faulted, and whose native code was running on the thread that died.
-        var acr = s.CrashTime == null ? null : AdvancedCrashReporter.For(d, crashAt, report?.Dir, s.Partial ? crashAt.AddMinutes(-30) : s.Start);
+        var winCrash = d.Events.Any(e => e.Kind == "appcrash" && Math.Abs((e.At - crashAt).TotalSeconds) <= 60);
+        var acr = s.CrashTime == null && !winCrash ? null : AdvancedCrashReporter.For(d, crashAt, report?.Dir, s.Partial ? crashAt.AddMinutes(-30) : s.Start);
         if (acr != null)
         {
             s.AcrFile = acr.File; s.Symbol = acr.Symbol;
@@ -376,13 +397,31 @@ public static class Analyzer
             AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
+        // RED4ext's log stops on "Loading plugin from '...\X.dll'": the game died inside that plugin's start-up. A
+        // direct observation, like ACR seeing a mod's code on the thread - the process ended while X's own code ran.
+        var redLog = s.Red4extLog == null ? null : d.Red4ext.FirstOrDefault(x => x.File == s.Red4extLog);
+        if (redLog?.DiedLoading is { } plugin && !vramOver)
+        {
+            var owner = d.Mods.OwnerOfPlugin(plugin) ?? d.Mods.OwnerOfPlugin(plugin.Replace(" ", "")) ?? plugin;
+            var secs = Math.Max(1, (int)Math.Round((crashAt - s.Start).TotalSeconds));
+            var ver = StartingVersion(d, plugin, s.Start, crashAt) ?? redLog.PluginsLoaded.FirstOrDefault(p => p.name.Equals(plugin, StringComparison.OrdinalIgnoreCase)).version;
+            var known = KnownReleases.Check(plugin, ver, KnownReleases.GameKey(redLog.FileVersion, redLog.ProductVersion));
+            s.EndKind = EndKind.Script; s.Confidence = winCrash || acr != null ? 3 : 2;
+            s.Evidence.Add(new Evidence { TMinus = Math.Max(0, (int)Math.Round((crashAt - redLog.LastLineAt).TotalSeconds)), Source = "RED4ext", Text = L.T("ev.diedLoading", plugin), Hit = true, At = redLog.LastLineAt });
+            s.Evidence = s.Evidence.OrderByDescending(e => e.TMinus).ToList();
+            s.Verdict = L.Cat(L.T("verdict.diedLoading", secs, plugin), report == null ? L.T("verdict.diedLoadingNoReport") : "", known?.Text ?? "", partialNote);
+            s.Suspects.Add(SuspectFor(d, owner, "high", L.T("suspect.diedLoading", plugin)));
+            return;
+        }
         if (appcrash != null)
         {
             s.Confidence = 2; var mod = appcrash.Mod ?? "";
             var raw = appcrash.Module ?? "";
             if (Regex.IsMatch(raw, @"^(nvwgf2um|nvlddmkm|nvgpucomp|amdxc64|amdxx64|atidxx|igd)", RegexOptions.IgnoreCase)) { s.EndKind = EndKind.Gpu; s.Confidence = 3; s.Verdict = L.Cat(L.T("verdict.winDriver", raw), partialNote); s.Suspects.Add(new Suspect { Mod = L.T("suspect.gpuDriver.name"), Level = "high", Why = L.T("suspect.gpuDriver.why"), Actions = { new UiAction("open:driver", L.T("act.deviceManager")) } }); return; }
             if (mod != raw && d.Mods.Find(mod) != null) { s.EndKind = EndKind.Script; s.Confidence = 3; s.Verdict = L.Cat(L.T("verdict.winModDll", raw, mod), partialNote); s.Suspects.Add(SuspectFor(d, mod, "high", L.T("suspect.nativeCode"))); return; }
-            s.Verdict = L.Cat(L.T("verdict.winModule", raw), raw.StartsWith("Cyberpunk2077", StringComparison.OrdinalIgnoreCase) ? L.T("verdict.winGameItself") : "", partialNote);
+            s.Verdict = raw.Length == 0 || raw.Equals("unknown", StringComparison.OrdinalIgnoreCase)
+                ? L.Cat(L.T("verdict.winUnknown"), partialNote)
+                : L.Cat(L.T("verdict.winModule", raw), raw.StartsWith("Cyberpunk2077", StringComparison.OrdinalIgnoreCase) ? L.T("verdict.winGameItself") : "", partialNote);
             AddScriptSuspects(d, s, scriptErrs, xlErrs, crashAt, el);
             return;
         }
