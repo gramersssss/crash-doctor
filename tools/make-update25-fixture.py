@@ -18,12 +18,13 @@ report (synthetic, same landmarks as the real one); the second has none, and Win
 faked, so it stays unconfirmed. Expected:
   - Health, first: high "Your game updated to 2.5, and your frameworks do not all support it yet", saying
     RED4ext 1.30.0 is older than 1.31.0 (the first release for 2.5) and to update it; the game closed while RED4ext
-    was loading ArchiveXL; ArchiveXL / TweakXL / Codeware built for 2.31 with no 2.5 release on 24 Oct 2026;
+    was loading ArchiveXL; ArchiveXL 1.27.5 / TweakXL 1.11.5 / Codeware 1.20.6 older than 1.28.0 / 1.12.0 / 1.21.0,
+    the first releases for 2.5 (25 Oct 2026);
     AppearanceRuntimePlugin refused, in plain words (built for 3.0.80.51928 (2.31)); RedFileSystem 0.15.1 older than
     0.16.0; CET 1.37.1 older than 1.38.0; the "update these, wait for the rest" advice.
   - Requirements: RED4ext, CET, ArchiveXL, TweakXL, Codeware "outdated".
   - The two newest sessions: "The game closed 3 s after it started, while RED4ext was loading the native plugin
-    ArchiveXL", ArchiveXL the high suspect, plus the ArchiveXL 2.31 / no-2.5-release sentence.
+    ArchiveXL", ArchiveXL the high suspect, plus "ArchiveXL 1.27.5 is older than 1.28.0 ... Update it".
   - The rule "Native plugin refuses to load on this patch: AppearanceRuntimePlugin" with the plain-words sentence.
   Scan twice: the second scan reads the remembered change and must say the same.
 

@@ -227,13 +227,17 @@ Gary's launches of 22 Oct 2026, rebuilt: game 2.5 (3.0.88.46235) with the 2.31-e
 AppearanceRuntimePlugin ("requested runtime ... 3.0.80.51928"), starts loading ArchiveXL 1.27.5, and the log stops
 there; the first launch has an Advanced Crash Reporter report (synthetic, the real one's landmarks), the second has
 nothing (Windows' own crash record cannot be faked). Expected in `updated25`: the high update item first in Health,
-naming RED4ext 1.30.0 < 1.31.0 and CET 1.37.1 < 1.38.0 (update them), RedFileSystem 0.15.1 < 0.16.0, ArchiveXL /
-TweakXL / Codeware built for 2.31 with no 2.5 release on 24 Oct 2026, AppearanceRuntimePlugin refused "in plain
-words", and the "update these, wait for the rest" advice; those six "outdated" in Requirements; both 2.5 sessions
+naming RED4ext 1.30.0 < 1.31.0, CET 1.37.1 < 1.38.0, RedFileSystem 0.15.1 < 0.16.0, ArchiveXL 1.27.5 < 1.28.0,
+TweakXL 1.11.5 < 1.12.0 and Codeware 1.20.6 < 1.21.0 (the first 2.5 releases; table dated 25 Oct 2026),
+AppearanceRuntimePlugin refused "in plain words", and the "update these" advice; those six "outdated" in Requirements; both 2.5 sessions
 "closed 3 s after it started, while RED4ext was loading the native plugin ArchiveXL" with ArchiveXL the high suspect.
 Scan it twice; the second scan must say the same. `updated25-new` has no 2.31 session at all (a new user, or the old
 logs rotated away): the update item must still appear, led by "Your game is 2.5, the update released on 22 Oct" -
 from the release table (`knowledge\releases\frameworks.json`), and only until 30 days after that date.
+
+The "no release for this game yet" sentence (`known.noRelease`) no longer fires in any fixture since the table gained
+the 25 Oct 2.5 releases; it was watched firing on 24 Oct (ArchiveXL 1.27.5 "built for 2.31, no release for 2.5 yet")
+and stays for the next patch.
 
 Notes (24 Oct 2026): `make-acr-fixture.py` writes a stand-in `config.ini` when ACR itself has been purged (its reports
 stay behind). `make-twobuild-fixture.py` needs the two 6 Sep 2026 crash folders, which the game has since rotated out
