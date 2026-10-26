@@ -1,9 +1,10 @@
 # Crash Doctor 0.8.0 - release texts (DRAFT - nothing posted yet)
 
-Zip: `dist\CrashDoctor-0.8.0-manual.zip` - 61,787,135 bytes (58.9 MB), SHA-256
-40A3C80A255AF19B195FCB45B1639C8BC53B58BB73863FCD485797AE2E6D0B55
-(built 24 Oct 2026 from commit fba5577; the exe says 0.8.0+fba55777e7794d763566e84e1722bcd9dba4730e, exe SHA-256
-0C5AD3CE11ECF20867208376B6CAE9FAEC1379228695F06BE498FCBBEC04BDE6). Rebuilding from the tag gives a different zip hash
+Zip: `dist\CrashDoctor-0.8.0-manual.zip` - 61,789,062 bytes (58.9 MB), SHA-256
+864763E95DB1FDD0FE3B2CF869CCF39EE8DDF796EA048C57378B38C3F4C0CC79
+(built 26 Oct 2026 from commit a14bc49, tag v0.8.0 moved there; the exe says
+0.8.0+a14bc49c53b1d71b72bad0dc9f263b1e3d02cd68, exe SHA-256
+955336E9374496A6DC970B9524CDD3D49B1ACD57599FAFE2A06607FD8F50DF81). Rebuilding from the tag gives a different zip hash
 (timestamps), as with 0.7.0: if the tag is rebuilt, record the new hash here.
 Not released yet: Gary scans once on 2.5 first. Push `version.json` (0.8.0) only after the Nexus and GitHub files are
 live, or every copy with the update check on will announce a version that cannot be downloaded yet. version.json is
@@ -15,9 +16,10 @@ NOT in the commits above on purpose (it is modified in the working tree only).
 - **Ready for game update 2.5.** When the game updates, Health says so first and lists what RED4ext, Cyber Engine
   Tweaks and redscript each wrote in their own logs on the new version - which frameworks loaded, which refused. On top
   of that it now carries a small, dated list of framework releases checked against their own release notes: for 2.5,
-  RED4ext 1.31.0, Cyber Engine Tweaks 1.38.0 and RedFileSystem 0.16.0 are the first releases for it, so an older one is
-  named with the version to update to; ArchiveXL, TweakXL and Codeware had no 2.5 release yet on 24 Oct 2026, and
-  Crash Doctor says exactly that, with the date. A version newer than the list knows is never flagged.
+  RED4ext 1.31.0, Cyber Engine Tweaks 1.38.0, RedFileSystem 0.16.0, ArchiveXL 1.28.0, TweakXL 1.12.0 and Codeware
+  1.21.0 are the first releases for it, so an older one is named with the version to update to. A framework updated
+  after the game last ran is not judged by its old logs: Crash Doctor asks you to start the game once and scan again.
+  A version newer than the list knows is never flagged.
 - **"The game closed while RED4ext was loading X."** When RED4ext's log stops at "Loading plugin ... X.dll" and the
   game is gone seconds later, Crash Doctor names that plugin: the game died inside its start-up. This is what a
   2.31-era ArchiveXL does on 2.5 - no crash report from the game, and Advanced Crash Reporter's own reading is
@@ -54,11 +56,11 @@ mods.
 
 ## Nexus file
 - Name: CrashDoctor 0.8.0 | Version: 0.8.0 | tick "Update mod version"
-- File description: Ready for game update 2.5: says which frameworks need updating and which have no 2.5 release yet.
+- File description: Ready for game update 2.5: says which frameworks need updating for it, and to which version.
   Reads Mod Organizer 2 directly, uses Advanced Crash Reporter's reports when installed, and speaks 19 languages
   (Ctrl+L for English). Unzip anywhere, run CrashDoctor.exe.
 - Changelog:
-  - New: after a game update, names frameworks that are behind (for 2.5: RED4ext 1.31.0, CET 1.38.0, RedFileSystem 0.16.0; no ArchiveXL/TweakXL/Codeware 2.5 release on 24 Oct 2026).
+  - New: after a game update, names frameworks that are behind (for 2.5: RED4ext 1.31.0, CET 1.38.0, RedFileSystem 0.16.0, ArchiveXL 1.28.0, TweakXL 1.12.0, Codeware 1.21.0; table checked 26 Oct 2026).
   - New: names the native plugin the game died loading (RED4ext's log stops at "Loading plugin ... X.dll").
   - New: RED4ext's "requested runtime" refusals explained in plain words.
   - New: names a script mod broken by 2.5's inventory-filter change (it switches off every redscript mod).
@@ -74,9 +76,10 @@ mods.
   logs and a dated list of releases") and "in-game mod menu (mod.io) mods are not listed yet". The GitHub notes above
   carry the same caveats.
 
-## When frameworks ship their 2.5 releases (0.8.1)
-`knowledge\releases\frameworks.json` holds the dated table: when ArchiveXL / TweakXL / Codeware (or a 2.5 hotfix with a
-new build number) come out, add a "for" entry and move "asOf". It ships next to the exe, so a corrected table can go
+## Keeping the release table current
+`knowledge\releases\frameworks.json` holds the dated table (all six 2.5 releases are in it, checked 26 Oct 2026;
+redscript 0.5.32 is recorded but cannot be checked, scc.exe has no version stamp). For a 2.5 hotfix with a new build
+number or the next patch, add a "for" entry and move "asOf". It ships next to the exe, so a corrected table can go
 out as a small update without code changes.
 
 ## After both are live
