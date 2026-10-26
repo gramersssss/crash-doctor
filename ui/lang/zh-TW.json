@@ -1287,5 +1287,7 @@
   "suspect.diedLoading": "遊戲在這個外掛啟動時當掉：RED4ext 記錄停在「Loading plugin … {name}.dll」。",
   "rule.rs25.title": "{mod} 是為舊版遊戲撰寫的，它讓所有腳本模組都無法載入",
   "rule.rs25.detail": "redscript 無法編譯它。遊戲更新 2.5 為 InventoryItemModeLogicController.{method} 增加了一個參數，而 {mod} 仍在掛接沒有該參數的舊版本。只要有一個腳本編譯失敗，redscript 就一個都不載入，因此在修好之前你所有的 redscript 模組都處於關閉狀態。請把 {mod} 更新到適用於 2.5 的版本，或在有新版本之前將其移除。redscript 寫下的內容：",
-  "fmt.date.dmy": "yyyy年M月d日"
+  "fmt.date.dmy": "yyyy年M月d日",
+  "update.fw.updatedSince": "{name} 是在遊戲上次執行（{date}）之後安裝或更新的，所以當時的記錄說的是舊檔案。",
+  "update.fw.notReached": "{name} 根本沒輪到：RED4ext 還在載入外掛時遊戲就當掉了。"
 }

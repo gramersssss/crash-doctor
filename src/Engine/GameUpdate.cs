@@ -133,14 +133,24 @@ public static class GameUpdate
         var MissingState = gameRan ? "notStarted" : "notRun";
         var known = d.KnownChecks;
         // the table's word on a framework, added to whatever its log said; "old" outranks a log that saw nothing wrong
+        var red = d.Red4ext.Where(x => x.Start >= since).OrderByDescending(x => x.Start).FirstOrDefault();
+        // the last time the game ran at all, by the newest log anything wrote since the update
+        var lastRun = new[] { red?.LastWrite, d.CetStarts.Where(x => x.at >= since).Select(x => (DateTime?)x.at).DefaultIfEmpty(null).Max() }.Where(x => x != null).DefaultIfEmpty(null).Max();
         void Add(string name, string state, string text)
         {
             var k = known.FirstOrDefault(x => x.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (k != null && state is "ran" or "notRun") state = "old";
+            if (k != null && state is "ran" or "notRun" or "notReached" or "updated") state = "old";
+            // installed or updated after the game last ran (25 Oct 2026: ArchiveXL 1.28.0 over the 1.27.5 that took the
+            // game down on 22 Oct): what the logs said then is about the old file
+            else if (k == null && lastRun is DateTime lr && state != "notRun" && KnownReleases.ChangedSince(d, name, lr))
+            {
+                var ver = KnownReleases.InstalledVersion(d, name);
+                state = "updated"; text = L.T("update.fw.updatedSince", ver != null ? name + " " + ver : name, L.Date(lr, "dmt"));
+            }
             list.Add(new FrameworkCheck { Name = name, State = state, Text = k != null ? L.Cat(text, k.Text) : text, Known = k?.Kind });
         }
-
-        var red = d.Red4ext.Where(x => x.Start >= since).OrderByDescending(x => x.Start).FirstOrDefault();
+        // the game went down while RED4ext was still loading plugins: whatever comes later never had its turn
+        bool notReached = red?.DiedLoading != null;
         if (KnownReleases.Installed(d, "RED4ext"))
         {
             if (red == null) Add("RED4ext", MissingState, Missing("RED4ext"));
@@ -158,7 +168,7 @@ public static class GameUpdate
                 else if (refused != null) Add(plugin, "refused", L.Cat(L.T("update.fw.pluginRefused", plugin, refused), RefusedPlain(refused)));
                 else if (loaded.name != null) Add(plugin, "ran", L.T("update.fw.pluginLoaded", plugin, loaded.version));
                 // RED4ext never reached it: the game went down on an earlier plugin
-                else if (red.DiedLoading != null) Add(plugin, MissingState, Missing(plugin));
+                else if (red.DiedLoading != null) Add(plugin, "notReached", L.T("update.fw.notReached", plugin));
                 else Add(plugin, "errors", L.T("update.fw.pluginAbsent", plugin));
             }
             if (red != null)
@@ -167,7 +177,10 @@ public static class GameUpdate
                 if (red.DiedLoading != null && !main.Contains(red.DiedLoading, StringComparer.OrdinalIgnoreCase))
                     list.Add(new FrameworkCheck { Name = red.DiedLoading, State = "errors", Text = L.T("update.fw.pluginDiedLoading", red.DiedLoading) });
                 // every other native plugin RED4ext turned away on the new build, counted in one line
-                var others = red.Incompatible.Select(i => Regex.Match(i, @"^(.+?) \(version").Groups[1].Value).Where(n => n.Length > 0 && !main.Contains(n, StringComparer.OrdinalIgnoreCase)).Distinct().ToList();
+                // ... still installed as the file RED4ext refused, not replaced or removed since
+                var others = red.Incompatible.Select(i => Regex.Match(i, @"^(.+?) \(version").Groups[1].Value).Where(n => n.Length > 0 && !main.Contains(n, StringComparer.OrdinalIgnoreCase))
+                                .Where(n => !g.DirExists(Path.Combine(GamePaths.RelRed4extPlugins, n)) || (KnownReleases.FileTime(d, n) is DateTime ft && ft <= red.LastWrite.AddMinutes(1)))
+                                .Distinct().ToList();
                 if (others.Count > 0)
                 {
                     var first = red.Incompatible.First(i => i.StartsWith(others[0], StringComparison.OrdinalIgnoreCase));
@@ -185,13 +198,15 @@ public static class GameUpdate
             var start = d.CetStarts.Where(x => x.at >= since).OrderByDescending(x => x.at).FirstOrDefault();
             if (refused != null) Add("Cyber Engine Tweaks", "refused", L.T("update.fw.cetRefused", refused));
             else if (start.gameVersion != null) Add("Cyber Engine Tweaks", "ran", L.T("update.fw.cetRan", d.CetVersion, start.gameVersion));
+            else if (notReached) Add("Cyber Engine Tweaks", "notReached", L.T("update.fw.notReached", "Cyber Engine Tweaks"));
             else Add("Cyber Engine Tweaks", MissingState, Missing("Cyber Engine Tweaks"));
         }
 
         if (g.Exists(@"engine\tools\scc.exe") || g.Exists(@"engine\tools\scc_lib.dll"))
         {
             var written = d.RedscriptLog != null ? File.GetLastWriteTime(d.RedscriptLog) : (DateTime?)null;
-            if (written == null || written < since) list.Add(new FrameworkCheck { Name = "redscript", State = MissingState, Text = Missing("redscript") });
+            if ((written == null || written < since) && notReached) list.Add(new FrameworkCheck { Name = "redscript", State = "notReached", Text = L.T("update.fw.notReached", "redscript") });
+            else if (written == null || written < since) list.Add(new FrameworkCheck { Name = "redscript", State = MissingState, Text = Missing("redscript") });
             else if (d.RedscriptErrors.Count > 0) list.Add(new FrameworkCheck { Name = "redscript", State = "errors", Text = L.P("update.fw.redscriptErrors", d.RedscriptErrors.Count, Analyzer.Short(d.RedscriptErrors[0])) });
             else list.Add(new FrameworkCheck { Name = "redscript", State = "ran", Text = L.T("update.fw.redscriptRan") });
         }
@@ -213,8 +228,11 @@ public static class GameUpdate
     {
         // known only from the release table, with no framework installed: nothing worth a line in Health
         if (c.Inferred && fw.Count == 0) return null;
-        var bad = fw.Where(f => f.State is "refused" or "errors" or "notStarted" or "old").ToList();
-        var waiting = fw.Where(f => f.State == "notRun").ToList();
+        // the one line counting other native plugins RED4ext refused is not about a framework (26 Oct 2026: Gary's
+        // frameworks all on 2.5, only DualSense Support and LizziesBDs refused - "your frameworks do not all support
+        // it" would be false); each of those has its own Health item (Rules: NativePluginsRefusingToLoad)
+        var bad = fw.Where(f => f.State is "refused" or "errors" or "notStarted" or "old" && f.Name != "plugins").ToList();
+        var waiting = fw.Where(f => f.State is "notRun" or "updated" or "notReached").ToList();
         if (bad.Count == 0 && waiting.Count == 0 && c.At < DateTime.Now.AddDays(-QuietDays)) return null;
         // a month on, a framework that still refuses is its own standing problem (Rules: NativePluginsRefusingToLoad),
         // not news about the update

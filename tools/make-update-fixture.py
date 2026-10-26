@@ -88,4 +88,9 @@ W(os.path.join(game, "bin", "x64", "plugins", "cyber_engine_tweaks", "cyber_engi
   + "[%s UTC-07:00] [info] [Options] [9548] CET version v1.37.1 [HEAD]\n" % st(start)
   + "[%s UTC-07:00] [info] [Options] [9548] Game version 3.0.81.10000\n" % st(start)
   + "[%s UTC-07:00] [error] [Options] [9548] Unsupported game version! This version of CET supports 3.0.80.51928 only.\n" % st(start))
+# the frameworks were installed long before any of these sessions (Crash Doctor 0.8.0 treats a framework file newer
+# than the last launch as "updated since the game last ran")
+old = (NOW - datetime.timedelta(days=10)).timestamp()
+for rel in (os.path.join("red4ext", "RED4ext.dll"), os.path.join("bin", "x64", "plugins", "cyber_engine_tweaks.asi")) + tuple(os.path.join("red4ext", "plugins", p, p + ".dll") for p in ("ArchiveXL", "TweakXL", "Codeware")):
+    os.utime(os.path.join(game, rel), (old, old))
 print("built updated  ->", fx)

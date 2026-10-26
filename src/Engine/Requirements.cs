@@ -19,8 +19,10 @@ public static class RequirementsCheck
         // the release table (KnownReleases.cs): a version known to be behind this game is out of date with or without an update notice
         KnownCheck? Known(string name) => d.KnownChecks.FirstOrDefault(k => k.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
         string AfterUpdate(string status, string name) => (Update(name) != null || Known(name) != null) && status == "ok" ? "outdated" : status;
-        string Detail(string detail, string name) => Update(name) is { } u ? L.Cat(detail, u.Text) : Known(name) is { } k ? L.Cat(detail, k.Text) : detail;
-        string? Ver(string? fromLog, string name) => !string.IsNullOrEmpty(fromLog) ? fromLog : KnownReleases.InstalledVersion(d, name);
+        FrameworkCheck? Any(string name) => d.FrameworkChecks.FirstOrDefault(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase) && f.State != "ran");
+        string Detail(string detail, string name) => Any(name) is { } u ? L.Cat(detail, u.Text) : Known(name) is { } k ? L.Cat(detail, k.Text) : detail;
+        // the file's own version stamp is what is installed now; a log only says what ran then
+        string? Ver(string? fromLog, string name) => KnownReleases.InstalledVersion(d, name) ?? (string.IsNullOrEmpty(fromLog) ? null : fromLog);
 
         // RED4ext (all reads go through GamePaths, so a framework installed as a Mod Organizer 2 mod is found too)
         // its own files, not the folder: after a purge red4ext\ still holds the old logs
@@ -37,7 +39,9 @@ public static class RequirementsCheck
         // CET
         var cet = g.Exists(@"bin\x64\plugins\cyber_engine_tweaks.asi");
         var needCet = NeededBy("cet");
-        var cetStatus = !cet ? (needCet.Count > 0 ? "missing" : "optional") : (!string.IsNullOrEmpty(d.CetGameVersion) && red != null && !string.IsNullOrEmpty(red.FileVersion) && d.CetGameVersion != red.FileVersion && d.CetGameVersion.Count(c => c == '.') == red.FileVersion.Count(c => c == '.') ? "outdated" : "ok");
+        // CET's log is about the file that wrote it: an asi replaced since its last start has said nothing yet
+        var cetStale = d.CetStarts.Count > 0 && KnownReleases.ChangedSince(d, "Cyber Engine Tweaks", d.CetStarts.Max(x => x.at));
+        var cetStatus = !cet ? (needCet.Count > 0 ? "missing" : "optional") : cetStale ? "ok" : (!string.IsNullOrEmpty(d.CetGameVersion) && red != null && !string.IsNullOrEmpty(red.FileVersion) && d.CetGameVersion != red.FileVersion && d.CetGameVersion.Count(c => c == '.') == red.FileVersion.Count(c => c == '.') ? "outdated" : "ok");
         list.Add(Req("cet", "Cyber Engine Tweaks", cet ? Ver(d.CetVersion, "Cyber Engine Tweaks") : null, AfterUpdate(cetStatus, "Cyber Engine Tweaks"),
             Detail(cet ? L.Cat(L.P("req.cet.ok", inv.CetMods), cetStatus == "outdated" ? L.T("req.cet.builtFor", d.CetGameVersion, red!.FileVersion) : "") : L.T("req.cet.missing"), "Cyber Engine Tweaks"),
             needCet, "https://www.nexusmods.com/cyberpunk2077/mods/107"));

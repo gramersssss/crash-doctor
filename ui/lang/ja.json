@@ -1287,5 +1287,7 @@
   "suspect.diedLoading": "このプラグインの起動中にゲームが落ちました。RED4ext のログは「Loading plugin … {name}.dll」で途切れています。",
   "rule.rs25.title": "{mod} は古いゲームバージョン向けに書かれており、すべてのスクリプト MOD の読み込みを止めています",
   "rule.rs25.detail": "redscript はこれをコンパイルできませんでした。アップデート 2.5 で InventoryItemModeLogicController.{method} に引数が追加されましたが、{mod} は引数のない古いバージョンにまだフックしています。スクリプトが一つでもコンパイルに失敗すると redscript はどれも読み込まないため、これが直るまで redscript の MOD はすべて無効です。{mod} を 2.5 向けのバージョンに更新するか、それが出るまで外してください。redscript の出力:",
-  "fmt.date.dmy": "yyyy年M月d日"
+  "fmt.date.dmy": "yyyy年M月d日",
+  "update.fw.updatedSince": "{name} はゲームの最後の起動（{date}）より後にインストールまたは更新されたため、当時のログは古いファイルについてのものです。",
+  "update.fw.notReached": "{name} は出番が来ませんでした。RED4ext がまだプラグインを読み込んでいる間にゲームが落ちています。"
 }

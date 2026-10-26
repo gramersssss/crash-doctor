@@ -234,6 +234,11 @@ AppearanceRuntimePlugin refused "in plain words", and the "update these" advice;
 Scan it twice; the second scan must say the same. `updated25-new` has no 2.31 session at all (a new user, or the old
 logs rotated away): the update item must still appear, led by "Your game is 2.5, the update released on 22 Oct" -
 from the release table (`knowledge\releases\frameworks.json`), and only until 30 days after that date.
+`updated25-redeployed` is `updated25` after the frameworks were replaced (Gary's state on 25 Oct) and the game not
+started since: every framework file is newer than the last launch (the fixture dates each log by its last line).
+Expected: a MEDIUM "Your game updated to 2.5" item saying each framework was installed or updated after the game last
+ran, then one "start the game once and scan again"; nothing "outdated" in Requirements; no AppearanceRuntimePlugin
+refusal anywhere (its file was replaced too).
 
 The "no release for this game yet" sentence (`known.noRelease`) no longer fires in any fixture since the table gained
 the 25 Oct 2.5 releases; it was watched firing on 24 Oct (ArchiveXL 1.27.5 "built for 2.31, no release for 2.5 yet")

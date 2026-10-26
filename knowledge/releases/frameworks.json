@@ -1,6 +1,6 @@
 {
   "_about": "Framework releases checked by hand against each framework's own release notes. Read by src/Engine/KnownReleases.cs. Builds are matched exactly (a hotfix gets its own line once its build is known). Only facts that stay true go here: which release first supports a game version, and which release was the newest one (and what game it was built for) on the asOf date. Crash Doctor states the asOf date whenever it uses 'latest', because a newer release can come out the next day. Update asOf and the entries together, never one without the other.",
-  "asOf": "2026-10-25",
+  "asOf": "2026-10-26",
   "games": [
     { "build": "3.0.88.46235", "version": "2.5", "released": "2026-10-22" },
     { "build": "3.0.80.51928", "version": "2.31" }
@@ -15,8 +15,14 @@
     {
       "name": "Cyber Engine Tweaks", "nexus": "107",
       "for": [ { "game": "2.5", "from": "1.38.0", "released": "2026-10-22" } ],
-      "latest": "1.38.0",
-      "source": "CET 1.38.0 (Nexus file 'Game version 2.5', game build 3.0.88)"
+      "latest": "1.38.1",
+      "source": "CET 1.38.0 (22 Oct 2026, GitHub release 'Game version 2.5', game build 3.0.88.46235; earlier patches no longer supported); 1.38.1 (26 Oct) only updated RED4ext.SDK and RTTIHelper"
+    },
+    {
+      "name": "redscript", "nexus": "1511",
+      "for": [ { "game": "2.5", "from": "0.5.32" } ],
+      "latest": "0.5.32",
+      "source": "redscript 0.5.32 is the first release that runs on 2.5 (checked on the developer's 2.5 install, 25 Oct 2026). scc.exe carries no version stamp and its log names no version, so Crash Doctor cannot read the installed version: this line is a record, it never flags anything on its own"
     },
     {
       "name": "RedFileSystem", "nexus": "13378",

@@ -1407,5 +1407,7 @@
   "suspect.diedLoading": "Le jeu a planté pendant le démarrage de ce plugin : le journal de RED4ext s'arrête sur « Loading plugin … {name}.dll ».",
   "rule.rs25.title": "{mod} a été écrit pour une version plus ancienne du jeu et empêche tous les mods de script de se charger",
   "rule.rs25.detail": "redscript n'a pas pu le compiler. La mise à jour 2.5 a ajouté un paramètre à InventoryItemModeLogicController.{method}, et {mod} s'accroche encore à l'ancienne version sans ce paramètre. Tant qu'un script ne compile pas, redscript n'en charge aucun : tous vos mods redscript sont désactivés jusqu'à ce que ce soit réglé. Mettez {mod} à jour vers une version pour 2.5, ou retirez-le en attendant. Ce que redscript a écrit :",
-  "fmt.date.dmy": "d MMM yyyy"
+  "fmt.date.dmy": "d MMM yyyy",
+  "update.fw.updatedSince": "{name} a été installé ou mis à jour après le dernier lancement du jeu ({date}) : ce que disaient les journaux concerne donc l'ancien fichier.",
+  "update.fw.notReached": "{name} n'a jamais eu son tour : le jeu a planté pendant que RED4ext chargeait encore les plugins."
 }

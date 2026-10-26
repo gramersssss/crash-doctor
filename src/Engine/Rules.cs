@@ -395,6 +395,8 @@ public static class Rules
         foreach (var inc in latestRed.Incompatible)
         {
             var name = Regex.Match(inc, @"^(.+?) \(version").Groups[1].Value;
+            // replaced since that log was written (an update installed after the last launch): the refusal was about the old file
+            if (name.Length > 0 && KnownReleases.ChangedSince(d, name, latestRed.LastWrite)) continue;
             var owner = d.Mods.OwnerOfPlugin(name.Replace(" ", "")) ?? d.Mods.OwnerOfPlugin(name) ?? name;
             hits.Add(new RuleHit
             {

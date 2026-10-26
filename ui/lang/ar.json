@@ -1887,5 +1887,7 @@
   "suspect.diedLoading": "انهارت اللعبة أثناء بدء هذه الإضافة: يتوقف سجل RED4ext عند \"Loading plugin … {name}.dll\".",
   "rule.rs25.title": "كُتب {mod} لإصدار أقدم من اللعبة، وهو يمنع تحميل كل تعديلات السكربت",
   "rule.rs25.detail": "لم يستطع redscript ترجمته. أضاف تحديث اللعبة 2.5 معاملًا إلى InventoryItemModeLogicController.{method}، بينما لا يزال {mod} يرتبط بالنسخة القديمة من دونه. وما دام سكربت واحد يفشل في الترجمة، لا يحمّل redscript أيًّا منها، لذا كل تعديلات redscript لديك متوقفة إلى أن يُصلح هذا. حدّث {mod} إلى نسخة مصنوعة للإصدار 2.5، أو أزله إلى أن تتوفر. ما كتبه redscript:",
-  "fmt.date.dmy": "d MMM yyyy"
+  "fmt.date.dmy": "d MMM yyyy",
+  "update.fw.updatedSince": "ثُبّت {name} أو حُدّث بعد آخر تشغيل للعبة ({date})، لذا فما قالته السجلات حينها يخص الملف القديم.",
+  "update.fw.notReached": "لم يأتِ دور {name} أصلًا: انهارت اللعبة بينما كان RED4ext لا يزال يحمّل الإضافات."
 }

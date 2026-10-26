@@ -106,6 +106,20 @@ public static class KnownReleases
     };
     static string[] FilesOf(string name) => Files_.TryGetValue(name, out var f) ? f : new[] { Path.Combine(GamePaths.RelRed4extPlugins, name, name + ".dll") };
 
+    /// <summary>When the framework's own file was last written (installed or updated), or null when it is not installed.</summary>
+    public static DateTime? FileTime(CollectedData d, string name)
+    {
+        foreach (var rel in FilesOf(name))
+            if (d.Paths.Find(rel) is { } full) { try { return File.GetLastWriteTime(full); } catch { } }
+        return null;
+    }
+
+    /// <summary>
+    /// The framework's file was installed or updated after <paramref name="t"/> (a minute's slack for the copy itself):
+    /// whatever a log written at t says is about the old file.
+    /// </summary>
+    public static bool ChangedSince(CollectedData d, string name, DateTime t) => FileTime(d, name) is { } ft && ft > t.AddMinutes(1);
+
     /// <summary>Whether the framework's own file is installed now (not just a folder its old logs left behind).</summary>
     public static bool Installed(CollectedData d, string name) => FilesOf(name).Any(f => d.Paths.Exists(f)) || (name == "RED4ext" && d.Paths.Exists(@"bin\x64\winmm.dll"));
 
@@ -128,16 +142,17 @@ public static class KnownReleases
             catch { }
         }
         var newest = d.Red4ext.OrderByDescending(x => x.Start).ToList();
-        if (name == "RED4ext") return newest.Select(x => x.Red4extVersion).FirstOrDefault(v => v.Length > 0);
-        if (name == "Cyber Engine Tweaks") return Parse(d.CetVersion)?.ToString();
-        foreach (var s in newest)
+        if (name == "RED4ext") return newest.Where(x => !ChangedSince(d, name, x.LastWrite)).Select(x => x.Red4extVersion).FirstOrDefault(v => v.Length > 0);
+        if (name == "Cyber Engine Tweaks") return d.CetStarts.Count > 0 && ChangedSince(d, name, d.CetStarts.Max(x => x.at)) ? null : Parse(d.CetVersion)?.ToString();
+        // a version from a log only describes the file if the file has not been replaced since that log was written
+        foreach (var s in newest.Where(s => !ChangedSince(d, name, s.LastWrite)))
         {
             var p = s.PluginsLoaded.FirstOrDefault(x => x.name.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (p.name != null) return Short(p.version);
             var inc = s.Incompatible.Select(i => Regex.Match(i, @"^(.+?) \(version: ([^,)]+)")).FirstOrDefault(m => m.Success && m.Groups[1].Value.Equals(name, StringComparison.OrdinalIgnoreCase));
             if (inc != null) return Short(inc.Groups[2].Value);
         }
-        var starting = d.Events.Where(e => e.Text.StartsWith(name + " ", StringComparison.OrdinalIgnoreCase)).OrderByDescending(e => e.At)
+        var starting = d.Events.Where(e => e.Text.StartsWith(name + " ", StringComparison.OrdinalIgnoreCase) && !ChangedSince(d, name, e.At)).OrderByDescending(e => e.At)
                                .Select(e => Regex.Match(e.Text, "^" + Regex.Escape(name) + @" v?(\d+\.\d+(?:\.\d+)?) is starting", RegexOptions.IgnoreCase)).FirstOrDefault(m => m.Success);
         return starting?.Groups[1].Value;
     }

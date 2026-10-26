@@ -1407,5 +1407,7 @@
   "suspect.diedLoading": "A játék e plugin indulása közben omlott össze: a RED4ext naplója a „Loading plugin … {name}.dll” sorral ér véget.",
   "rule.rs25.title": "A(z) {mod} egy régebbi játékverzióhoz készült, és megakadályozza, hogy bármelyik szkriptmod betöltődjön",
   "rule.rs25.detail": "A redscript nem tudta lefordítani. A 2.5-ös frissítés egy paramétert adott az InventoryItemModeLogicController.{method} metódushoz, a(z) {mod} viszont még a régi, paraméter nélküli változatra kapcsolódik. Amíg egy szkript nem fordul le, a redscript egyiket sem tölti be, így minden redscript modod ki van kapcsolva, amíg ez nincs megoldva. Frissítsd a(z) {mod} modot egy 2.5-höz készült verzióra, vagy távolítsd el, amíg nincs ilyen. Amit a redscript írt:",
-  "fmt.date.dmy": "yyyy. MMM d."
+  "fmt.date.dmy": "yyyy. MMM d.",
+  "update.fw.updatedSince": "A(z) {name} a játék legutóbbi futása ({date}) után lett telepítve vagy frissítve, így amit a naplók akkor írtak, az a régi fájlra vonatkozik.",
+  "update.fw.notReached": "A(z) {name} sorra sem került: a játék összeomlott, miközben a RED4ext még a pluginokat töltötte."
 }

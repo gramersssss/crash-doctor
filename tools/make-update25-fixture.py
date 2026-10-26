@@ -32,6 +32,13 @@ updated25-new: the same two launches, but no 2.31 session left (a new Crash Doct
 rotated away). Crash Doctor cannot see the build change, so it falls back on the release table: 3.0.88.x is 2.5,
 released 22 Oct 2026. Expected: the same high Health item, led by "Your game is 2.5, the update released on 22 Oct."
 Only fires within 30 days of 22 Oct 2026 (the table's release date); after that this flavour expects no update item.
+
+updated25-redeployed: updated25 after the frameworks were updated (Gary's state on 25 Oct: RED4ext 1.31.0, ArchiveXL
+1.28.0, TweakXL 1.12.0, Codeware 1.21.1 deployed, game not started since). Every framework file is newer than the last
+launch, so the 22 Oct logs describe the old files. Expected: a MEDIUM "Your game updated to 2.5" item that says each
+was installed or updated after the game last ran and to start the game once and scan again; no framework "outdated" in
+Requirements; no AppearanceRuntimePlugin refusal in the update item (its file was replaced too). The two 22 Oct
+sessions keep their ArchiveXL verdict - that is history and stays true.
 """
 import io, os, sys, shutil, datetime
 
@@ -44,7 +51,7 @@ def W(path, text=""):
     io.open(path, "w", encoding="utf-8").write(text)
 
 
-def build(name, with_old_sessions):
+def build(name, with_old_sessions, redeployed=False):
     fx = os.path.join(ROOT, name)
     if os.path.isdir(fx):
         shutil.rmtree(fx)
@@ -97,6 +104,11 @@ def build(name, with_old_sessions):
     # the update: the exe is rewritten yesterday afternoon
     upd = NOW - datetime.timedelta(days=1, hours=6)
     os.utime(exe, (upd.timestamp(), upd.timestamp()))
+    # the frameworks were installed well before every session here; a framework file newer than the last launch would
+    # read as "updated since the game last ran" (see the updated25-redeployed flavour)
+    old = (NOW - datetime.timedelta(days=10)).timestamp() if not redeployed else NOW.timestamp()
+    for rel in [os.path.join("red4ext", "RED4ext.dll"), os.path.join("bin", "x64", "plugins", "cyber_engine_tweaks.asi")] +                [os.path.join("red4ext", "plugins", p, p + ".dll") for p in ("AppearanceRuntimePlugin", "ArchiveXL", "TweakXL", "Codeware", "RedFileSystem")]:
+        os.utime(os.path.join(game, rel), (old, old))
 
     # the two launches on 2.5, each dying three seconds in while RED4ext loads ArchiveXL
     for k, start in enumerate((NOW - datetime.timedelta(days=1, hours=2), NOW - datetime.timedelta(days=1, hours=2) + datetime.timedelta(seconds=45))):
@@ -146,8 +158,22 @@ def build(name, with_old_sessions):
                 "  >> [06] 0x00007FFE0C91DCD8  RED4ext.dll                  +0x7DCD8  (PluginBase::Main+0x128, src/dll/PluginBase.cpp:98)  [LOADER]",
                 "  >> [07] 0x00007FFE0C92991C  RED4ext.dll                  +0x8991C  (PluginSystem::Load+0x84C, src/dll/Systems/PluginSystem.cpp:311)  [LOADER]",
             ]) + "\n")
+    if redeployed:
+        # the logs were written when those sessions ran, not now (a real log's time is its last line's): without this
+        # every log is as new as the redeployed framework files and nothing reads as "updated since the game last ran"
+        import re
+        for dirpath, _, files in os.walk(game):
+            for f in files:
+                if not (f.endswith(".log") or f.endswith(".txt")):
+                    continue
+                p = os.path.join(dirpath, f)
+                stamps = re.findall(r"(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)", io.open(p, encoding="utf-8").read())
+                if stamps:
+                    t = datetime.datetime.strptime(stamps[-1], "%Y-%m-%d %H:%M:%S").timestamp() + 1
+                    os.utime(p, (t, t))
     print("built %-14s -> %s" % (name, fx))
 
 
 build("updated25", True)
 build("updated25-new", False)
+build("updated25-redeployed", True, redeployed=True)

@@ -1647,5 +1647,7 @@
   "suspect.diedLoading": "Hra spadla při startu tohoto pluginu: log RED4ext končí na „Loading plugin … {name}.dll“.",
   "rule.rs25.title": "{mod} byl napsán pro starší verzi hry a brání načtení všech skriptových modů",
   "rule.rs25.detail": "redscript ho nedokázal zkompilovat. Aktualizace 2.5 přidala parametr do InventoryItemModeLogicController.{method} a {mod} se stále napojuje na starou verzi bez něj. Dokud se jeden skript nezkompiluje, redscript nenačte žádný, takže všechny tvoje redscript mody jsou vypnuté, dokud se to nevyřeší. Aktualizuj {mod} na verzi pro 2.5, nebo ho odstraň, dokud nebude. Co zapsal redscript:",
-  "fmt.date.dmy": "d. MMM yyyy"
+  "fmt.date.dmy": "d. MMM yyyy",
+  "update.fw.updatedSince": "{name} byl nainstalován nebo aktualizován po posledním spuštění hry ({date}), takže to, co tehdy psaly logy, se týká starého souboru.",
+  "update.fw.notReached": "{name} se vůbec nedostal na řadu: hra spadla, zatímco RED4ext ještě načítal pluginy."
 }

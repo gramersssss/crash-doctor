@@ -1287,5 +1287,7 @@
   "suspect.diedLoading": "이 플러그인이 시작하는 도중 게임이 멈췄습니다. RED4ext 로그는 \"Loading plugin … {name}.dll\"에서 끝납니다.",
   "rule.rs25.title": "{mod}은(는) 이전 게임 버전용으로 작성되어 모든 스크립트 모드가 불러와지지 못하게 합니다",
   "rule.rs25.detail": "redscript가 이를 컴파일하지 못했습니다. 게임 업데이트 2.5에서 InventoryItemModeLogicController.{method}에 매개변수가 추가되었는데, {mod}은(는) 아직 매개변수가 없는 이전 버전에 연결합니다. 스크립트 하나라도 컴파일에 실패하면 redscript는 하나도 불러오지 않으므로, 이 문제가 해결될 때까지 모든 redscript 모드가 꺼져 있습니다. {mod}을(를) 2.5용 버전으로 업데이트하거나, 그런 버전이 나올 때까지 제거하세요. redscript가 쓴 내용:",
-  "fmt.date.dmy": "yyyy년 MMM d일"
+  "fmt.date.dmy": "yyyy년 MMM d일",
+  "update.fw.updatedSince": "{name}은(는) 게임이 마지막으로 실행된 뒤({date}) 설치되거나 업데이트되었으므로, 그때의 로그는 이전 파일에 대한 내용입니다.",
+  "update.fw.notReached": "{name}은(는) 차례가 오지 않았습니다. RED4ext가 아직 플러그인을 불러오는 중에 게임이 멈췄습니다."
 }

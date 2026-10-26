@@ -1407,5 +1407,7 @@
   "suspect.diedLoading": "Das Spiel ist abgestürzt, während dieses Plugin startete: Das RED4ext-Log endet bei „Loading plugin … {name}.dll“.",
   "rule.rs25.title": "{mod} wurde für eine ältere Spielversion geschrieben und verhindert, dass irgendein Skript-Mod lädt",
   "rule.rs25.detail": "redscript konnte es nicht kompilieren. Das Spielupdate 2.5 hat InventoryItemModeLogicController.{method} einen Parameter hinzugefügt, und {mod} hängt sich noch an die alte Version ohne ihn. Solange ein Skript nicht kompiliert, lädt redscript keines davon – alle deine redscript-Mods sind aus, bis das behoben ist. Aktualisiere {mod} auf eine Version für 2.5 oder entferne es, bis es eine gibt. Was redscript geschrieben hat:",
-  "fmt.date.dmy": "d. MMM yyyy"
+  "fmt.date.dmy": "d. MMM yyyy",
+  "update.fw.updatedSince": "{name} wurde installiert oder aktualisiert, nachdem das Spiel zuletzt lief ({date}); was die Logs damals sagten, betrifft also die alte Datei.",
+  "update.fw.notReached": "{name} kam gar nicht an die Reihe: Das Spiel ist abgestürzt, während RED4ext noch Plugins lud."
 }

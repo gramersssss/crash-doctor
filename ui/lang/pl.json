@@ -1647,5 +1647,7 @@
   "suspect.diedLoading": "Gra padła podczas uruchamiania tej wtyczki: log RED4ext kończy się na „Loading plugin … {name}.dll”.",
   "rule.rs25.title": "{mod} napisano dla starszej wersji gry i blokuje on wczytanie wszystkich modów skryptowych",
   "rule.rs25.detail": "redscript nie mógł go skompilować. Aktualizacja 2.5 dodała parametr do InventoryItemModeLogicController.{method}, a {mod} wciąż podpina się pod starą wersję bez niego. Dopóki jeden skrypt się nie kompiluje, redscript nie wczytuje żadnego, więc wszystkie twoje mody redscript są wyłączone, dopóki to nie zostanie naprawione. Zaktualizuj {mod} do wersji dla 2.5 albo usuń go, dopóki takiej nie będzie. Co zapisał redscript:",
-  "fmt.date.dmy": "d MMM yyyy"
+  "fmt.date.dmy": "d MMM yyyy",
+  "update.fw.updatedSince": "{name} zainstalowano lub zaktualizowano po ostatnim uruchomieniu gry ({date}), więc to, co wtedy zapisały logi, dotyczy starego pliku.",
+  "update.fw.notReached": "{name} nie doczekał swojej kolei: gra padła, gdy RED4ext wciąż wczytywał wtyczki."
 }

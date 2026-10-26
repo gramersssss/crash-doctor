@@ -1407,5 +1407,7 @@
   "suspect.diedLoading": "Oyun bu eklenti başlarken çöktü: RED4ext günlüğü \"Loading plugin … {name}.dll\" satırında bitiyor.",
   "rule.rs25.title": "{mod} eski bir oyun sürümü için yazılmış ve hiçbir betik modunun yüklenmesine izin vermiyor",
   "rule.rs25.detail": "redscript onu derleyemedi. 2.5 güncellemesi InventoryItemModeLogicController.{method} yöntemine bir parametre ekledi; {mod} ise hâlâ parametresiz eski sürüme bağlanıyor. Bir betik derlenemediği sürece redscript hiçbirini yüklemez; bu düzelene kadar tüm redscript modlarınız kapalıdır. {mod} modunu 2.5 için yapılmış bir sürüme güncelleyin ya da böyle bir sürüm çıkana kadar kaldırın. redscript'in yazdığı:",
-  "fmt.date.dmy": "d MMM yyyy"
+  "fmt.date.dmy": "d MMM yyyy",
+  "update.fw.updatedSince": "{name}, oyunun son çalıştığı zamandan ({date}) sonra kuruldu ya da güncellendi; o zamanki günlükler eski dosyayla ilgili.",
+  "update.fw.notReached": "{name} sırası hiç gelmedi: RED4ext hâlâ eklentileri yüklerken oyun çöktü."
 }

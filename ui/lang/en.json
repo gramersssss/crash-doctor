@@ -1407,5 +1407,7 @@
   "suspect.diedLoading": "The game went down while this plugin was starting: RED4ext's log stops at \"Loading plugin … {name}.dll\".",
   "rule.rs25.title": "{mod} was written for an older game version, and it keeps every script mod from loading",
   "rule.rs25.detail": "redscript could not compile it. Game update 2.5 added a parameter to InventoryItemModeLogicController.{method}, and {mod} still hooks the old version without it. While one script fails to compile, redscript loads none of them, so all your redscript mods are off until this is fixed. Update {mod} to a version made for 2.5, or remove it until there is one. What redscript wrote:",
-  "fmt.date.dmy": "d MMM yyyy"
+  "fmt.date.dmy": "d MMM yyyy",
+  "update.fw.updatedSince": "{name} was installed or updated after the game last ran ({date}), so what the logs said then is about the old file.",
+  "update.fw.notReached": "{name} never got its turn: the game went down while RED4ext was still loading plugins."
 }

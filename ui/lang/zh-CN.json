@@ -1287,5 +1287,7 @@
   "suspect.diedLoading": "游戏在这个插件启动时崩溃：RED4ext 日志停在“Loading plugin … {name}.dll”。",
   "rule.rs25.title": "{mod} 是为旧版游戏编写的，它让所有脚本模组都无法加载",
   "rule.rs25.detail": "redscript 无法编译它。游戏更新 2.5 给 InventoryItemModeLogicController.{method} 增加了一个参数，而 {mod} 仍在挂接没有该参数的旧版本。只要有一个脚本编译失败，redscript 就一个都不加载，因此在修好之前你所有的 redscript 模组都处于关闭状态。请把 {mod} 更新到适用于 2.5 的版本，或在有新版本之前将其移除。redscript 写下的内容：",
-  "fmt.date.dmy": "yyyy年M月d日"
+  "fmt.date.dmy": "yyyy年M月d日",
+  "update.fw.updatedSince": "{name} 是在游戏上次运行（{date}）之后安装或更新的，所以当时的日志说的是旧文件。",
+  "update.fw.notReached": "{name} 根本没轮到：RED4ext 还在加载插件时游戏就崩溃了。"
 }

@@ -1407,5 +1407,7 @@
   "suspect.diedLoading": "El juego cayó mientras este plugin arrancaba: el registro de RED4ext termina en «Loading plugin … {name}.dll».",
   "rule.rs25.title": "{mod} se escribió para una versión anterior del juego e impide que se cargue cualquier mod de script",
   "rule.rs25.detail": "redscript no pudo compilarlo. La actualización 2.5 añadió un parámetro a InventoryItemModeLogicController.{method}, y {mod} aún se engancha a la versión antigua sin él. Mientras un script no compile, redscript no carga ninguno, así que todos tus mods de redscript están desactivados hasta que se arregle. Actualiza {mod} a una versión para 2.5 o quítalo hasta que la haya. Lo que escribió redscript:",
-  "fmt.date.dmy": "d MMM yyyy"
+  "fmt.date.dmy": "d MMM yyyy",
+  "update.fw.updatedSince": "{name} se instaló o actualizó después de la última vez que se ejecutó el juego ({date}), así que lo que decían los registros se refiere al archivo antiguo.",
+  "update.fw.notReached": "{name} nunca llegó a su turno: el juego cayó mientras RED4ext aún cargaba plugins."
 }
