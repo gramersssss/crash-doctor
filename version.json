@@ -1,5 +1,5 @@
 {
-  "version": "0.7.0",
+  "version": "0.8.0",
   "url": "https://www.nexusmods.com/cyberpunk2077/mods/33934",
-  "notes": "0.7.0: Clear old logs (and put them back) in Settings, a mod count, real lengths for sessions closed without a trace, and a fix for mods that share a name. Also on GitHub: https://github.com/gramersssss/crash-doctor/releases/tag/v0.7.0"
+  "notes": "0.8.0: reads Mod Organizer 2 directly, uses Advanced Crash Reporter's reports when installed, says clearly when a game update has outrun your frameworks, and speaks 19 languages (Ctrl+L for English). Also on GitHub: https://github.com/gramersssss/crash-doctor/releases/tag/v0.8.0"
 }
