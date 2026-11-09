@@ -18,6 +18,9 @@ public sealed class ModInventory
     public List<(string name, DateTime at, string version)> Mo2Installed { get; } = new();
     public List<(string rel, string winner, List<string> losers)> Mo2Conflicts { get; } = new();
     public bool AlsoMo2 { get; set; }                            // Vortex was read, but an MO2 instance manages this game too
+    // mods from the game's own mod menu (mod.io, Modio.cs), whatever manager handles the rest, and when each folder appeared
+    public List<(string name, DateTime at, string version)> ModioInstalled { get; } = new();
+    public int ModioCount => Mods.Count(m => m.Source == "mod.io");
     readonly List<(string file, long bytes)> _archiveSizes = new();
 
     // The biggest installed .archive files, named by the mod that owns them. Texture weight is what fills a card.
@@ -45,6 +48,7 @@ public sealed class ModInventory
         else if (g.Mo2 != null && ReadMo2(g, inv)) inv.Manager = ModOrganizer.ManagerName;
         else ReadManual(g, inv);
         if (inv.Manager == "Vortex" && g.Mo2 != null) inv.AlsoMo2 = true;
+        try { ReadModio(inv); } catch { /* the in-game mod menu is an extra, never worth the scan */ }
         foreach (var m in inv.Mods) m.Type = Classify(m.Files);
         return inv;
     }
@@ -98,6 +102,21 @@ public sealed class ModInventory
             inv.Mo2Conflicts.Add((kv.Key, kv.Value[^1], kv.Value.Take(kv.Value.Count - 1).ToList()));
         inv.Mods.AddRange(rows);
         return true;
+    }
+
+    // The game loads these from mod.io's own folder, not from the game folder, so no manager knows about them. Their
+    // files are listed as "mod.io\<id>\<path inside the mod>": nothing in the game folder is claimed by them.
+    static void ReadModio(ModInventory inv)
+    {
+        foreach (var m in Modio.Read())
+        {
+            var row = new ModRow { Name = m.Name, Folder = "mod.io\\" + m.Id, Version = m.Version, Source = "mod.io", ModioId = m.Id, Status = m.Enabled == false ? "disabled" : "enabled" };
+            try { row.Files.AddRange(Directory.EnumerateFiles(m.Dir, "*", SearchOption.AllDirectories).Take(5000).Select(p => Path.Combine("mod.io", m.Id, Path.GetRelativePath(m.Dir, p)))); } catch { }
+            // a name the manager already uses gets its source added, so "Find" and the changes list never mix the two up
+            if (inv.Find(row.Name) != null) row.Name += " (mod.io)";
+            inv.Mods.Add(row);
+            if (m.InstalledAt is { } at) inv.ModioInstalled.Add((row.Name, at, m.Version));
+        }
     }
 
     static bool ReadVortex(GamePaths g, ModInventory inv)
@@ -159,7 +178,11 @@ public sealed class ModInventory
         bool xl = files.Any(f => f.EndsWith(".xl", StringComparison.OrdinalIgnoreCase));
         bool tweak = files.Any(f => f.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".yml", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".tweak", StringComparison.OrdinalIgnoreCase));
         bool archive = files.Any(f => f.EndsWith(".archive", StringComparison.OrdinalIgnoreCase));
+        // the in-game mod menu's formats: scripts compiled ahead (.redscripts) and tweaks as .json
+        bool compiled = files.Any(f => f.EndsWith(".redscripts", StringComparison.OrdinalIgnoreCase));
+        bool jsonTweak = files.Any(f => f.StartsWith("mod.io\\", StringComparison.OrdinalIgnoreCase) && f.Contains("\\tweaks\\",StringComparison.OrdinalIgnoreCase) && f.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
         var parts = new List<string>();
+        if (compiled) parts.Add("compiled scripts"); if (jsonTweak) parts.Add("tweaks");
         if (dll) parts.Add("native plugin"); if (reds) parts.Add("redscript"); if (lua) parts.Add("CET"); if (xl) parts.Add("ArchiveXL"); if (tweak) parts.Add("TweakXL"); if (archive && parts.Count == 0) parts.Add("archive"); else if (archive) parts.Add("archive");
         return parts.Count == 0 ? "other" : string.Join(" + ", parts);
     }

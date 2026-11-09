@@ -614,6 +614,8 @@ button.mark:hover{filter:brightness(.94)}
       <div class="card" id="archive-card"></div>
       <h2 data-i18n="ui.set.gameLogs">Game logs</h2>
       <div class="card" id="gamelogs-card"></div>
+      <h2 data-i18n="ui.set.history">History</h2>
+      <div class="card" id="history-card"></div>
       <h2 data-i18n="ui.set.vram">Video memory</h2>
       <div class="card" id="vramlog-card"></div>
       <h2 data-i18n="ui.set.updates">Updates</h2>
@@ -774,8 +776,10 @@ function gfxv(v){ return t('gfxv.'+v,null,v); }
 function modsCounted(r){ return r.mods.counted==='pieces'; }
 // "in {manager}": the engine's own words for "your mod manager" (mgr.manual), which every language wrote for that place
 function mgrName(r){ return r.mods.manager==='manual'?t('mgr.manual'):r.mods.manager; }
-function modsChip(r){ return modsCounted(r) ? tp('ui.mods.chipPieces',r.mods.enabled) : tp('ui.mods.chip',r.mods.enabled,{manager:mgrName(r)}); }
-function modsLine(r){ return modsCounted(r) ? tp('ui.mods.linePieces',r.mods.enabled) : tp('ui.mods.line',r.mods.enabled,{manager:mgrName(r)})+(r.mods.mo2Profile?SP()+t('ui.mods.mo2Profile',{profile:r.mods.mo2Profile}):''); }
+// mods from the game's own mod menu (mod.io, Modio.cs) are counted apart: no mod manager knows about them
+function modioPart(r){ return r.mods&&r.mods.modio?' '+t('ui.mods.plusModio',{n:r.mods.modioEnabled}):''; }
+function modsChip(r){ return (modsCounted(r) ? tp('ui.mods.chipPieces',r.mods.enabled) : tp('ui.mods.chip',r.mods.enabled,{manager:mgrName(r)}))+modioPart(r); }
+function modsLine(r){ return (modsCounted(r) ? tp('ui.mods.linePieces',r.mods.enabled) : tp('ui.mods.line',r.mods.enabled,{manager:mgrName(r)}))+modioPart(r)+(r.mods.mo2Profile?SP()+t('ui.mods.mo2Profile',{profile:r.mods.mo2Profile}):''); }
 
 function load(r,keepView){
   REPORT=r; done();
@@ -797,6 +801,14 @@ function load(r,keepView){
 }
 var CURRENT_SESSION=null;
 
+// What has happened since a crash, worked out on every scan (Settle.cs): the verdict below it is about that night.
+function sinceNote(s){
+  if(!s||s.endKind==='clean'||s.endKind==='running') return '';
+  var txt='';
+  if(s.settled) txt='<b>'+esc(s.settled)+'</b>';   // the sentence itself starts "Looks settled:"
+  else if(s.cleanSince) txt=esc(t('ui.dx.cleanSince',{n:s.cleanSince,date:fmtDate(s.cleanSinceLast)}));
+  return txt?'<p class="sub" style="margin:4px 0 8px">'+txt+'</p>':'';
+}
 function renderDx(r){
   var s=r.latest; var empty=document.getElementById('dx-empty'), body=document.getElementById('dx-body');
   if(!s){ empty.style.display=''; empty.innerHTML=noCrashPanel(r); body.style.display='none'; return; }
@@ -804,7 +816,7 @@ function renderDx(r){
   var cls=KIND_CLS[s.endKind]||'grey'; if(cls==='engine') cls='sig';
   var card=document.getElementById('dx-card'); card.className='card verdict '+cls;
   document.getElementById('dx-when').innerHTML='<span>'+esc(fmtDate(s.start))+'</span><span>'+(s.durationKnown===false?esc(t('ui.dur.unknown')):esc(t('ui.dx.ran',{dur:fmtDur(s.minutes)})))+'</span>'+(s.partial?'<span class="mark grey">'+esc(t('ui.dx.reportOnly'))+'</span>':'')+(s.district?'<span>'+esc(s.district)+'</span>':'')+(s.quest?'<span>'+esc(s.quest)+'</span>':'')+'<span class="mark '+cls+'">'+esc(kindLabel(s.endKind))+'</span>';
-  document.getElementById('dx-flagnote').innerHTML='';
+  document.getElementById('dx-flagnote').innerHTML=sinceNote(s);
   document.getElementById('dx-sentence').textContent=s.verdict;
   renderVram(s); renderVramLog(s);
   renderArea(s); renderChanges(s); renderSaved(r,s);
@@ -950,6 +962,10 @@ function noCrashPanel(r){
   if(badHealth.length) next.push('<button class="btn" onclick=&quot;go(&#39;health&#39;)&quot;>'+esc(tp('ui.ok.worth',badHealth.length))+'</button>');
   if(ss.length) next.push('<button class="btn" onclick=&quot;go(&#39;sessions&#39;)&quot;>'+esc(t('ui.ok.every'))+'</button>');
 
+  // the newest crash looks settled (Settle.cs): say which one and why, and keep it one click away
+  if(r.latestSettled){ var ls=r.latestSettled;
+    lead+='</p><p class="sub" style="margin-top:10px">'+esc(t('ui.ok.lastSettled',{date:fmtDate(ls.start)}))+' '+esc(ls.settled||'');
+    next.push('<button class="btn" onclick="showSession(&quot;'+esc(ls.id)+'&quot;)">'+esc(t('ui.ok.showCrash'))+'</button>'); }
   var recent=(ss.length&&r.recentChangesNote)?'<div class="changes" style="margin-top:18px"><p class="eyebrow">'+esc(t('ui.ok.since'))+'</p><p class="sub">'+esc(r.recentChangesNote)+'</p>'+changeRows(r.recentChanges||[])+'</div>':'';
   return '<div class="ok"><h2>'+esc(head)+'</h2><p>'+lead+'</p>'+recent+
     (next.length?'<div class="row" style="margin-top:16px">'+next.join('')+'</div>':'')+
@@ -1011,7 +1027,7 @@ function renderSessions(r){
   r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).forEach(function(s){
     var d=document.createElement('div'); d.className='sess'; d.tabIndex=0; d.setAttribute('role','button');
     var isNew=!window.EXPORTED&&(r.newCrashes||[]).indexOf(s.id)>=0;
-    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+(isNew?'<span class="mark new">'+esc(t('ui.new'))+'</span> ':'')+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+(s.vramLog&&s.vramLog.totalMB?'<br><span class="mono">'+esc(t('ui.sess.recordedPeak',{pct:Math.round(s.vramLog.peak*100)}))+'</span>':'')+'</div>';
+    d.innerHTML='<div class="mono">'+esc(fmtDate(s.start))+'</div><div class="dur">'+esc(fmtDur(s.minutes,s.durationKnown))+'</div><div class="end"><i class="i-'+esc(s.endKind)+'"></i><span>'+(isNew?'<span class="mark new">'+esc(t('ui.new'))+'</span> ':'')+(s.settled?'<span class="mark mint" title="'+esc(s.settled)+'">'+esc(t('ui.dx.settled'))+'</span> ':'')+esc(s.verdict)+'</span></div><div class="dist muted" style="font-size:12.5px">'+esc(s.district||'')+(s.vramUsedMB&&s.vramTotalMB?'<br><span class="mono">VRAM '+Math.round(s.vramUsedMB/s.vramTotalMB*100)+'%</span>':'')+(s.vramLog&&s.vramLog.totalMB?'<br><span class="mono">'+esc(t('ui.sess.recordedPeak',{pct:Math.round(s.vramLog.peak*100)}))+'</span>':'')+'</div>';
     d.onclick=function(){ showSession(s.id); }; d.onkeydown=function(e){ if(e.key==='Enter') showSession(s.id); };
     el.appendChild(d);
   });
@@ -1140,7 +1156,7 @@ function renderMods(){
       if(f.sessionId) return '<button class="mark '+cls+'" title="'+title+'" onclick="showModFlag('+esc(JSON.stringify(m.name))+","+i+')">'+esc(f.label)+" →</button> ";
       return '<span class="mark '+cls+'" title="'+title+'">'+esc(f.label)+"</span> ";
     }).join("");
-    tr.innerHTML="<td>"+esc(m.name)+'</td><td class="mono">'+esc(m.version||"")+'</td><td class="muted">'+esc(typeLabel(m.type))+"</td>"+
+    tr.innerHTML="<td>"+esc(m.name)+(m.source==='mod.io'?' <span class="mark grey" title="'+esc(t('ui.mods.modioTip'))+'">mod.io</span>':'')+'</td><td class="mono">'+esc(m.version||"")+'</td><td class="muted">'+esc(typeLabel(m.type))+"</td>"+
       '<td><span class="mark '+(m.status==="enabled"?"mint":m.status==="disabled"?"grey":"sig")+'">'+esc(statusLabel(m.status))+"</span></td><td>"+flags+"</td>";
     tb.appendChild(tr);
   });
@@ -1313,6 +1329,18 @@ function clearLogs(){
   if(!CLEAR_ARMED){ CLEAR_ARMED=true; renderGameLogs(REPORT); setTimeout(function(){ if(CLEAR_ARMED){ CLEAR_ARMED=false; if(REPORT) renderGameLogs(REPORT); } },6000); return; }
   CLEAR_ARMED=false; act('logs:clear');
 }
+/* ---------- clear history (History.cs) ----------
+   Forgets the crashes Crash Doctor remembers, and their warnings. The app asks first in a native dialog, keeps a copy,
+   and Undo brings everything back. Normal sessions are kept: they are what rules mods out. */
+function renderHistory(r){
+  var host=document.getElementById('history-card'); if(!host) return; var h=r.history;
+  if(!h){ host.innerHTML='<span class="muted">'+esc(t('ui.notInSaved'))+'</span>'; return; }
+  host.innerHTML='<b>'+esc(t('ui.hist.title'))+'</b><br><span class="muted" style="font-size:13px">'+esc(t('ui.hist.help'))+'</span>'
+    +'<div class="saved"><span>'+esc(t('ui.hist.counts',{sessions:h.sessions,crashes:h.crashes})+(h.clearedAt?SP()+t('ui.hist.clearedOn',{date:fmtDate(h.clearedAt)}):''))+'</span>'
+    +'<button class="btn" onclick="clearHistory()">'+esc(t('ui.hist.clear'))+'</button>'
+    +(h.canUndo?'<button class="btn" onclick="act(&quot;history:undo&quot;)">'+esc(t('ui.hist.undo'))+'</button>':'')+'</div>';
+}
+function clearHistory(){ if(!hasHost()){ toast(t('ui.appOnly'),true); return; } act('history:clear'); }
 function setArchive(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'archive',enabled:!!on}); else toast(t('ui.appOnly'),true); }
 
 /* ---------- video memory recorded while the game runs ----------
@@ -1417,7 +1445,7 @@ function markSeen(){ if(REPORT) REPORT.newCrashes=[]; if(hasHost()) window.chrom
 function openNewCrash(id){ markSeen(); showSession(id); }
 
 function renderSettings(r){
-  renderLangCard(); renderArchive(r); renderGameLogs(r); renderVramLogCard(r); renderUpdateCard(r);
+  renderLangCard(); renderArchive(r); renderGameLogs(r); renderHistory(r); renderVramLogCard(r); renderUpdateCard(r);
   renderProfiles(r); renderGraphics(r);
   var notes=document.getElementById('settings-notes'); notes.innerHTML='';
   (r.settingsNotes||[]).forEach(function(n){ notes.innerHTML+='<div class="card" style="margin-bottom:10px;border-left:4px solid var(--'+(n.level==='high'?'signal':n.level==='medium'?'amber':'mint')+')"><b>'+esc(n.title)+'</b><div class="muted" style="margin-top:4px">'+esc(n.detail)+'</div></div>'; });
@@ -1443,6 +1471,7 @@ function summaryText(r){
     if(s.changesNote){ lines.push('  '+t('ui.sum.changed')+'  '+s.changesNote); (s.changes||[]).forEach(function(c){ lines.push('    '+fmtDate(c.at)+'  '+c.text); }); }
     s.evidence.forEach(function(e){ lines.push('  T-'+e.tMinus+'s  ['+e.source+'] '+e.text); });
     s.suspects.forEach(function(x){ lines.push('  '+t('ui.sum.suspect',{mod:x.mod,why:x.why})); }); lines.push(''); }
+  else if(r.latestSettled){ lines.push(t('ui.sum.lastSettled')+'  '+fmtDate(r.latestSettled.start)+' · '+r.latestSettled.verdict); lines.push('  '+r.latestSettled.settled); lines.push(''); }
   lines.push(t('ui.sum.sessions'));
   r.sessions.slice().sort(function(a,b){return new Date(b.start)-new Date(a.start);}).slice(0,12).forEach(function(x){ lines.push('  '+fmtDate(x.start)+'  '+fmtDur(x.minutes,x.durationKnown).padEnd(14)+' '+x.endKind.padEnd(8)+' '+x.verdict+(x.vramLog&&x.vramLog.totalMB?'  ['+t('ui.sum.vramPeak',{peak:Math.round(x.vramLog.peak*100),median:Math.round(x.vramLog.median*100)})+']':'')); });
   lines.push(''); lines.push(t('ui.sum.health'));

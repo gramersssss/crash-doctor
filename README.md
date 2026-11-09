@@ -64,8 +64,23 @@ and Codeware 1.21.0), so it can say "update ArchiveXL to 1.28.0" even when the g
 write anything. When the game closes while RED4ext is
 loading a plugin - its log stops at "Loading plugin ... X.dll" - that plugin is named, because the game died inside its
 start-up. A script mod that no longer compiles because 2.5 changed two inventory filter methods it hooks
-is named too, since one such error switches off every redscript mod. Not yet: mods installed through the game's own
-in-game mod menu (mod.io, new in 2.5) are not listed among your mods.
+is named too, since one such error switches off every redscript mod.
+
+**Mods from the game's own mod menu (mod.io, new in 2.5).** Listed with your other mods, marked "mod.io", with their
+name, version and whether the game has them switched on, read from mod.io's own folder (C:\Users\Public\mod.io by
+default). An install or update through the menu shows under "what changed since your last clean session". Only the
+installed files, mod.io's list of them and the game's list of switched-on mods are read - never your mod.io sign-in.
+Work in progress: no PC with menu mods was available while writing this, so the layout is read defensively; if a menu
+mod is missing or misnamed, a saved report helps.
+
+**Old crashes stop shouting.** Every crash keeps the verdict it was given that night, and on every scan Crash Doctor
+also works out what has happened since: how many times the game has ended normally after it, and whether what it was
+blamed on has changed since - a framework that could not run on a new game version and now does, or every mod it named
+updated, switched off or removed, with a normal session after that. Such a crash "looks settled" and no longer leads
+the first page; it stays in the list of sessions. A crash nobody could explain is never called settled just because
+time has passed. **Settings → History → Clear history** forgets every crash and freeze from before that moment, with
+their warnings (normal sessions are kept, because they are what rules mods out). It asks first, changes only Crash
+Doctor's own history - never the game's files, logs or saves - and **Undo** brings it all back.
 
 **Your language.** The window, the diagnosis and the saved report are available in English and the 18 languages the
 game itself ships (Arabic, Chinese simplified and traditional, Czech, French, German, Hungarian, Italian, Japanese,

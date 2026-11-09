@@ -351,6 +351,16 @@ public sealed class MainForm : Form
             if (res.Ok) await ScanAsync();
             return;
         }
+        // "Clear history" forgets the crashes Crash Doctor remembers (History.cs) - its own file only, after a native
+        // confirmation, with a copy kept so Undo brings everything back. Then the scan runs again.
+        if (id == "history:clear" || id == "history:undo")
+        {
+            if (id == "history:clear" && MessageBox.Show(this, Q("host.clearHistory", History.CrashesToClear(_report)), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            var res = await Task.Run(() => id == "history:clear" ? History.Clear() : History.Undo());
+            Post(new { cmd = res.Ok ? "toast" : "error", text = res.Message });
+            if (res.Ok) await ScanAsync();
+            return;
+        }
         if (id.StartsWith("open:vramlog:"))
         {
             var f = _report?.Sessions.FirstOrDefault(x => x.Id == id["open:vramlog:".Length..])?.VramLog?.File;

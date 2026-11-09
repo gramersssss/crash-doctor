@@ -1,11 +1,12 @@
 # Builds the distributable: a single self-contained CrashDoctor.exe (no .NET install needed on the user's PC)
 # plus the ui\, fixes\ and knowledge\ folders, zipped for Nexus. One zip only: Crash Doctor is not a mod, and a Vortex
 # package would deploy it into the game folder and list it as one (dropped 14 Sep at Gary's suggestion).
-param([string]$Version = "0.1.0")
+# -Dist builds somewhere other than dist\ (a test build while the app is running from dist\, which this wipes)
+param([string]$Version = "0.1.0", [string]$Dist = "dist")
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $env:PATH = "C:\Program Files\dotnet;" + $env:PATH
-$dist = Join-Path $root 'dist'; if (Test-Path $dist) { Get-ChildItem $dist -Recurse -Force | Remove-Item -Recurse -Force }
+$dist = Join-Path $root $Dist; if (Test-Path $dist) { Get-ChildItem $dist -Recurse -Force | Remove-Item -Recurse -Force }
 New-Item -ItemType Directory -Force $dist | Out-Null
 $pub = Join-Path $dist 'publish'
 & dotnet publish (Join-Path $root 'src\CrashDoctor.csproj') -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:Version=$Version -o $pub -nologo -v q

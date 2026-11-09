@@ -31,6 +31,8 @@ public sealed class Report
     public ArchiveSummary? Archive { get; set; }                      // crash logs kept before the game rotates them
     public VramLogSummary? VramLogs { get; set; }                     // video memory recorded while the game ran
     public LogClearSummary? GameLogs { get; set; }                    // logs in the game folder, and the last clearing (LogCleaner.cs)
+    public HistorySummary? History { get; set; }                      // what Crash Doctor remembers, and the last "Clear history" (History.cs)
+    public Session? LatestSettled { get; set; }                       // the newest crash, when it looks settled and so is not Latest
     public UpdateInfo? Update { get; set; }                           // the opt-in update check's last result (Updates.cs)
     public List<Change> RecentChanges { get; set; } = new();          // what changed since the last clean session, up to now
     public DateTime? RecentChangesSince { get; set; }
@@ -114,10 +116,21 @@ public sealed class SystemInfo
     public bool Laptop { get; set; }
 }
 
+public sealed class HistorySummary
+{
+    public int Sessions { get; set; }             // remembered in history.json
+    public int Crashes { get; set; }              // of those, the ones that did not end normally
+    public DateTime? ClearedAt { get; set; }      // crashes before this are hidden
+    public bool CanUndo { get; set; }             // the copy taken when clearing is still there
+}
+
 public sealed class ModsSummary
 {
     public int Installed { get; set; }
     public int Enabled { get; set; }
+    // mods from the game's own mod menu (mod.io), counted apart: no mod manager handles them (Modio.cs)
+    public int Modio { get; set; }
+    public int ModioEnabled { get; set; }
     public string Manager { get; set; } = "manual";
     // "mods" when a mod manager told us what is installed. "pieces" when there is none: then every .archive, .xl,
     // CET folder, plugin folder and script folder is its own row, and one mod is usually several of those. Measured
@@ -173,6 +186,12 @@ public sealed class Session
     public List<Change> Changes { get; set; } = new();
     public DateTime? ChangesSince { get; set; }   // when that clean session ended; null when there is none to compare with
     public string? ChangesNote { get; set; }
+    // Worked out again on every scan, never trusted from history (Settle.cs): the normal sessions played since this
+    // crash, and - when what it was blamed on has changed since and the game has ended normally after that - why it
+    // looks settled. A settled crash stops being the headline; it is still listed with the rest.
+    public int CleanSince { get; set; }
+    public DateTime? CleanSinceLast { get; set; }
+    public string? Settled { get; set; }
     [JsonIgnore] public string? Red4extLog { get; set; }
     [JsonIgnore] public DateTime? CrashTime { get; set; }
     [JsonIgnore] public string? EngineMessage { get; set; }
@@ -246,6 +265,8 @@ public sealed class ModRow
     public string Type { get; set; } = "";
     public string Status { get; set; } = "enabled";
     public string? NexusId { get; set; }
+    public string? Source { get; set; }      // "mod.io" for the game's own mod menu; null for everything a mod manager or the game folder holds
+    public string? ModioId { get; set; }
     public List<ModFlag> Flags { get; set; } = new();
     [JsonIgnore] public string Folder { get; set; } = "";
     [JsonIgnore] public List<string> Files { get; set; } = new();

@@ -132,6 +132,15 @@ public static class ChangeLog
             if (row?.Status == "disabled") text = L.T("chg.withState", text, L.T("chg.stateDisabled"));
             list.Add(new Change { At = at, Kind = "installed", Mod = name, Text = text });
         }
+        // the game's own mod menu (mod.io): the time each mod's folder appeared
+        foreach (var (name, at, version) in inv.ModioInstalled.Where(x => x.at > from && x.at <= to))
+        {
+            var row = inv.Find(name);
+            var text = L.T("chg.modio", name + (version.Length > 0 ? " " + version : ""));
+            if (row?.Status == "disabled") text = L.T("chg.withState", text, L.T("chg.stateDisabled"));
+            list.Add(new Change { At = at, Kind = "installed", Mod = name, Text = text });
+        }
+        // (EnabledMods.json's own time says nothing: the game rewrites it on every launch - 8 Nov 2026, Gary's PC)
         if (d.Paths.Mo2 is { } mo2 && File.Exists(mo2.ModList) && File.GetLastWriteTime(mo2.ModList) is var ml && ml > from && ml <= to)
             list.Add(new Change { At = ml, Kind = "enabled", Text = L.T("chg.mo2List", mo2.Profile) });
 

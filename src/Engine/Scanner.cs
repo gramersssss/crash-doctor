@@ -37,7 +37,8 @@ public static class Scanner
         }
         catch { /* never worth the diagnosis */ }
         r.System = d.System;
-        r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count, Enabled = d.Mods.Mods.Count(m => m.Status == "enabled"), Manager = d.Mods.Manager, Counted = d.Mods.Manager is "Vortex" or ModOrganizer.ManagerName ? "mods" : "pieces", Frameworks = Frameworks(d),
+        r.Mods = new ModsSummary { Installed = d.Mods.Mods.Count(m => m.Source == null), Enabled = d.Mods.Mods.Count(m => m.Status == "enabled" && m.Source == null),
+            Modio = d.Mods.ModioCount, ModioEnabled = d.Mods.Mods.Count(m => m.Source == "mod.io" && m.Status == "enabled"), Manager = d.Mods.Manager, Counted = d.Mods.Manager is "Vortex" or ModOrganizer.ManagerName ? "mods" : "pieces", Frameworks = Frameworks(d),
             Mo2Instance = g.Mo2?.BaseDir, Mo2Profile = g.Mo2?.Profile };
         if (d.Mods.AlsoMo2) d.Warnings.Add(L.T("warn.vortexAndMo2", g.Mo2!.BaseDir));
         Analyzer.Analyze(d, r);
@@ -49,6 +50,7 @@ public static class Scanner
         Mark("crash log archive");
         try { r.VramLogs = VramLogs.Summary(); } catch { }
         try { r.GameLogs = LogCleaner.Summary(g); } catch { }
+        try { r.History = History.Summary(); } catch { }
         var seenUntil = GameLocator.LoadConfig().CrashesSeenUntil;
         if (seenUntil != null)
             r.NewCrashes = r.Sessions.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running) && s.Start > seenUntil.Value)
@@ -102,7 +104,8 @@ public static class Scanner
         if (cleared.ro != null)
             m.Flags.Add(new ModFlag { Label = L.T("flag.ruledOut"), Level = "cleared", Detail = cleared.ro.Why, SessionId = cleared.session.Id, When = L.Date(cleared.session.Start, "dmt") });
         else
-            foreach (var s in newestFirst)
+            // a crash that looks settled (Settle.cs) no longer flags its suspects: what it named has changed since
+            foreach (var s in newestFirst.Where(x => x.Settled == null))
                 foreach (var su in s.Suspects)
                     if (su.Mod.Equals(m.Name, StringComparison.OrdinalIgnoreCase) && !m.Flags.Any(f => f.Label == L.T("flag.suspect")))
                         m.Flags.Add(new ModFlag { Label = L.T("flag.suspect"), Level = su.Level, Detail = su.Why, SessionId = s.Id, When = L.Date(s.Start, "dmt") });

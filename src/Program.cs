@@ -84,6 +84,14 @@ static class Program
             Environment.Exit(0);
         }
 
+        // Clear Crash Doctor's history / undo that, the same two actions as the Settings page (History.cs):
+        //   CrashDoctor.exe --clear-history      CrashDoctor.exe --undo-clear-history
+        if (args.Contains("--clear-history") || args.Contains("--undo-clear-history"))
+        {
+            var res = args.Contains("--clear-history") ? History.Clear() : History.Undo();
+            (res.Ok ? Console.Out : Console.Error).WriteLine(L.R(res.Message)); Console.Out.Flush(); Console.Error.Flush();
+            Environment.Exit(res.Ok ? 0 : 1);
+        }
         // Clear old logs / put them back, the same two actions as the Settings page (LogCleaner.cs):
         //   CrashDoctor.exe --clear-logs [--game "C:\path"]      CrashDoctor.exe --restore-logs [--game "C:\path"]
         if (args.Contains("--clear-logs") || args.Contains("--restore-logs"))

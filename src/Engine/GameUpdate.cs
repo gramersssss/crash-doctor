@@ -224,6 +224,13 @@ public static class GameUpdate
     }
 
     /// <summary>The Health item for a game update, or null when there is nothing to say any more.</summary>
+    /// <summary>
+    /// A framework has not yet shown it runs on the new build. The line counting other native plugins RED4ext refused is
+    /// not a framework (see Health below): on 7 Nov 2026 Gary's DualSense Support refusal kept adding "before every
+    /// framework had shown that it runs on that version" to crashes two weeks after the update, with every framework fine.
+    /// </summary>
+    public static bool FrameworksBehind(List<FrameworkCheck> fw) => fw.Any(f => f.Name != "plugins" && f.State != "ran");
+
     public static HealthItem? Health(GameVersionChange c, List<FrameworkCheck> fw)
     {
         // known only from the release table, with no framework installed: nothing worth a line in Health

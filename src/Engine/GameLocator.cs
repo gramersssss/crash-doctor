@@ -148,6 +148,13 @@ public sealed class GamePaths
     public static string AppData => Path.Combine(RoamingAppData, "CrashDoctor");
     public static string VortexDir => Path.Combine(RoamingAppData, "Vortex");   // vortex.log, vortex1.log ... (install history)
     public static string ConfigFile => Path.Combine(AppData, "config.json");
+    // Where the game keeps saves and EnabledMods.json (its list of in-game mod menu mods that are switched on).
+    public static string SavedGames => TestRoot is { } t ? Path.Combine(t, "Saved Games", "CD Projekt Red", "Cyberpunk 2077")
+        : Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Saved Games", "CD Projekt Red", "Cyberpunk 2077");
+    // mod.io's own settings (LocalAppData\mod.io\globalsettings.json) and its default storage, C:\Users\Public\mod.io
+    public static string ModioSettings => Path.Combine(LocalAppData, "mod.io", "globalsettings.json");
+    public static string ModioDefaultRoot => TestRoot is { } t ? Path.Combine(t, "Public", "mod.io")
+        : Path.Combine(Environment.GetEnvironmentVariable("PUBLIC") ?? @"C:\Users\Public", "mod.io");
 }
 
 public static class GameLocator
@@ -176,6 +183,10 @@ public static class GameLocator
         public DateTime? GameVersionChangedAt { get; set; }
         public string? PreviousGameVersion { get; set; }
         public string? PreviousGameFileVersion { get; set; }
+        // "Clear history" (History.cs): crashes from before this moment are no longer shown, and the copy of
+        // history.json taken at that moment, so Undo can bring them back
+        public DateTime? HistoryClearedAt { get; set; }
+        public string? HistoryBackup { get; set; }
     }
 
     public static Config LoadConfig()

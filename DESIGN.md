@@ -178,3 +178,21 @@ English whatever the window shows, because the people answering them mostly read
   table knows is never flagged. It still keeps no guess about what a future release will support.
 - A RED4ext log whose last line is "Loading plugin from '...X.dll'" ended inside X's start-up: that is an observation,
   like ACR seeing a mod's code on the faulting thread, so X is a high suspect for that crash.
+
+## Old crashes, clearing history, the in-game mod menu (0.8.1)
+- A verdict is true about its night, not about now. Remembered crashes kept their warnings for days after everything
+  was updated (LyciaPintella, Nexus, 8 Nov 2026). The fix is the missing half, not deletion: on every scan `Settle.cs`
+  works out what has happened since each crash - the normal sessions after it, and whether what it was blamed on has
+  changed since. Only two checkable causes settle a crash: it came after a game update before the frameworks had run on
+  the new build and they all have since; or every high/medium suspect that is a mod has been updated, switched off or
+  removed since, with a normal session after the last change. A settled crash says why ("looks settled"), stops being
+  the headline and stops flagging its suspects; it stays listed. Quiet time alone never settles anything: "normal
+  sessions since this crash: 3" is shown as exactly that. Settings, the video memory ceiling, the driver and "a script
+  problem" cannot be updated away, so a crash blamed on them is never settled.
+- "Clear history" is Crash Doctor's own data only: native confirmation, a copy of history.json first, Undo. It hides
+  every crash and freeze from before that moment from the scan as well (or the game's crash reports would bring them
+  straight back) and keeps normal sessions, which warn about nothing and are what elimination needs.
+- Mods from the game's mod menu (mod.io SDK v2, game 5784) are read from mod.io's storage root, never from the user's
+  mod.io sign-in (user.json). Their keys are looked up by landmarks under several spellings: no install with menu mods
+  was available to check on 8 Nov 2026, so a missing key means less detail, never a failed scan. They are counted
+  apart from the mod manager's mods, because no manager knows about them.

@@ -39,6 +39,16 @@ launch, so the 22 Oct logs describe the old files. Expected: a MEDIUM "Your game
 was installed or updated after the game last ran and to start the game once and scan again; no framework "outdated" in
 Requirements; no AppearanceRuntimePlugin refusal in the update item (its file was replaced too). The two 22 Oct
 sessions keep their ArchiveXL verdict - that is history and stays true.
+
+updated25-fixed (0.8.1): updated25 the day after - the frameworks were replaced by their 2.5 releases twelve hours ago
+(RED4ext 1.31.0, ArchiveXL 1.28.0, TweakXL 1.12.0, Codeware 1.21.1, RedFileSystem 0.16.0, CET 1.38.1) and the game
+then ran normally on 2.5 for 90 minutes. Expected: nothing "outdated" in Requirements; both 2.5 crashes "look settled"
+(ArchiveXL, which they were blamed on, was updated since and the game ended normally after that); the first page is
+the no-crash panel naming the last crash and why; ArchiveXL carries no "suspect" flag on the mods page.
+
+updated25-fixed-rotated: the same, but the two crash logs have rotated away. Scan `updated25` first and copy its
+AppData\\CrashDoctor\\history.json and config.json into this fixture: the crashes then come only from history, with
+the verdict written that night ("your frameworks do not all support it yet"), and must still look settled.
 """
 import io, os, sys, shutil, datetime
 
@@ -51,7 +61,7 @@ def W(path, text=""):
     io.open(path, "w", encoding="utf-8").write(text)
 
 
-def build(name, with_old_sessions, redeployed=False):
+def build(name, with_old_sessions, redeployed=False, fixed=False, rotated=False):
     fx = os.path.join(ROOT, name)
     if os.path.isdir(fx):
         shutil.rmtree(fx)
@@ -71,8 +81,8 @@ def build(name, with_old_sessions, redeployed=False):
     def ts(dt, ms=0):
         return dt.strftime("%Y-%m-%d %H:%M:%S") + ".%03d" % ms
 
-    def red4ext_log(start, product, filever, lines):
-        L = ["[%s] [info    ] [ 40968] [RED4ext] RED4ext (v1.30.0) is initializing..." % ts(start, 738),
+    def red4ext_log(start, product, filever, lines, version="1.30.0"):
+        L = ["[%s] [info    ] [ 40968] [RED4ext] RED4ext (v%s) is initializing..." % (ts(start, 738), version),
              "[%s] [info    ] [ 40968] [RED4ext] Product version: %s" % (ts(start, 738), product),
              "[%s] [info    ] [ 40968] [RED4ext] File version: %s" % (ts(start, 738), filever),
              "[%s] [info    ] [ 40968] [RED4ext] RED4ext has been successfully initialized" % ts(start + datetime.timedelta(seconds=2), 678),
@@ -112,6 +122,8 @@ def build(name, with_old_sessions, redeployed=False):
 
     # the two launches on 2.5, each dying three seconds in while RED4ext loads ArchiveXL
     for k, start in enumerate((NOW - datetime.timedelta(days=1, hours=2), NOW - datetime.timedelta(days=1, hours=2) + datetime.timedelta(seconds=45))):
+        if rotated:
+            break   # those logs have rotated away; the crashes are known only from Crash Doctor's history
         t = lambda sec, ms=0: ts(start + datetime.timedelta(seconds=sec), ms)
         red4ext_log(start, "2.50", "3.0.88.46235", [
             "[%s] [info    ] [ 40968] [RED4ext] Loading plugin from '%s'..." % (t(2, 937), os.path.join(plugdir, "AppearanceRuntimePlugin", "AppearanceRuntimePlugin.dll")),
@@ -158,7 +170,26 @@ def build(name, with_old_sessions, redeployed=False):
                 "  >> [06] 0x00007FFE0C91DCD8  RED4ext.dll                  +0x7DCD8  (PluginBase::Main+0x128, src/dll/PluginBase.cpp:98)  [LOADER]",
                 "  >> [07] 0x00007FFE0C92991C  RED4ext.dll                  +0x8991C  (PluginSystem::Load+0x84C, src/dll/Systems/PluginSystem.cpp:311)  [LOADER]",
             ]) + "\n")
-    if redeployed:
+    if fixed:
+        # twelve hours ago every framework was replaced by its 2.5 release, and two hours ago the game ran normally
+        new = (NOW - datetime.timedelta(hours=12)).timestamp()
+        for rel in [os.path.join("red4ext", "RED4ext.dll"), os.path.join("bin", "x64", "plugins", "cyber_engine_tweaks.asi")] + \
+                   [os.path.join("red4ext", "plugins", p, p + ".dll") for p in ("AppearanceRuntimePlugin", "ArchiveXL", "TweakXL", "Codeware", "RedFileSystem")]:
+            os.utime(os.path.join(game, rel), (new, new))
+        NEW = [("AppearanceRuntimePlugin", "1.5.0"), ("ArchiveXL", "1.28.0"), ("TweakXL", "1.12.0"), ("Codeware", "1.21.1"), ("RedFileSystem", "0.16.0")]
+        start = NOW - datetime.timedelta(hours=2)
+        end = start + datetime.timedelta(minutes=90)
+        body = ["[%s] [info    ] [ 40968] [RED4ext] %s (version: %s, author(s): someone) has been loaded" % (ts(start + datetime.timedelta(seconds=3 + i)), n, v) for i, (n, v) in enumerate(NEW)]
+        body += ["[%s] [info    ] [ 40968] [RED4ext] RED4ext has been started" % ts(start + datetime.timedelta(seconds=9)),
+                 "[%s] [info    ] [ 40968] [RED4ext] RED4ext has been shut down" % ts(end, 880)]
+        red4ext_log(start, "2.50", "3.0.88.46235", body, version="1.31.0")
+        st = start.strftime("%Y-%m-%d %H:%M:%S")
+        cetlog = os.path.join(game, "bin", "x64", "plugins", "cyber_engine_tweaks", "cyber_engine_tweaks.log")
+        io.open(cetlog, "a", encoding="utf-8").write("\n".join([
+            "[%s UTC-07:00] [info] [Options] [9548] Cyber Engine Tweaks is starting..." % st,
+            "[%s UTC-07:00] [info] [Options] [9548] CET version v1.38.1 [HEAD]" % st,
+            "[%s UTC-07:00] [info] [Options] [9548] Game version 3.0.88.46235" % st]) + "\n")
+    if redeployed or fixed:
         # the logs were written when those sessions ran, not now (a real log's time is its last line's): without this
         # every log is as new as the redeployed framework files and nothing reads as "updated since the game last ran"
         import re
@@ -177,3 +208,5 @@ def build(name, with_old_sessions, redeployed=False):
 build("updated25", True)
 build("updated25-new", False)
 build("updated25-redeployed", True, redeployed=True)
+build("updated25-fixed", True, fixed=True)
+build("updated25-fixed-rotated", True, fixed=True, rotated=True)

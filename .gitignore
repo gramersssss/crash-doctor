@@ -5,3 +5,4 @@ dist/
 *.user
 *.suo
 .vs/
+dist-test/

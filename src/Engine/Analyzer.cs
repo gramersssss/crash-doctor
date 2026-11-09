@@ -14,7 +14,11 @@ public static class Analyzer
     public static void Analyze(CollectedData d, Report r)
     {
         ResolveNames(d);
-        var sessions = BuildSessions(d);
+        // "Clear history" (History.cs): crashes from before it are gone from the scan as well as from history.json, or
+        // the game's own crash reports would bring them straight back. Normal sessions stay - they warn about nothing.
+        var clearedAt = History.ClearedAt;
+        if (clearedAt != null) d.CrashReports.RemoveAll(c => c.At < clearedAt.Value);
+        var sessions = BuildSessions(d).Where(s => !History.Hidden(s, clearedAt)).ToList();
         VramLogs.Attach(d.VramLogs, sessions);
         // Nothing may be ranked until we know what this install does when it is NOT crashing.
         var elimination = Elimination.Build(d, sessions);
@@ -23,7 +27,7 @@ public static class Analyzer
         foreach (var s in sessions) SayAfterGameUpdate(d, s);
         r.CrashGroups = GroupBySignature(d, sessions);
         foreach (var g in r.CrashGroups) NoteGroupOnSessions(g, sessions);
-        var merged = History.Merge(sessions, History.Load());
+        var merged = History.Merge(sessions, History.Load().Where(s => !History.Hidden(s, clearedAt)).ToList());
         // remembered sessions carry whatever recording they had when saved; refresh from the files that still exist
         VramLogs.Attach(d.VramLogs, merged);
         // What is different between this install and the one that last played without a problem. Done for every
@@ -31,6 +35,8 @@ public static class Analyzer
         // the plugin-version diff comes back for any whose logs still exist. Cheap, and it means a wording fix or a
         // new source reaches old crashes too instead of freezing whatever was written into history the first time.
         foreach (var s in merged.Where(x => x.EndKind is not (EndKind.Clean or EndKind.Running))) CompareWithLastClean(d, s, merged);
+        // what has happened since each crash, worked out fresh: a remembered verdict is true about its night, not about now
+        Settle.All(d, merged);
         History.Save(merged);
         r.Sessions = merged;
         // and the same question for right now, for the no-crash screen: what has changed since the last clean session
@@ -39,7 +45,10 @@ public static class Analyzer
         r.RecentChangesSince = latestClean?.End;
         r.RecentChanges = latestClean == null ? new() : ChangeLog.Between(d, latestClean.End!.Value, DateTime.Now, ChangeLog.LogOf(d, latestClean), latestLog);
         r.RecentChangesNote = ChangeLog.Note(d, r.RecentChanges, r.RecentChangesSince, forCrash: false);
-        r.Latest = merged.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).OrderByDescending(s => s.Start).FirstOrDefault();
+        // the first page leads with the newest crash - unless it looks settled, and then with the clean bill of health,
+        // which names that crash and why (Settle.cs)
+        var newestCrash = merged.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running)).OrderByDescending(s => s.Start).FirstOrDefault();
+        if (newestCrash?.Settled != null) r.LatestSettled = newestCrash; else r.Latest = newestCrash;
         r.Health = Health(d, merged, elimination, r);
         r.SettingsNotes = SettingsNotes(d, merged);
     }
@@ -121,7 +130,7 @@ public static class Analyzer
     {
         if (d.GameChange is not { } c || !c.Newer) return;
         if (s.EndKind is EndKind.Clean or EndKind.Running || s.Start < c.At.AddMinutes(-1)) return;
-        if (d.FrameworkChecks.All(f => f.State == "ran")) return;
+        if (!GameUpdate.FrameworksBehind(d.FrameworkChecks)) return;
         s.Verdict = L.Cat(s.Verdict, L.T("verdict.afterUpdate", c.To));
     }
 
@@ -716,13 +725,17 @@ public static class Analyzer
             var wc = full.Count(s => s.EndKind != EndKind.Clean);
             var crashesFull = full.Where(s => s.EndKind != EndKind.Clean).ToList();
             var med = crashesFull.Count > 0 ? crashesFull.Select(s => s.Minutes).OrderBy(x => x).ElementAt(crashesFull.Count / 2) : 0;
-            var sev = full.Count > 0 && wc >= 3 && wc >= full.Count / 2.0 ? "high" : (wc + partial) > 0 ? "medium" : "info";
+            // crashes that look settled (Settle.cs) are still counted - they happened - but no longer raise the alarm
+            var settled = week.Count(s => s.Settled != null);
+            var live = wc + partial - settled;
+            var sev = live <= 0 ? "info" : full.Count > 0 && wc - crashesFull.Count(s => s.Settled != null) >= 3 && wc >= full.Count / 2.0 ? "high" : "medium";
             var detail = full.Count > 0
                 ? L.Cat(L.P("health.week.crashed", full.Count, wc),
                         wc > 0 ? L.T("health.week.typical", L.Dur(med)) : "",
                         L.T("health.week.kinds", crashesFull.Count(s => s.EndKind == EndKind.Gpu), crashesFull.Count(s => s.EndKind == EndKind.Vram), crashesFull.Count(s => s.EndKind == EndKind.Script), crashesFull.Count(s => s.EndKind == EndKind.Hang), crashesFull.Count(s => s.EndKind is EndKind.Unknown or EndKind.Engine)))
                 : "";
             if (partial > 0) detail = L.Cat(detail, L.P("health.week.partial", partial));
+            if (settled > 0) detail = L.Cat(detail, L.T("health.week.settled", settled));
             h.Add(new HealthItem { Severity = sev, Title = L.P("health.week.title", wc + partial), Detail = detail });
         }
 

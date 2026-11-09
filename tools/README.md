@@ -218,6 +218,30 @@ that every engine call passes as many arguments as the English text has placehol
 the same keys, the same placeholders, the plural forms its language needs and the same `<b>` tags. Run it after any
 wording change; 0 problems is the bar.
 
+## make-modio-fixture.py
+
+    python tools/make-modio-fixture.py C:\temp\fixtures
+    set CRASHDOCTOR_TEST_ROOT=C:\temp\fixtures\modio
+
+Mods from the game's own mod menu (mod.io, 2.5): three installed under `Public\mod.io\5784\mods` (one with an archive
+folder, compiled scripts and a json tweak; one the game's EnabledMods.json does not switch on; one with no state.json
+entry), a state.json entry whose folder is gone, the storage root given in `LocalAppData\mod.io\globalsettings.json`,
+and a fake sign-in token in `user.json` that must never appear in any output. Expected: three rows marked mod.io (two
+enabled, one disabled, the uninstalled one absent), the chip "+ in-game mod menu (mod.io): 2", and each install
+under "what changed since your last clean session". The keys in state.json are a best guess (no real install with
+menu mods was available on 8 Nov 2026); check them against a real one when someone sends a saved report.
+
+## Clear history
+
+    set CRASHDOCTOR_TEST_ROOT=<a copy of the broken fixture>
+    CrashDoctor.exe --clear-history         CrashDoctor.exe --undo-clear-history
+
+The same two actions as Settings → History (History.cs), without the confirmation the window asks for. On a copy of
+`broken`: before, 6 crashes and every crash-based rule; after clearing, 0 crashes, the one clean session kept, only
+the rules about what is installed now, a `history-before-clear-*.json` copy beside history.json, and the game folder
+and LocalAppData byte-identical; after Undo, the same sessions and Health as before and the copy gone; a second Undo
+says there is nothing to bring back.
+
 ## make-update25-fixture.py
 
     python tools/make-update25-fixture.py C:\temp\fixtures
@@ -234,6 +258,13 @@ AppearanceRuntimePlugin refused "in plain words", and the "update these" advice;
 Scan it twice; the second scan must say the same. `updated25-new` has no 2.31 session at all (a new user, or the old
 logs rotated away): the update item must still appear, led by "Your game is 2.5, the update released on 22 Oct" -
 from the release table (`knowledge\releases\frameworks.json`), and only until 30 days after that date.
+`updated25-fixed` (0.8.1) is the day after: frameworks replaced by their 2.5 releases twelve hours ago and one normal
+90-minute session on 2.5 since. Expected: nothing outdated, both crashes "look settled" (ArchiveXL, updated since),
+the first page is the no-crash panel naming the last crash, and no "suspect" flag on ArchiveXL. `updated25-fixed-rotated`
+is the same with the two crash logs gone: scan `updated25` first and copy its `AppData\CrashDoctor\history.json` and
+`config.json` in, so the crash comes from history with that night's "frameworks do not all support it yet" verdict -
+it must still look settled, for the other reason. (Only one of the two crashes comes back from history: they started
+45 s apart and History.Merge treats starts within 90 s as one session - a known limit, not part of this test.)
 `updated25-redeployed` is `updated25` after the frameworks were replaced (Gary's state on 25 Oct) and the game not
 started since: every framework file is newer than the last launch (the fixture dates each log by its last line).
 Expected: a MEDIUM "Your game updated to 2.5" item saying each framework was installed or updated after the game last
