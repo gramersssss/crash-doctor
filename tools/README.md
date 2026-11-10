@@ -223,13 +223,17 @@ wording change; 0 problems is the bar.
     python tools/make-modio-fixture.py C:\temp\fixtures
     set CRASHDOCTOR_TEST_ROOT=C:\temp\fixtures\modio
 
-Mods from the game's own mod menu (mod.io, 2.5): three installed under `Public\mod.io\5784\mods` (one with an archive
-folder, compiled scripts and a json tweak; one the game's EnabledMods.json does not switch on; one with no state.json
-entry), a state.json entry whose folder is gone, the storage root given in `LocalAppData\mod.io\globalsettings.json`,
-and a fake sign-in token in `user.json` that must never appear in any output. Expected: three rows marked mod.io (two
-enabled, one disabled, the uninstalled one absent), the chip "+ in-game mod menu (mod.io): 2", and each install
-under "what changed since your last clean session". The keys in state.json are a best guess (no real install with
-menu mods was available on 8 Nov 2026); check them against a real one when someone sends a saved report.
+Mods from the game's own mod menu (mod.io, 2.5), in the layout seen on Gary's PC on 9 Nov 2026 (state.json entries
+with ID, PathOnDisk, Profile.name, Profile.modfile.version, State ...; the mod folder with about.json,
+r6\scripts\<mod>\*.reds and the game's own r6\cache\final.redscripts): three installed under `Public\mod.io\5784\mods`
+(one the game's EnabledMods.json does not switch on; one with no state.json entry, named from its about.json), a
+state.json entry whose folder is gone, the storage root given in `LocalAppData\mod.io\globalsettings.json`, and a
+fake sign-in token in `user.json` that must never appear in any output. Expected: three rows marked mod.io (two
+enabled, one disabled, the uninstalled one absent), the script mod typed "redscript" but not listed as needing
+redscript in Requirements, the chip "+ in-game mod menu (mod.io): 2", and each install under "what changed since
+your last clean session". Then delete `mods\6481578` and its state.json entry (what an in-game uninstall does) and
+scan again: its install must still be listed, "(no longer installed)", from `AppData\CrashDoctor\modio-seen.json`.
+Still unseen for real: an archive-only menu mod's layout and the format of EnabledMods.json's "enabled_mods" entries.
 
 ## Clear history
 

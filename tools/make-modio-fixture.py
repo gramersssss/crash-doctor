@@ -4,24 +4,29 @@
     set CRASHDOCTOR_TEST_ROOT=C:\\temp\\fixtures\\modio
     CrashDoctor.exe --json out.json --game C:\\temp\\fixtures\\modio\\game
 
-The layout is the mod.io SDK v2's, as the game's exe names it ("state.json", "PathOnDisk", "{}/mods/{}") and as an
-empty install on Gary's PC shows it (8 Nov 2026: C:\\Users\\Public\\mod.io\\5784\\metadata\\state.json = {"Mods":[]},
-LocalAppData\\mod.io\\globalsettings.json = {"RootLocalStoragePath":"C:/Users/Public/mod.io/"}, and
-Saved Games\\CD Projekt Red\\Cyberpunk 2077\\EnabledMods.json with an empty "enabled_mods"). No install with mods was
-available, so the entries below are a best guess at the SDK's keys and the reader must not depend on them:
+The layout is the one seen on Gary's PC on 9 Nov 2026 with "Unlimited Reserve Ammo (Keep Reloading)" 1.0.1 installed
+from the menu: C:\\Users\\Public\\mod.io\\5784\\metadata\\state.json = {"Mods":[{ID, NeverRetryCategory, NeverRetryCode,
+PathOnDisk, Profile{name, modfile{version}, date_added, ...}, SizeOnDisk, State, SubscriptionCount}], "version":1}, and
+the mod's folder 5784\\mods\\<ID> holding about.json, r6\\scripts\\<mod>\\*.reds and the game's own compiled
+r6\\cache\\final.redscripts(.h64). Also LocalAppData\\mod.io\\globalsettings.json = {"RootLocalStoragePath":
+"C:/Users/Public/mod.io/"} and Saved Games\\CD Projekt Red\\Cyberpunk 2077\\EnabledMods.json (8 Nov; its
+"enabled_mods" entry format is still unseen - a list of ids is a guess). After an in-game uninstall the entry and the
+folder are both gone. What is here:
 
-- 6272372 "Neon Rain Retexture" 1.2.0: an archive folder, compiled scripts and a json tweak; listed as enabled
-- 6338259 "Quiet Streets" 0.9: archive only; NOT in enabled_mods, so it must read "disabled"
-- 6406157: a folder with no state.json entry (the name falls back to "mod.io 6406157")
+- 6481578 "Unlimited Reserve Ammo (Keep Reloading)" 1.0.1: the real layout; listed as enabled
+- 6338259 "Quiet Streets" 0.9: an archive mod (archive layout not yet seen for real); NOT in enabled_mods -> "disabled"
+- 6406157: a folder with no state.json entry; its about.json names it "Something From About"
 - 6999999: a state.json entry whose folder is gone (must not be listed)
 - the root comes from globalsettings.json (forward slashes), as the game writes it
 - LocalAppData\\mod.io\\5784\\someone\\user.json holds a fake sign-in token that must never appear in any output
-- one RED4ext session that ended normally two days ago, so the mod.io installs (their folders were created now) show
+- one RED4ext session that ended normally two days ago, so the menu installs (their folders were created now) show
   under "what changed since your last clean session"
 
-Expected: 3 extra rows in the mods list marked mod.io (2 enabled, 1 disabled), types "archive + compiled scripts +
-tweaks" style for the first, the chip saying "+ in-game mod menu (mod.io): 2", and "installed or updated from the
-in-game mod menu (mod.io)" lines under the changes since the last clean session. No rule fires.
+Expected: 3 rows marked mod.io (2 enabled, 1 disabled), the first typed "redscript" and NOT listed under redscript in
+Requirements (the game compiles menu mods itself), the chip "+ in-game mod menu (mod.io): 2", and "installed or updated
+from the in-game mod menu (mod.io)" under the changes since the last clean session. No rule fires. Then delete
+mods\\6481578 and its state.json entry (an in-game uninstall) and scan again: the install is still listed under
+"what changed", marked "no longer installed" (remembered in AppData\\CrashDoctor\\modio-seen.json).
 """
 import io, os, sys, shutil, json, datetime
 
@@ -63,23 +68,35 @@ for dirpath, _, files in os.walk(os.path.join(game, "red4ext", "logs")):
 
 store = os.path.join(fx, "Public", "mod.io")
 mods = os.path.join(store, "5784", "mods")
-W(os.path.join(mods, "6272372", "NeonRain", "neonrain.archive"), "archive")
-W(os.path.join(mods, "6272372", "scripts", "neonrain.redscripts"), "compiled")
-W(os.path.join(mods, "6272372", "scripts", "neonrain.redscripts.h64"), "h64")
-W(os.path.join(mods, "6272372", "tweaks", "neonrain_tweak.json"), "{}")
+ura = os.path.join(mods, "6481578")
+W(os.path.join(ura, "about.json"), json.dumps({"name": "Unlimited Reserve Ammo (Keep Reloading)", "version": "1.0.1"}))
+W(os.path.join(ura, "r6", "scripts", "UnlimitedReserveAmmo", "UnlimitedReserveAmmo.reds"), "// script\n")
+W(os.path.join(ura, "r6", "cache", "final.redscripts"), "compiled by the game")
+W(os.path.join(ura, "r6", "cache", "final.redscripts.h64"), "h64")
+W(os.path.join(mods, "6338259", "about.json"), json.dumps({"name": "Quiet Streets"}))
 W(os.path.join(mods, "6338259", "QuietStreets", "quietstreets.archive"), "archive")
+W(os.path.join(mods, "6406157", "about.json"), json.dumps({"name": "Something From About", "version": "2.0"}))
 W(os.path.join(mods, "6406157", "Something", "something.archive"), "archive")
+
+
+def entry(mid, name, version=None, size=4096):
+    profile = {"id": mid, "name": name, "date_added": int(NOW.timestamp()), "date_live": int(NOW.timestamp()),
+               "date_updated": int(NOW.timestamp()), "dependencies": False, "community_options": 0,
+               "description": "<p>%s</p>" % name}
+    if version:
+        profile["modfile"] = {"version": version}
+    return {"ID": mid, "NeverRetryCategory": 0, "NeverRetryCode": 0, "PathOnDisk": os.path.join(mods, str(mid)),
+            "Profile": profile, "SizeOnDisk": size, "State": 1, "SubscriptionCount": 1}
+
+
 W(os.path.join(store, "5784", "metadata", "state.json"), json.dumps({"Mods": [
-    {"ID": 6272372, "Profile": {"id": 6272372, "name": "Neon Rain Retexture", "modfile": {"version": "1.2.0"}},
-     "CurrentState": 1, "SizeOnDisk": 12, "PathOnDisk": (mods + "/6272372").replace("\\", "/")},
-    {"ID": 6338259, "Profile": {"id": 6338259, "name": "Quiet Streets", "modfile": {"version": "0.9"}},
-     "CurrentState": 1, "PathOnDisk": (mods + "/6338259").replace("\\", "/")},
-    {"ID": 6999999, "Profile": {"id": 6999999, "name": "Already Uninstalled"}, "CurrentState": 1,
-     "PathOnDisk": (mods + "/6999999").replace("\\", "/")},
+    entry(6481578, "Unlimited Reserve Ammo (Keep Reloading)", "1.0.1"),
+    entry(6338259, "Quiet Streets", "0.9"),
+    entry(6999999, "Already Uninstalled", "3.0"),
 ], "version": 1}))
 W(os.path.join(fx, "LocalAppData", "mod.io", "globalsettings.json"), json.dumps({"RootLocalStoragePath": store.replace("\\", "/") + "/"}))
 W(os.path.join(fx, "LocalAppData", "mod.io", "5784", "someone", "user.json"), json.dumps({"AuthToken": TOKEN, "UserName": "someone"}))
 W(os.path.join(fx, "Saved Games", "CD Projekt Red", "Cyberpunk 2077", "EnabledMods.json"), json.dumps({
     "version": 6, "date": int(NOW.timestamp()), "modio_user_id": 0, "modio_reload_result": 3,
-    "enabled_mods": [6272372, 6406157], "mods_config": {}}, indent=4))
+    "enabled_mods": [6481578, 6406157], "mods_config": {}}, indent=4))
 print("built modio -> %s (token in user.json: %s)" % (fx, TOKEN))

@@ -18,8 +18,12 @@ after the files are live bump and push `version.json`.
   that version" because an unrelated native plugin was refused. Only the frameworks count now, as in Health.
 - New: mods installed through the game's own mod menu (mod.io, 2.5) are listed with your other mods, marked mod.io,
   with name, version and on/off, and an install or update shows under "what changed since your last clean session".
-  Read from mod.io's own folder; your mod.io sign-in is never read. Work in progress: no PC with menu mods was
-  available to check the layout, so if a menu mod is missing or misnamed, please send a saved report.
+  Read from mod.io's own folder; your mod.io sign-in is never read. Crash Doctor remembers each menu install it has
+  seen, so a crash during an install still lists it after the mod is uninstalled again. Checked against one real
+  script mod; if a menu mod is missing or misnamed, please send a saved report.
+- Fixed: a freeze that Advanced Crash Reporter saw ended by the engine's watchdog was shown as "the engine stopped
+  itself" and counted as "one repeating problem" with every earlier freeze. It now reads as a freeze, and the count
+  says that every freeze ends at the same place.
 
 ## Short description line (if the page needs one)
 

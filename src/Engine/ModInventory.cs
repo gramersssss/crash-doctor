@@ -108,14 +108,24 @@ public sealed class ModInventory
     // files are listed as "mod.io\<id>\<path inside the mod>": nothing in the game folder is claimed by them.
     static void ReadModio(ModInventory inv)
     {
-        foreach (var m in Modio.Read())
+        var mods = Modio.Read();
+        // installs seen on an earlier scan whose folder is gone now (uninstalled from the menu): kept for "what changed"
+        foreach (var gone in Modio.Remember(mods)) inv.ModioInstalled.Add((gone.Name, gone.InstalledAt, gone.Version));
+        foreach (var m in mods)
         {
             var row = new ModRow { Name = m.Name, Folder = "mod.io\\" + m.Id, Version = m.Version, Source = "mod.io", ModioId = m.Id, Status = m.Enabled == false ? "disabled" : "enabled" };
-            try { row.Files.AddRange(Directory.EnumerateFiles(m.Dir, "*", SearchOption.AllDirectories).Take(5000).Select(p => Path.Combine("mod.io", m.Id, Path.GetRelativePath(m.Dir, p)))); } catch { }
+            var inner = new List<string>();
+            try { inner.AddRange(Directory.EnumerateFiles(m.Dir, "*", SearchOption.AllDirectories).Take(5000).Select(p => Path.GetRelativePath(m.Dir, p))); } catch { }
+            row.Files.AddRange(inner.Select(p => Path.Combine("mod.io", m.Id, p)));
             // a name the manager already uses gets its source added, so "Find" and the changes list never mix the two up
             if (inv.Find(row.Name) != null) row.Name += " (mod.io)";
             inv.Mods.Add(row);
             if (m.InstalledAt is { } at) inv.ModioInstalled.Add((row.Name, at, m.Version));
+            // The folder mirrors the game's layout (9 Nov 2026: r6\scripts\<mod>\*.reds), so a log line naming such a path
+            // belongs to this mod - unless a file in the game folder already claims it. Its own r6\cache is the game's
+            // compiled copy, not the mod's.
+            foreach (var p in inner.Where(p => !p.StartsWith(@"r6\cache\", StringComparison.OrdinalIgnoreCase)))
+                inv.FileOwner.TryAdd(p, row.Name);
         }
     }
 
@@ -179,7 +189,8 @@ public sealed class ModInventory
         bool tweak = files.Any(f => f.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".yml", StringComparison.OrdinalIgnoreCase) || f.EndsWith(".tweak", StringComparison.OrdinalIgnoreCase));
         bool archive = files.Any(f => f.EndsWith(".archive", StringComparison.OrdinalIgnoreCase));
         // the in-game mod menu's formats: scripts compiled ahead (.redscripts) and tweaks as .json
-        bool compiled = files.Any(f => f.EndsWith(".redscripts", StringComparison.OrdinalIgnoreCase));
+        // (a menu mod also carries the game's r6\cache\final.redscripts, compiled from its own .reds: not a part of it)
+        bool compiled = files.Any(f => f.EndsWith(".redscripts", StringComparison.OrdinalIgnoreCase) && !f.Contains(@"\r6\cache\", StringComparison.OrdinalIgnoreCase));
         bool jsonTweak = files.Any(f => f.StartsWith("mod.io\\", StringComparison.OrdinalIgnoreCase) && f.Contains("\\tweaks\\",StringComparison.OrdinalIgnoreCase) && f.EndsWith(".json", StringComparison.OrdinalIgnoreCase));
         var parts = new List<string>();
         if (compiled) parts.Add("compiled scripts"); if (jsonTweak) parts.Add("tweaks");
@@ -187,7 +198,9 @@ public sealed class ModInventory
         return parts.Count == 0 ? "other" : string.Join(" + ", parts);
     }
 
-    public bool Needs(ModRow m, string framework) => framework switch
+    // A menu mod needs nothing installed beside the game: 2.5 compiles its .reds itself (9 Nov 2026: the mod's folder held
+    // its own r6\cache\final.redscripts), and the menu allows no frameworks.
+    public bool Needs(ModRow m, string framework) => m.Source == "mod.io" ? false : framework switch
     {
         "red4ext" => m.Files.Any(f => f.StartsWith(@"red4ext\plugins\", StringComparison.OrdinalIgnoreCase) && f.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)),
         "redscript" => m.Files.Any(f => f.EndsWith(".reds", StringComparison.OrdinalIgnoreCase)),

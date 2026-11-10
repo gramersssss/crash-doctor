@@ -367,7 +367,10 @@ public static class Analyzer
             else if (!settingsKnown) s.Suspects.Add(new Suspect { Mod = L.T("suspect.settingsThen.name"), Level = "medium", Why = L.T("suspect.settingsThen.why"), Actions = { new UiAction("settings", L.T("act.seeSettings")) } });
             return;
         }
-        if (s.EndKind == EndKind.Engine && s.EngineMessage != null)
+        // ... unless the message is the watchdog's and ACR saw the freeze: that is a freeze, handled just below. (9 Nov 2026:
+        // Gary's two freezes while installing a menu mod read "Watchdog timeout! (120 seconds)" and were counted as "one
+        // repeating problem, 7 times" with five older freezes - which every freeze is, since all end at the watchdog.)
+        if (s.EndKind == EndKind.Engine && s.EngineMessage != null && !(acr != null && (acr.Watchdog || acr.Kind == "hang")))
         {
             s.Confidence = 2;
             if (s.EngineMessage.Contains("scripts", StringComparison.OrdinalIgnoreCase))

@@ -137,7 +137,8 @@ public static class ChangeLog
         {
             var row = inv.Find(name);
             var text = L.T("chg.modio", name + (version.Length > 0 ? " " + version : ""));
-            if (row?.Status == "disabled") text = L.T("chg.withState", text, L.T("chg.stateDisabled"));
+            if (row == null) text = L.T("chg.withState", text, L.T("chg.stateGone"));   // remembered, uninstalled since (Modio.Remember)
+            else if (row.Status == "disabled") text = L.T("chg.withState", text, L.T("chg.stateDisabled"));
             list.Add(new Change { At = at, Kind = "installed", Mod = name, Text = text });
         }
         // (EnabledMods.json's own time says nothing: the game rewrites it on every launch - 8 Nov 2026, Gary's PC)
