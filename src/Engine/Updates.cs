@@ -3,12 +3,12 @@ using System.Text.Json;
 
 namespace CrashDoctor.Engine;
 
-// The update check. Opt-in, and the only thing in the app that ever touches the network.
+// The update check, the only thing in the app that ever touches the network.
 //
-// "Nothing leaves your PC" is a promise the Nexus page makes and the app has to keep, so this is off until the user
-// turns it on under Settings, and when it is on it does exactly one thing: fetch a small version file (one GET,
-// no identifiers sent, nothing about the install in the request) at most once a day, and compare the version in it
-// with this build's. It never downloads or installs anything; a newer version is a line of text and a button that
+// On by default since 0.8.2 (Gary, 10 Nov 2026: people kept running old builds). Existing users who never chose are on
+// too: CheckForUpdates is null until the Settings switch is used, and only an explicit false keeps it off. It does
+// exactly one thing: fetch a small version file (version.json on GitHub; one GET, no identifiers sent, nothing about
+// the install in the request) once each time the window starts, and compare the version in it with this build's. It never downloads or installs anything; a newer version is a line of text and a button that
 // opens the release page in the browser. The result is cached in config.json so the page can show it without
 // asking again, and the headless scan never checks at all.
 //
@@ -50,7 +50,7 @@ public static class Updates
         var c = GameLocator.LoadConfig();
         var info = new UpdateInfo
         {
-            Enabled = c.CheckForUpdates == true,
+            Enabled = On(c),
             Configured = VersionUrl() != null,
             Checked = c.LastUpdateCheck,
             Latest = c.LatestVersion,
@@ -62,13 +62,17 @@ public static class Updates
         return info;
     }
 
+    /// <summary>On unless the user switched it off (null = never chose = on, since 0.8.2).</summary>
+    public static bool On(GameLocator.Config c) => c.CheckForUpdates != false;
+
+    /// <summary>Whether a check may run: switched on and there is an address. The window asks once per start.</summary>
     public static bool Due()
     {
         var c = GameLocator.LoadConfig();
-        return c.CheckForUpdates == true && VersionUrl() != null && (c.LastUpdateCheck == null || DateTime.Now - c.LastUpdateCheck.Value > Every);
+        return On(c) && VersionUrl() != null;
     }
 
-    /// <summary>One fetch of the version file. Only the window calls this, and only when the user has turned the check on.</summary>
+    /// <summary>One fetch of the version file. Only the window calls this, once per start, and never when the user has switched the check off.</summary>
     public static async Task<UpdateInfo> CheckAsync()
     {
         var c = GameLocator.LoadConfig();

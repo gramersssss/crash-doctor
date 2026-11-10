@@ -1223,9 +1223,14 @@
   "ui.upd.newest": "Geprüft {when}: {v} ist die neueste Version.",
   "ui.upd.notYet": "Noch nicht geprüft.",
   "ui.upd.title": "Sag mir Bescheid, wenn eine neuere Version erscheint",
-  "ui.upd.help": "Standardmäßig aus, weil alles andere in Crash Doctor auf deinem PC bleibt. Wenn es an ist, holt die App höchstens einmal am Tag eine kleine Versionsdatei und vergleicht sie mit diesem Build ({v}). Nichts über dich oder deine Installation wird gesendet, und sie lädt oder installiert nie selbst etwas: Eine neuere Version ist eine Zeile oben im Fenster und ein Button, der die Download-Seite öffnet.",
   "ui.upd.check": "Jetzt prüfen",
   "ui.upd.checking": "Prüfe…",
+  "ui.upd.help": "Standardmäßig an. Bei jedem Start holt Crash Doctor eine kleine Datei, version.json aus dem GitHub des Projekts, und vergleicht sie mit diesem Build ({v}). Sonst wird nichts gesendet: nichts über dich, deinen PC oder deine Installation. Die App lädt oder installiert nie selbst etwas: Eine neuere Version ist eine Zeile oben im Fenster und ein Button, der die Download-Seite öffnet. Schalte das aus, und Crash Doctor sendet nichts mehr irgendwohin.",
+  "ui.savefix.banner": {
+    "one": "{n} Spielstand kann repariert werden: Ihm fehlt ein Teil des Mox-Looks der Gorilla Arms.",
+    "other": "{n} Spielstände können repariert werden: Ihnen fehlt ein Teil des Mox-Looks der Gorilla Arms."
+  },
+  "ui.savefix.show": "Zeig sie mir",
   "ui.play.with": "Spiel läuft mit „{name}“",
   "ui.play.running": "Das Spiel läuft.",
   "ui.play.waiting": "Warte auf den Start des Spiels.",

@@ -1456,9 +1456,15 @@
   "ui.upd.newest": "Zkontrolováno {when}: {v} je nejnovější verze.",
   "ui.upd.notYet": "Zatím nezkontrolováno.",
   "ui.upd.title": "Dej mi vědět, když vyjde novější verze",
-  "ui.upd.help": "Ve výchozím stavu vypnuto, protože všechno ostatní v aplikaci Crash Doctor zůstává na tvém PC. Když je to zapnuté, aplikace nejvýš jednou denně stáhne jeden malý soubor s verzí a porovná ho s tímto sestavením ({v}). Nic o tobě ani o tvé instalaci se neodesílá a sama nikdy nic nestahuje ani neinstaluje: novější verze je řádek nahoře v okně a tlačítko, které otevře stránku stažení.",
   "ui.upd.check": "Zkontrolovat",
   "ui.upd.checking": "Kontroluji…",
+  "ui.upd.help": "Ve výchozím stavu zapnuto. Při každém spuštění Crash Doctor stáhne jeden malý soubor, version.json z GitHubu projektu, a porovná ho s tímto sestavením ({v}). Nic dalšího se neodesílá: nic o tobě, tvém PC ani tvé instalaci. Sám nikdy nic nestahuje ani neinstaluje: novější verze je řádek nahoře v okně a tlačítko, které otevře stránku stažení. Když to vypneš, Crash Doctor nikam nic neposílá.",
+  "ui.savefix.banner": {
+    "one": "{n} uloženou pozici lze opravit: přišla o kus vzhledu Mox u Gorilla Arms.",
+    "few": "{n} uložené pozice lze opravit: přišly o kus vzhledu Mox u Gorilla Arms.",
+    "other": "{n} uložených pozic lze opravit: přišly o kus vzhledu Mox u Gorilla Arms."
+  },
+  "ui.savefix.show": "Ukázat",
   "ui.play.with": "Hraje se s profilem „{name}“",
   "ui.play.running": "Hra běží.",
   "ui.play.waiting": "Čekám na spuštění hry.",

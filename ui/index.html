@@ -84,8 +84,12 @@ a{color:var(--trace)}
 .rail .n.sig{background:var(--signal);color:var(--on-fill)}
 .rail .n.amb{background:var(--amber);color:var(--on-fill)}
 .rail .foot{margin-top:auto;font-size:11px;color:var(--steel);padding:8px 12px;line-height:1.5}
-.main{overflow:auto;padding:24px 28px 40px}
-.view{display:none;max-width:1120px}
+.main{overflow:auto;padding:24px 28px 40px;--content-max:1120px}
+/* one width for everything in the main column: the views AND the notices above them (new crashes, video memory, update,
+   play). The notices had their own 1120px while the views grew to 1480px on wide windows, so a notice sat narrower
+   than the page under it (Gary, 10 Nov 2026). Change the width here, never per box. */
+.main>div,.main>section{max-width:var(--content-max)}
+.view{display:none}
 .view.on{display:block}
 
 /* ---------- common ---------- */
@@ -294,7 +298,7 @@ button.mark:hover{filter:brightness(.94)}
 @keyframes slide{from{transform:translateX(-100%)}to{transform:translateX(340%)}}
 /* drop readouts in reverse order of usefulness rather than truncating all of them */
 /* a 1440p window at 100 % scaling left the right 40 % empty: let the page grow, keeping the main column at a readable width */
-@media (min-width:1700px){.view{max-width:1480px}.dx{grid-template-columns:1fr 340px;gap:24px}.bx{grid-template-columns:1fr 360px}.main{padding:32px 40px 48px}}
+@media (min-width:1700px){.main{--content-max:1480px}.dx{grid-template-columns:1fr 340px;gap:24px}.bx{grid-template-columns:1fr 360px}.main{padding:32px 40px 48px}}
 /* the language button took about 130 px of the bezel in 0.8.0, so the readouts give way that much earlier */
 @media (max-width:1360px){.bezel .chip.opt3{display:none}}
 @media (max-width:1200px){.bezel .chip.opt2{display:none}}
@@ -410,7 +414,7 @@ button.mark:hover{filter:brightness(.94)}
 .switch{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
 .switch input{margin-top:3px;width:16px;height:16px;accent-color:var(--trace)}
 /* video memory recorded while the game runs (VramMonitor.cs): a live strip while it is running, and a curve on the card */
-.vramlive{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-left:5px solid var(--mint);background:var(--card);border-radius:var(--radius);padding:10px 16px;margin:0 0 18px;max-width:1120px;font-size:13px;color:var(--steel)}
+.vramlive{display:flex;gap:14px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-left:5px solid var(--mint);background:var(--card);border-radius:var(--radius);padding:10px 16px;margin:0 0 18px;font-size:13px;color:var(--steel)}
 .vramlive b{font-family:var(--display);color:var(--ink)}
 .vramlive .dot{width:9px;height:9px;border-radius:50%;background:var(--mint);animation:vlpulse 1.6s ease-in-out infinite}
 .vramlive.warn{border-left-color:var(--amber)}.vramlive.warn .dot{background:var(--amber)}
@@ -422,7 +426,9 @@ button.mark:hover{filter:brightness(.94)}
 .spark .guide{stroke:var(--steel);stroke-width:1;stroke-dasharray:3 3;opacity:.6;vector-effect:non-scaling-stroke}
 .vram.warn .spark .area{fill:var(--amber)}.vram.warn .spark .line{stroke:var(--amber)}
 .vram.full .spark .area{fill:var(--signal)}.vram.full .spark .line{stroke:var(--signal)}
-.newcrash{border:1px solid var(--signal);border-left:5px solid var(--signal);background:var(--signal-bg);border-radius:var(--radius);padding:12px 16px;margin:0 0 18px;max-width:1120px}
+.vramlive.savefix{border-left-color:var(--amber,var(--signal))}
+.vramlive.savefix b{color:var(--ink)}
+.newcrash{border:1px solid var(--signal);border-left:5px solid var(--signal);background:var(--signal-bg);border-radius:var(--radius);padding:12px 16px;margin:0 0 18px}
 .newcrash .hd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .newcrash .hd b{font-family:var(--display);font-size:16px;color:var(--ink)}
 .newcrash .it{display:grid;grid-template-columns:200px 1fr auto;gap:12px;align-items:center;padding:8px 0 0;margin-top:8px;border-top:1px solid var(--line);font-size:13px}
@@ -522,6 +528,7 @@ button.mark:hover{filter:brightness(.94)}
     <div id="newcrash"></div>
     <div id="vramlive"></div>
     <div id="update"></div>
+    <div id="savefix"></div>
     <div id="play"></div>
     <!-- DIAGNOSIS -->
     <section class="view on" id="v-dx">
@@ -808,7 +815,7 @@ function load(r,keepView){
   document.getElementById('n-mods').textContent=r.modsList.length;
   document.getElementById('pulse').style.background = hi ? 'var(--signal)' : med ? 'var(--amber)' : 'var(--mint)';
   var shown=keepView&&CURRENT_SESSION?r.sessions.filter(function(x){return x.id===CURRENT_SESSION;})[0]:null;
-  renderNewCrashes(r); renderUpdate(r);
+  renderNewCrashes(r); renderUpdate(r); renderSaveFix(r);
   if(shown){ var save=r.latest; r.latest=shown; renderDx(r); r.latest=save; } else { CURRENT_SESSION=null; renderDx(r); }
   renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
 }
@@ -1131,7 +1138,9 @@ function fiLink(){ var a=(document.getElementById('fi-a').value||'').trim(), b=(
 function renderHealth(r){
   var el=document.getElementById('health-list'); el.innerHTML='';
   var order={high:0,medium:1,low:2,info:3};
-  var list=r.health.slice().sort(function(a,b){return order[a.severity]-order[b.severity];});
+  // a save Crash Doctor can repair with one click comes first: it is the most actionable thing on the page (0.8.2)
+  function top(h){ return h.action&&/^savefix:/.test(h.action.id)?0:1; }
+  var list=r.health.slice().sort(function(a,b){return top(a)-top(b)||order[a.severity]-order[b.severity];});
   // Counts the rows on screen, not the non-info ones: the rail badge and this heading used to disagree with
   // each other and with the list underneath, which reads as a bug even though nothing was wrong.
   document.getElementById('health-h1').textContent=list.length? tp('ui.health.count',list.length) : t('ui.health.nothing');
@@ -1434,9 +1443,16 @@ function renderVramLogCard(r){
 }
 function setVramLog(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'vramlog',enabled:!!on}); else toast(t('ui.appOnly'),true); }
 
-/* ---------- the opt-in update check (Updates.cs) ----------
-   Off until switched on: "nothing leaves your PC" is a promise the Nexus page makes. When on, it fetches one small
-   version file at most once a day and compares it with this build. It never downloads or installs anything. */
+/* ---------- the update check (Updates.cs) ----------
+   On by default since 0.8.2, unless the user switched it off. It fetches one small version file (version.json on
+   GitHub) once per start and compares it with this build. It never downloads or installs anything. */
+// A save that can be repaired (MoxSave.cs) is named at the top of every page, not only somewhere in Health (0.8.2)
+function renderSaveFix(r){
+  var host=document.getElementById('savefix'); if(!host) return;
+  var n=(r&&r.health||[]).filter(function(h){return h.action&&/^savefix:repair:/.test(h.action.id);}).length;
+  if(window.EXPORTED||!n){ host.innerHTML=''; return; }
+  host.innerHTML='<div class="vramlive savefix"><b>'+esc(tp('ui.savefix.banner',n))+'</b><button class="btn primary" onclick="go(&quot;health&quot;)">'+esc(t('ui.savefix.show'))+'</button></div>';
+}
 function renderUpdate(r){
   var host=document.getElementById('update'); if(!host) return; var u=r&&r.update;
   if(window.EXPORTED||!u||!u.newer){ host.innerHTML=''; return; }

@@ -1223,9 +1223,14 @@
   "ui.upd.newest": "Ellenőrizve ({when}): a(z) {v} a legújabb verzió.",
   "ui.upd.notYet": "Még nincs ellenőrizve.",
   "ui.upd.title": "Szólj, ha újabb verzió jelenik meg",
-  "ui.upd.help": "Alapból kikapcsolva, mert a Crash Doctorban minden más a PC-den marad. Ha be van kapcsolva, az alkalmazás legfeljebb naponta egyszer letölt egy kis verziófájlt, és összeveti ezzel a builddel ({v}). Rólad vagy a telepítésedről semmi nem kerül elküldésre, és soha nem tölt le és nem telepít magától semmit: egy újabb verzió csak egy sor az ablak tetején, és egy gomb, amely megnyitja a letöltési oldalt.",
   "ui.upd.check": "Ellenőrzés most",
   "ui.upd.checking": "Ellenőrzés…",
+  "ui.upd.help": "Alapból bekapcsolva. A Crash Doctor minden indításkor letölt egy kis fájlt, a version.json-t a projekt GitHub-oldaláról, és összeveti ezzel a builddel ({v}). Semmi más nem kerül elküldésre: semmi rólad, a PC-dről vagy a telepítésedről. Soha nem tölt le és nem telepít magától semmit: egy újabb verzió csak egy sor az ablak tetején, és egy gomb, amely megnyitja a letöltési oldalt. Ha ezt kikapcsolod, a Crash Doctor semmit sem küld sehová.",
+  "ui.savefix.banner": {
+    "one": "{n} mentés javítható: elveszett belőle a Mox Gorilla Arms kinézet egy része.",
+    "other": "{n} mentés javítható: elveszett belőlük a Mox Gorilla Arms kinézet egy része."
+  },
+  "ui.savefix.show": "Mutasd",
   "ui.play.with": "Játék ezzel: „{name}”",
   "ui.play.running": "A játék fut.",
   "ui.play.waiting": "Várakozás a játék indulására.",

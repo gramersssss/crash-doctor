@@ -1105,9 +1105,13 @@
   "ui.upd.newest": "已於 {when} 檢查：{v} 是最新版本。",
   "ui.upd.notYet": "尚未檢查。",
   "ui.upd.title": "有新版本時通知我",
-  "ui.upd.help": "預設為關閉，因為 Crash Doctor 的其他所有功能都只在你的電腦上進行。開啟後，應用程式每天最多一次取得一個小小的版本檔案，並與這個版本（{v}）比較。不會傳送任何關於你或你安裝環境的資訊，它自己也永遠不會下載或安裝任何東西：有新版本時，只會在視窗頂端顯示一行訊息，以及一個開啟下載頁面的按鈕。",
   "ui.upd.check": "立即檢查",
   "ui.upd.checking": "檢查中……",
+  "ui.upd.help": "預設為開啟。每次啟動時，Crash Doctor 會從專案的 GitHub 取得一個小小的檔案 version.json，並與這個版本（{v}）比較。除此之外不會傳送任何資料：沒有任何關於你、你的電腦或你安裝環境的資訊。它自己也永遠不會下載或安裝任何東西：有新版本時，只會在視窗頂端顯示一行訊息，以及一個開啟下載頁面的按鈕。關閉此選項後，Crash Doctor 不會向任何地方傳送任何資料。",
+  "ui.savefix.banner": {
+    "other": "{n} 個存檔可以修復：它們遺失了 Mox Gorilla Arms 外觀的一個部件。"
+  },
+  "ui.savefix.show": "查看",
   "ui.play.with": "正在使用「{name}」遊玩",
   "ui.play.running": "遊戲正在執行。",
   "ui.play.waiting": "正在等待遊戲啟動。",

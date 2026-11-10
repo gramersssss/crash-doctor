@@ -1223,9 +1223,14 @@
   "ui.upd.newest": "Checked {when}: {v} is the newest version.",
   "ui.upd.notYet": "Not checked yet.",
   "ui.upd.title": "Tell me when a newer version is out",
-  "ui.upd.help": "Off by default, because everything else in Crash Doctor stays on your PC. When it is on, the app fetches one small version file at most once a day and compares it with this build ({v}). Nothing about you or your install is sent, and it never downloads or installs anything itself: a newer version is a line at the top of the window and a button that opens the download page.",
   "ui.upd.check": "Check now",
   "ui.upd.checking": "Checking…",
+  "ui.upd.help": "On by default. Each time Crash Doctor starts, it fetches one small file, version.json from the project's GitHub, and compares it with this build ({v}). Nothing else is sent: nothing about you, your PC or your install. It never downloads or installs anything itself: a newer version is a line at the top of the window and a button that opens the download page. Switch this off and Crash Doctor sends nothing anywhere.",
+  "ui.savefix.banner": {
+    "one": "{n} save can be repaired: it lost a piece of the Mox Gorilla Arms look.",
+    "other": "{n} saves can be repaired: they lost a piece of the Mox Gorilla Arms look."
+  },
+  "ui.savefix.show": "Show me",
   "ui.play.with": "Playing with “{name}”",
   "ui.play.running": "The game is running.",
   "ui.play.waiting": "Waiting for the game to start.",

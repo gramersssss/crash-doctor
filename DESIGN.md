@@ -214,3 +214,9 @@ English whatever the window shows, because the people answering them mostly read
   during a run are never dropped (a mod switched off stops being read). Pinned "always on" mods, and what they need, are
   never asked off. When a round cannot be set up as asked, "Continue with my current setup" takes what is actually
   enabled as the round; it still needs one tested mod off and one on, or nothing can be learned.
+- The update check is ON by default since 0.8.2 (Gary's decision, 10 Nov 2026), for new installs and for everyone who
+  never used the switch (config `CheckForUpdates` stays null until the switch is used; only an explicit false keeps it
+  off). It fetches version.json from GitHub once per start and sends nothing else. The Settings switch turns it off.
+- One width for the main column: the notices above the views (new crashes, video memory, update, repairable save)
+  used their own 1120px while the views grew to 1480px on wide windows. `--content-max` on `.main` now sets both.
+- A save Crash Doctor can repair is the first Health item and gets a notice at the top of every page.

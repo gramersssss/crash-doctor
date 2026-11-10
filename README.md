@@ -135,10 +135,12 @@ CrashDoctor.exe --profile-undo
 user's PC) in `dist\CrashDoctor-<version>\`, plus the zip for Nexus.
 
 ## Privacy
-Nothing leaves your PC, with one opt-in exception: the update check under Settings, off by default, fetches one small
-version file at most once a day and sends nothing about you or your install. A saved report contains your game path,
+Nothing leaves your PC, with one exception: the update check. Each time Crash Doctor starts it fetches one small file,
+`version.json` from this project's GitHub, to see whether a newer version is out. Nothing else is sent: nothing about
+you, your PC or your install. It is on by default; switch it off under Settings → Updates and Crash Doctor sends
+nothing anywhere. A saved report contains your game path,
 hardware model, mod names and log excerpts; share it only if you are comfortable with that.
 
 ## Source and licence
 Source at https://github.com/gramersssss/crash-doctor. MIT. `version.json` at the root of the repository is what the
-opt-in update check reads; bump it when a release goes up on Nexus.
+update check reads; bump it when a release goes up on Nexus.

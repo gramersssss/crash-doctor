@@ -12,6 +12,7 @@ public sealed class MainForm : Form
     GamePaths? _game;
     Report? _report;
     bool _scanning;
+    bool _updateChecked;   // the update check runs once per start (0.8.2)
 
     // Video memory is recorded only while this window exists (see VramMonitor.cs): a timer looks for the game every
     // few seconds, appends a reading while it runs, and when it goes away waits for the crash reporter to finish
@@ -126,7 +127,7 @@ public sealed class MainForm : Form
                 var uc = GameLocator.LoadConfig();
                 if (doc.RootElement.TryGetProperty("enabled", out var uen)) { uc.CheckForUpdates = uen.ValueKind == JsonValueKind.True; GameLocator.SaveConfig(uc); }
                 var checkNow = doc.RootElement.TryGetProperty("check", out var ck) && ck.ValueKind == JsonValueKind.True;
-                await UpdateCheckAsync(force: checkNow || (uc.CheckForUpdates == true && Updates.Due()));
+                await UpdateCheckAsync(force: checkNow || (Updates.On(uc) && !_updateChecked && Updates.Due()));
                 break;
             case "vramlog":
                 // switching video memory recording on or off; the recorder checks the setting on its next tick
@@ -279,15 +280,16 @@ public sealed class MainForm : Form
         }
         catch (Exception ex) { Post(new { cmd = "error", text = L.T("host.scanFailed", ex.Message) }); }
         finally { _scanning = false; }
-        // once a day, and only if the user turned it on: ask the version file whether a newer build exists
-        if (Updates.Due()) await UpdateCheckAsync(force: true);
+        // once per start, unless the user switched it off: ask the version file whether a newer build exists
+        if (!_updateChecked && Updates.Due()) await UpdateCheckAsync(force: true);
     }
 
     async Task UpdateCheckAsync(bool force)
     {
         try
         {
-            var enabled = GameLocator.LoadConfig().CheckForUpdates == true;
+            var enabled = Updates.On(GameLocator.LoadConfig());
+            if (force && enabled) _updateChecked = true;
             var info = force && enabled ? await Updates.CheckAsync() : Updates.Status();
             if (_report != null) _report.Update = info;
             Post(new { cmd = "update", update = info });

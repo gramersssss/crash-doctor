@@ -1459,9 +1459,16 @@
   "ui.upd.newest": "Sprawdzono {when}: {v} to najnowsza wersja.",
   "ui.upd.notYet": "Jeszcze nie sprawdzono.",
   "ui.upd.title": "Powiadom mnie, gdy wyjdzie nowsza wersja",
-  "ui.upd.help": "Domyślnie wyłączone, bo wszystko inne w Crash Doctor zostaje na twoim komputerze. Gdy jest włączone, aplikacja najwyżej raz dziennie pobiera jeden mały plik z numerem wersji i porównuje go z tą wersją ({v}). Nie jest wysyłane nic o tobie ani o twojej instalacji i aplikacja nigdy sama niczego nie pobiera ani nie instaluje: nowsza wersja to linia u góry okna i przycisk, który otwiera stronę pobierania.",
   "ui.upd.check": "Sprawdź teraz",
   "ui.upd.checking": "Sprawdzanie…",
+  "ui.upd.help": "Domyślnie włączone. Przy każdym uruchomieniu Crash Doctor pobiera jeden mały plik, version.json z repozytorium projektu na GitHub, i porównuje go z tą wersją ({v}). Nic więcej nie jest wysyłane: nic o tobie, twoim komputerze ani twojej instalacji. Aplikacja nigdy sama niczego nie pobiera ani nie instaluje: nowsza wersja to linia u góry okna i przycisk, który otwiera stronę pobierania. Wyłącz to, a Crash Doctor nigdzie niczego nie wyśle.",
+  "ui.savefix.banner": {
+    "one": "{n} zapis można naprawić: stracił część wyglądu Mox dla Gorilla Arms.",
+    "few": "{n} zapisy można naprawić: straciły część wyglądu Mox dla Gorilla Arms.",
+    "many": "{n} zapisów można naprawić: straciły część wyglądu Mox dla Gorilla Arms.",
+    "other": "{n} zapisu można naprawić: straciły część wyglądu Mox dla Gorilla Arms."
+  },
+  "ui.savefix.show": "Pokaż",
   "ui.play.with": "Gra z profilem „{name}”",
   "ui.play.running": "Gra działa.",
   "ui.play.waiting": "Oczekiwanie na uruchomienie gry.",

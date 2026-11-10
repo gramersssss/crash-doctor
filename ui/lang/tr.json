@@ -1223,9 +1223,14 @@
   "ui.upd.newest": "{when} tarihinde kontrol edildi: en yeni sürüm {v}.",
   "ui.upd.notYet": "Henüz kontrol edilmedi.",
   "ui.upd.title": "Daha yeni bir sürüm çıktığında bana haber ver",
-  "ui.upd.help": "Varsayılan olarak kapalıdır, çünkü Crash Doctor'daki diğer her şey bilgisayarınızda kalır. Açık olduğunda uygulama günde en fazla bir kez küçük bir sürüm dosyası indirir ve onu bu sürümle ({v}) karşılaştırır. Sizinle ya da kurulumunuzla ilgili hiçbir şey gönderilmez ve uygulama kendisi asla bir şey indirip kurmaz: daha yeni bir sürüm, pencerenin üstünde bir satır ve indirme sayfasını açan bir düğmeden ibarettir.",
   "ui.upd.check": "Şimdi kontrol et",
   "ui.upd.checking": "Kontrol ediliyor…",
+  "ui.upd.help": "Varsayılan olarak açıktır. Crash Doctor her başladığında projenin GitHub sayfasından küçük bir dosya olan version.json'ı indirir ve onu bu sürümle ({v}) karşılaştırır. Başka hiçbir şey gönderilmez: sizinle, bilgisayarınızla ya da kurulumunuzla ilgili hiçbir şey. Uygulama kendisi asla bir şey indirip kurmaz: daha yeni bir sürüm, pencerenin üstünde bir satır ve indirme sayfasını açan bir düğmeden ibarettir. Bunu kapatırsanız Crash Doctor hiçbir yere hiçbir şey göndermez.",
+  "ui.savefix.banner": {
+    "one": "{n} kayıt onarılabilir: Mox Gorilla Arms görünümünün bir parçasını kaybetti.",
+    "other": "{n} kayıt onarılabilir: bu kayıtlar Mox Gorilla Arms görünümünün bir parçasını kaybetti."
+  },
+  "ui.savefix.show": "Göster",
   "ui.play.with": "“{name}” ile oynanıyor",
   "ui.play.running": "Oyun çalışıyor.",
   "ui.play.waiting": "Oyunun başlaması bekleniyor.",

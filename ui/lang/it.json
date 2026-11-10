@@ -1223,9 +1223,14 @@
   "ui.upd.newest": "Controllato il {when}: {v} è la versione più recente.",
   "ui.upd.notYet": "Non ancora controllato.",
   "ui.upd.title": "Avvisami quando esce una nuova versione",
-  "ui.upd.help": "Disattivato di default, perché tutto il resto di Crash Doctor rimane sul tuo PC. Quando è attivo, l'app scarica un piccolo file di versione al massimo una volta al giorno e lo confronta con questa build ({v}). Non viene inviato nulla su di te o sulla tua installazione, e non scarica né installa mai nulla da solo: una versione più recente è una riga in cima alla finestra e un pulsante che apre la pagina di download.",
   "ui.upd.check": "Controlla ora",
   "ui.upd.checking": "Controllo…",
+  "ui.upd.help": "Attivo di default. Ogni volta che Crash Doctor si avvia, scarica un piccolo file, version.json, dal GitHub del progetto e lo confronta con questa build ({v}). Non viene inviato nient'altro: nulla su di te, sul tuo PC o sulla tua installazione. Non scarica né installa mai nulla da solo: una versione più recente è una riga in cima alla finestra e un pulsante che apre la pagina di download. Disattivalo e Crash Doctor non invia nulla da nessuna parte.",
+  "ui.savefix.banner": {
+    "one": "{n} salvataggio può essere riparato: ha perso un pezzo dell'aspetto Mox delle Gorilla Arms.",
+    "other": "{n} salvataggi possono essere riparati: hanno perso un pezzo dell'aspetto Mox delle Gorilla Arms."
+  },
+  "ui.savefix.show": "Mostrameli",
   "ui.play.with": "Stai giocando con «{name}»",
   "ui.play.running": "Il gioco è in esecuzione.",
   "ui.play.waiting": "In attesa dell'avvio del gioco.",
