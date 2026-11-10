@@ -703,6 +703,14 @@
     "one": "Henüz kesin bir şey yok. {signature} ile bir çökme bu {n} modu temize çıkarır; {min}+ dakikalık temiz bir deneme onu işaret eder. Daha kısa bir şey iki yönde de kesin değildir, bu yüzden oynamaya devam edin.",
     "other": "Henüz kesin bir şey yok. {signature} ile bir çökme bu {n} modu temize çıkarır; {min}+ dakikalık temiz bir deneme onları işaret eder. Daha kısa bir şey iki yönde de kesin değildir, bu yüzden oynamaya devam edin."
   },
+  "bisect.offNeeds": "şuna ihtiyaç duyuyor: {mod}; o da kapatılıyor",
+  "bisect.offNeedsCleared": "zaten temize çıktı; yalnızca şuna ihtiyaç duyduğu için kapalı: {mod}",
+  "bisect.brokenLink": "{mod} açık, ama ihtiyaç duyduğu {needs} kapalı.",
+  "bisect.continueNone": "Kurulmayı bekleyen bir Bul turu yok.",
+  "bisect.continueNothing": {
+    "one": "Bu tur mevcut kurulumunuzdan alınamaz: hâlâ testte olan {n} moddan en az biri kapalı, biri açık olmalı, yoksa hiçbir şey öğrenilemez.",
+    "other": "Bu tur mevcut kurulumunuzdan alınamaz: hâlâ testte olan {n} moddan en az biri kapalı, biri açık olmalı, yoksa hiçbir şey öğrenilemez."
+  },
   "chg.withState": "{text} ({state})",
   "chg.stateGone": "artık kurulu değil",
   "chg.stateDisabled": "şimdi devre dışı",
@@ -789,6 +797,12 @@
     "other": "{fault} hatası ikiye bölme yöntemiyle aransın mı?\n\nCrash Doctor sizden {manager} içinde mod gruplarını kapatmanızı, oynamanızı ve yeniden taramanızı isteyecek. Kendisi hiçbir şeyi değiştirmez: yalnızca gerçekte neyin etkin olduğunu kontrol eder ve sonucu log'larınızdan okur.\n\n{mods} mod aday durumda, bu yüzden yaklaşık {n} tur oynamayı bekleyin."
   },
   "host.bisectStop": "Arama durdurulsun ve ilerlemesi unutulsun mu?\n\nModlarınız tam olarak şu anki hâlinde bırakılır. Kapattıklarınızı hazır olduğunuzda {manager} içinde yeniden açın.",
+  "host.bisectContinue": {
+    "one": "Bu tur için şu anda açık olanlar kullanılsın mı?\n\nHâlâ testte olan modlardan {n} tanesi şu anda kapalı, {on} tanesi açık. Crash Doctor, istediği liste yerine tam olarak bunu bu tur olarak alır ve saymaya şimdi başlar. Mod yöneticinizde hiçbir şey değiştirilmez.",
+    "other": "Bu tur için şu anda açık olanlar kullanılsın mı?\n\nHâlâ testte olan modlardan {n} tanesi şu anda kapalı, {on} tanesi açık. Crash Doctor, istediği liste yerine tam olarak bunu bu tur olarak alır ve saymaya şimdi başlar. Mod yöneticinizde hiçbir şey değiştirilmez."
+  },
+  "host.saveRepair": "Şu kaydın onarılmış bir kopyası oluşturulsun mu: {save}?\n\nCrash Doctor kayıt klasörünüze YENİ bir kayıt yazar: {new}. Orijinal kayıt ({save}) değiştirilmez.\n\nKontrol etmek için yeni kaydı ({new}) oyunda yükleyin ve memnun kalana kadar orijinali ({save}) saklayın. Geri al, kopyayı yeniden kaldırır.",
+  "host.saveUndo": "Crash Doctor'ın oluşturduğu onarılmış kopya kaldırılsın mı: {new}?\n\nYalnızca o klasör kaldırılır, o da yalnızca oyun onun üzerine kayıt yapmadıysa. Orijinal kaydınıza dokunulmaz.",
   "host.copiedNames": {
     "one": "{n} mod adı kopyalandı. Bulmak için mod yöneticinizin arama kutusuna yapıştırın.",
     "other": "{n} mod adı kopyalandı. Bulmak için mod yöneticinizin arama kutusuna yapıştırın."
@@ -990,6 +1004,38 @@
     "other": "{n} adı kopyala"
   },
   "ui.bisect.turnOn": "Bunları yeniden açın: hâlâ testteler",
+  "ui.bisect.brokenHead": "Oyun bu hâliyle yüklenmeyebilir:",
+  "ui.bisect.continue": "Mevcut kurulumumla devam et",
+  "ui.bisect.continueHelp": "Bunları kapatamıyor veya kapatmak istemiyor musunuz? Bunun yerine bu tur için şu anda açık olanları kullanın.",
+  "ui.bisect.continued": "Bu tur sizin kendi kurulumunuzu kullanıyor: devam etmeyi seçtiğinizde açık olanları.",
+  "ui.bisect.kept": "Arama boyunca açık tutulur (sabitlenmiş ya da sabitlenmiş bir modun ihtiyaç duyduğu)",
+  "ui.findit.title": "Birlikte tutulur, açık tutulur",
+  "ui.findit.lead": "Bul, oyunun yine de başlayabilmesi için bir modu, ona ihtiyaç duyan bütün modlarla birlikte kapatır.",
+  "ui.findit.read": "Bu bilgisayarda okunan: {sources}. Eksik olanları aşağıya ekleyin.",
+  "ui.findit.readNone": "Bu bilgisayarda hangi modun hangisine ihtiyaç duyduğunu söyleyen hiçbir şey yok. Bildiklerinizi aşağıya ekleyin.",
+  "ui.findit.src.vortex": "Vortex kuralı",
+  "ui.findit.src.redscript": "script import'u",
+  "ui.findit.src.cet": "CET GetMod",
+  "ui.findit.src.folder": "klasöründeki dosyalar",
+  "ui.findit.src.manual": "sizin eklediğiniz",
+  "ui.findit.pinned": "Her zaman açık",
+  "ui.findit.noPins": "Sabitlenmiş bir şey yok.",
+  "ui.findit.neededByPin": "sabitlenmiş bir modun ihtiyaç duyduğu",
+  "ui.findit.pin": "Sabitle",
+  "ui.findit.unpin": "Sabitlemeyi kaldır",
+  "ui.findit.frameworks": "Sabitlenmiş modlar Bul tarafından asla kapatılmaz; onların ihtiyaç duyduğu hiçbir şey de kapatılmaz. Framework'ler (RED4ext, Cyber Engine Tweaks, ArchiveXL, TweakXL, Codeware, redscript...) zaten hiçbir zaman kapatılmaz.",
+  "ui.findit.linksHead": {
+    "one": "{n} \"ihtiyaç duyar\" bağlantısı",
+    "other": "{n} \"ihtiyaç duyar\" bağlantısı"
+  },
+  "ui.findit.needs": "{mod} ihtiyaç duyar: {needs}",
+  "ui.findit.noLinks": "Hiç bulunamadı.",
+  "ui.findit.remove": "Kaldır",
+  "ui.findit.modPlaceholder": "Mod adı...",
+  "ui.findit.needsWord": "ihtiyaç duyar",
+  "ui.findit.add": "Ekle",
+  "ui.findit.pickMod": "Listeden etkin bir mod seçin.",
+  "ui.findit.pickTwo": "Listeden iki farklı etkin mod seçin.",
   "ui.health.eyebrow": "Sağlık · çökmeden önce bulunan kalıcı sorunlar",
   "ui.health.h1": "Kontroller",
   "ui.health.count": {
@@ -1437,5 +1483,41 @@
   "ui.mods.plusModio": "+ oyunun mod menüsü (mod.io): {n}",
   "ui.mods.modioTip": "Oyunun kendi mod menüsünden (mod.io) kuruldu. Crash Doctor onu mod.io klasöründen okur; hiçbir mod yöneticisi onu yönetmez.",
   "ui.sum.lastSettled": "Son çökme (çözülmüş görünüyor):",
-  "health.week.settled": "Bunlardan o zamandan beri çözülmüş görünen çökme: {n}."
+  "health.week.settled": "Bunlardan o zamandan beri çözülmüş görünen çökme: {n}.",
+  "findit.linkBad": "Bu bağlantı eklenemedi: iki farklı mod seçin.",
+  "save.refuse.layout": "bilinmeyen kayıt yapısı, bu yüzden Crash Doctor ona dokunmayacak ({detail})",
+  "save.refuse.notSave": "bir Cyberpunk 2077 kaydı değil",
+  "save.refuse.female": "kadın V: bu onarım şimdiye kadar yalnızca erkek V kayıtlarında doğrulandı",
+  "save.refuse.metaSize": "kaydın meta verileri sav.dat dosyasıyla uyuşmuyor (kayıt değişmiş ya da eksik)",
+  "save.refuse.unreadable": "kayıt okunamadı ({error})",
+  "save.refuse.sameFolder": "onarılmış kopya orijinal klasöre değil, yeni bir klasöre gitmelidir",
+  "save.refuse.exists": "{name} adında bir klasör zaten var, bu yüzden hiçbir şey yazılmadı",
+  "save.refuse.gameRunning": "Cyberpunk 2077 çalışıyor. Aynı anda kayıt yazmaması için önce oyunu kapatın.",
+  "save.refuse.gone": "{name} artık kayıt klasörünüzde değil. Yeniden tarayın.",
+  "save.state.healthy": "zaten sağlam: birinci şahıs Mox parçası yerinde, onarılacak bir şey yok",
+  "save.state.other": "bu sorun değil: kayıtlı Gorilla Arms görünümü Mox değil",
+  "save.state.broken": "bozuk: Mox görünümü, kollar indirilmişken kullanılan birinci şahıs parçası olmadan kaydedilmiş (onarılabilir)",
+  "save.repaired": "{save} değiştirilmedi; onarılmış kopya: {new}. Kontrol etmek için yeni kaydı ({new}) oyunda yükleyin ve memnun kalana kadar orijinali ({save}) saklayın.",
+  "save.notRepaired": "Onarılmadı: {why}",
+  "save.undo.unknown": "Crash Doctor'da şunu oluşturduğuna dair bir bilgi yok: {name}. Bu yüzden onu kaldırmayacak.",
+  "save.undo.changed": "{name}, Crash Doctor onu oluşturduğundan beri değişti (oyun üzerine kayıt yaptı ya da dosyalar eklendi), bu yüzden olduğu gibi bırakılıyor. Artık istemiyorsanız oyunda silin.",
+  "save.undo.done": "{created} kaldırıldı. {source} hâlâ yerinde, olduğu gibi.",
+  "save.undo.failed": "{name} kaldırılamadı: {error}",
+  "save.health.title": "{save} ({when}): bu kayıt Mox Gorilla Arms görünümünün bir parçasını kaybetti",
+  "save.health.detail": "Erkek V + Phantom Liberty + Efsanevi Gorilla Arms + Mox ile ilgili bir oyun hatası: kayıt, Mox görünümünü kollar indirilmişken kullanılan birinci şahıs parçası olmadan tutar. O andan itibaren ripperdoc koltuğu hangi stili ayarlarsa ayarlasın kollar Mox şeklini korur ve Mox ile Barghest birinci şahısta görünmez olur.",
+  "save.health.repair": "Onar, onarılmış bir kopyayı yanına yeni bir kayıt olarak yazar: {new}. Orijinal kayıt ({save}) asla değiştirilmez. Kontrol etmek için kopyayı yükleyin ve orijinali saklayın.",
+  "save.health.doneTitle": "{save} onarıldı, yeni kayıt: {new}",
+  "save.health.doneDetail": "Crash Doctor şu kaydı oluşturdu: {new} ({when}). Onu oyunda yükleyin; {save} hâlâ olduğu gibi. Oyun üzerine kayıt yapmadığı sürece Geri al, yeni kaydı ({new}) yeniden kaldırır.",
+  "save.health.more": {
+    "one": "{n} kayıt daha Mox Gorilla Arms görünümünün aynı parçasını kaybetti",
+    "other": "{n} kayıt daha Mox Gorilla Arms görünümünün aynı parçasını kaybetti"
+  },
+  "save.health.moreDetail": "Ayrıca etkilenenler: {saves}. En yenisini onarmak genellikle yeterlidir: kopyayı yükleyin ve oradan oynamaya devam edin.",
+  "save.health.unsureTitle": {
+    "one": "{n} kayıt Mox Gorilla Arms sorununa benziyor, ama Crash Doctor onu henüz onaramıyor",
+    "other": "{n} kayıt Mox Gorilla Arms sorununa benziyor, ama Crash Doctor bunları henüz onaramıyor"
+  },
+  "save.health.unsureDetail": "Mox görünümü birinci şahıs parçası olmadan kaydedilmiş, ama bu kayıtlar onarımın kanıtlandığı durum değil, bu yüzden Crash Doctor onlara dokunmuyor:",
+  "save.action.repair": "Onar (kopya oluşturur)",
+  "save.action.undo": "Geri al (kopyayı kaldırır)"
 }

@@ -282,3 +282,35 @@ and stays for the next patch.
 Notes (24 Oct 2026): `make-acr-fixture.py` writes a stand-in `config.ini` when ACR itself has been purged (its reports
 stay behind). `make-twobuild-fixture.py` needs the two 6 Sep 2026 crash folders, which the game has since rotated out
 of this PC's ReportQueue, so it cannot be rebuilt here any more.
+
+## run-fixtures.py (0.8.2)
+
+    python tools/run-fixtures.py <CrashDoctor.exe> <fixtures folder> <results folder>
+    python tools/run-fixtures.py --compare <results A> <results B>
+
+Scans every fixture the make-*.py scripts built (a fresh copy each, CRASHDOCTOR_TEST_ROOT on the copy) and keeps the
+normalised JSON, so two builds can be compared. The comparison ignores what differs between two runs of the same
+build (crash-log zip times and sizes, copy times, a session still counted up to now). Close the game first:
+`game.running` and a session the fixture leaves open both change when Cyberpunk 2077 is running on the PC (seen
+10 Nov 2026).
+
+## test-savefix.py (0.8.2)
+
+    python tools/test-savefix.py <CrashDoctor.exe> <glamdocs-unlock\tools\savefix\testvectors> <scratch folder>
+
+The Mox Gorilla Arms save repair against the prototype's test vectors: every repaired sav.dat, its data, node table and
+metadata must have the prototype's md5s; healthy, not-Mox and female saves are refused with nothing written; damaged
+input is refused; a scan of a save folder offers Repair for exactly the broken saves; the Repair button's copy and
+Undo leave every original byte-identical. The test vectors are player saves: they are copied into the scratch folder,
+never into this repository.
+
+## test-findit.py (0.8.2)
+
+    python tools/test-findit.py <CrashDoctor.exe> <scratch folder>
+
+Builds a Vortex install whose mods need each other (an AMM with two add-ons, a redscript library and its user, a Vortex
+"requires" rule, a framework link that must be dropped) and drives Find it through the command line
+(`--findit-pin/--findit-unpin/--findit-link/--findit-unlink`, `--bisect-start/--bisect-continue/--bisect-stop`, each
+followed by the usual `--json` scan): the links read, a pin and what it keeps on, rounds that keep groups whole, a round
+redrawn when a pin arrives before it is under way, the "AMM off, add-ons on" warning and "continue with my current
+setup", and no Find it names in a `--no-mods` report.

@@ -703,6 +703,14 @@
     "one": "Nada decisivo ainda. Um crash com {signature} inocenta esse {n} mod; uma partida limpa de {min}+ minutos aponta para ele. Qualquer coisa mais curta não é conclusiva em nenhum sentido, então continue jogando.",
     "other": "Nada decisivo ainda. Um crash com {signature} inocenta esses {n} mods; uma partida limpa de {min}+ minutos aponta para eles. Qualquer coisa mais curta não é conclusiva em nenhum sentido, então continue jogando."
   },
+  "bisect.offNeeds": "precisa de {mod}, que também vai ser desligado",
+  "bisect.offNeedsCleared": "já inocentado; desligado só porque precisa de {mod}",
+  "bisect.brokenLink": "{mod} está ligado, mas precisa de {needs}, que está desligado.",
+  "bisect.continueNone": "Não há nenhuma rodada do Encontrar esperando para ser configurada.",
+  "bisect.continueNothing": {
+    "one": "Esta rodada não pode ser tirada da sua configuração atual: do {n} mod que ainda está no teste, pelo menos um tem que estar desligado e um ligado, senão nada pode ser aprendido.",
+    "other": "Esta rodada não pode ser tirada da sua configuração atual: dos {n} mods que ainda estão no teste, pelo menos um tem que estar desligado e um ligado, senão nada pode ser aprendido."
+  },
   "chg.withState": "{text} ({state})",
   "chg.stateGone": "não está mais instalado",
   "chg.stateDisabled": "agora desativado",
@@ -789,6 +797,12 @@
     "other": "Caçar {fault} por bisseção?\n\nO Crash Doctor vai pedir que você desligue grupos de mods em {manager}, jogue e analise de novo. Ele nunca muda nada sozinho: só confere o que está de fato ativado e lê o resultado dos seus logs.\n\n{mods} mods estão na disputa, então espere cerca de {n} rodadas de jogo."
   },
   "host.bisectStop": "Interromper a bisseção e esquecer o progresso?\n\nSeus mods ficam exatamente como estão agora. Ative de novo em {manager} os que você desligou quando estiver pronto.",
+  "host.bisectContinue": {
+    "one": "Usar o que está ativado agora para esta rodada?\n\n{n} mod que ainda está no teste está desligado agora e {on} estão ligados. O Crash Doctor usa exatamente isso como esta rodada, em vez da lista que ele pediu, e começa a contar a partir de agora. Nada é alterado no seu gerenciador de mods.",
+    "other": "Usar o que está ativado agora para esta rodada?\n\n{n} mods que ainda estão no teste estão desligados agora e {on} estão ligados. O Crash Doctor usa exatamente isso como esta rodada, em vez da lista que ele pediu, e começa a contar a partir de agora. Nada é alterado no seu gerenciador de mods."
+  },
+  "host.saveRepair": "Criar uma cópia reparada de {save}?\n\nO Crash Doctor grava um save NOVO, {new}, na sua pasta de saves. O próprio {save} não é alterado.\n\nCarregue {new} no jogo para conferir e guarde {save} até ficar satisfeito. Desfazer remove a cópia de novo.",
+  "host.saveUndo": "Remover {new}, a cópia reparada que o Crash Doctor fez?\n\nSó essa pasta é removida, e só se o jogo não tiver salvado por cima dela. Seu save original não é tocado.",
   "host.copiedNames": {
     "one": "{n} nome de mod copiado. Cole-o na busca do seu gerenciador de mods para encontrá-lo.",
     "other": "{n} nomes de mods copiados. Cole-os na busca do seu gerenciador de mods para encontrá-los."
@@ -990,6 +1004,38 @@
     "other": "Copiar {n} nomes"
   },
   "ui.bisect.turnOn": "Ative estes de novo: eles ainda estão no teste",
+  "ui.bisect.brokenHead": "O jogo pode não carregar assim:",
+  "ui.bisect.continue": "Continuar com a minha configuração atual",
+  "ui.bisect.continueHelp": "Não pode ou não quer desligar estes? Use o que está ativado agora para esta rodada.",
+  "ui.bisect.continued": "Esta rodada usa a sua própria configuração: o que estava ativado quando você escolheu continuar.",
+  "ui.bisect.kept": "Mantidos ligados durante toda a busca (fixados, ou necessários para um mod fixado)",
+  "ui.findit.title": "Mantidos juntos, mantidos ligados",
+  "ui.findit.lead": "O Encontrar desliga um mod junto com todos os mods que precisam dele, para que o jogo ainda consiga iniciar.",
+  "ui.findit.read": "Lido neste PC: {sources}. Adicione abaixo o que faltar.",
+  "ui.findit.readNone": "Nada neste PC diz qual mod precisa de qual. Adicione abaixo o que você sabe.",
+  "ui.findit.src.vortex": "regra do Vortex",
+  "ui.findit.src.redscript": "import de script",
+  "ui.findit.src.cet": "GetMod do CET",
+  "ui.findit.src.folder": "arquivos na pasta dele",
+  "ui.findit.src.manual": "adicionado por você",
+  "ui.findit.pinned": "Sempre ligados",
+  "ui.findit.noPins": "Nada fixado.",
+  "ui.findit.neededByPin": "necessário para um mod fixado",
+  "ui.findit.pin": "Fixar",
+  "ui.findit.unpin": "Desafixar",
+  "ui.findit.frameworks": "Mods fixados nunca são desligados pelo Encontrar, nem nada de que eles precisam. Frameworks (RED4ext, Cyber Engine Tweaks, ArchiveXL, TweakXL, Codeware, redscript...) nunca são desligados de qualquer forma.",
+  "ui.findit.linksHead": {
+    "one": "{n} vínculo \"precisa de\"",
+    "other": "{n} vínculos \"precisa de\""
+  },
+  "ui.findit.needs": "{mod} precisa de {needs}",
+  "ui.findit.noLinks": "Nenhum encontrado.",
+  "ui.findit.remove": "Remover",
+  "ui.findit.modPlaceholder": "Nome do mod...",
+  "ui.findit.needsWord": "precisa de",
+  "ui.findit.add": "Adicionar",
+  "ui.findit.pickMod": "Escolha um mod ativado da lista.",
+  "ui.findit.pickTwo": "Escolha dois mods ativados diferentes da lista.",
   "ui.health.eyebrow": "Saúde · problemas permanentes encontrados antes de você ter um crash",
   "ui.health.h1": "Verificações",
   "ui.health.count": {
@@ -1437,5 +1483,41 @@
   "ui.mods.plusModio": "+ menu de mods do jogo (mod.io): {n}",
   "ui.mods.modioTip": "Instalado pelo próprio menu de mods do jogo (mod.io). O Crash Doctor o lê da pasta do mod.io; nenhum gerenciador de mods cuida dele.",
   "ui.sum.lastSettled": "Último crash (parece resolvido):",
-  "health.week.settled": "Destes, crashes que parecem resolvidos desde então: {n}."
+  "health.week.settled": "Destes, crashes que parecem resolvidos desde então: {n}.",
+  "findit.linkBad": "Esse vínculo não pôde ser adicionado: escolha dois mods diferentes.",
+  "save.refuse.layout": "estrutura de save desconhecida, então o Crash Doctor não vai mexer nele ({detail})",
+  "save.refuse.notSave": "não é um save de Cyberpunk 2077",
+  "save.refuse.female": "V feminina: até agora este reparo só foi verificado em saves de V masculino",
+  "save.refuse.metaSize": "os metadados do save não batem com o sav.dat dele (o save mudou ou está incompleto)",
+  "save.refuse.unreadable": "não foi possível ler o save ({error})",
+  "save.refuse.sameFolder": "a cópia reparada precisa ir para uma pasta nova, não para a original",
+  "save.refuse.exists": "já existe uma pasta chamada {name}, então nada foi gravado",
+  "save.refuse.gameRunning": "O Cyberpunk 2077 está rodando. Feche o jogo primeiro, para que ele não grave saves ao mesmo tempo.",
+  "save.refuse.gone": "{name} não está mais na sua pasta de saves. Analise de novo.",
+  "save.state.healthy": "já está saudável: a parte Mox em primeira pessoa está lá, nada para reparar",
+  "save.state.other": "não é este problema: o visual dos Gorilla Arms guardado não é Mox",
+  "save.state.broken": "quebrado: o visual Mox está guardado sem a sua parte em primeira pessoa com os braços recolhidos (reparável)",
+  "save.repaired": "{save} não foi alterado; a cópia reparada é {new}. Carregue {new} no jogo para conferir e guarde {save} até ficar satisfeito.",
+  "save.notRepaired": "Não reparado: {why}",
+  "save.undo.unknown": "O Crash Doctor não tem registro de ter criado {name}, então não vai removê-lo.",
+  "save.undo.changed": "{name} mudou desde que o Crash Doctor o criou (o jogo salvou por cima dele ou arquivos foram adicionados), então ele fica como está. Apague-o no jogo se não quiser mais.",
+  "save.undo.done": "{created} removido. {source} continua lá, como estava.",
+  "save.undo.failed": "Não foi possível remover {name}: {error}",
+  "save.health.title": "{save} ({when}): este save perdeu uma parte do visual Mox dos Gorilla Arms",
+  "save.health.detail": "Um bug do jogo com V masculino + Phantom Liberty + Gorilla Arms lendários + Mox: o save mantém o visual Mox sem a sua parte em primeira pessoa com os braços recolhidos. A partir daí os braços mantêm a forma Mox, seja qual for o estilo definido na cadeira do ripperdoc, e Mox e Barghest ficam invisíveis em primeira pessoa.",
+  "save.health.repair": "Reparar grava uma cópia reparada como um save novo, {new}, ao lado dele. O próprio {save} nunca é alterado. Carregue a cópia para conferir e guarde o original.",
+  "save.health.doneTitle": "{save} foi reparado em {new}",
+  "save.health.doneDetail": "O Crash Doctor criou {new} em {when}. Carregue-o no jogo; {save} continua como estava. Desfazer remove {new} de novo, desde que o jogo não tenha salvado por cima dele.",
+  "save.health.more": {
+    "one": "Mais {n} save perdeu a mesma parte do visual Mox dos Gorilla Arms",
+    "other": "Mais {n} saves perderam a mesma parte do visual Mox dos Gorilla Arms"
+  },
+  "save.health.moreDetail": "Também afetados: {saves}. Reparar o mais recente geralmente basta: carregue a cópia e continue jogando a partir dela.",
+  "save.health.unsureTitle": {
+    "one": "{n} save parece ter o problema do Mox dos Gorilla Arms, mas o Crash Doctor ainda não consegue repará-lo",
+    "other": "{n} saves parecem ter o problema do Mox dos Gorilla Arms, mas o Crash Doctor ainda não consegue repará-los"
+  },
+  "save.health.unsureDetail": "O visual Mox está guardado sem a sua parte em primeira pessoa, mas estes saves não são o caso em que o reparo foi comprovado, então o Crash Doctor não mexe neles:",
+  "save.action.repair": "Reparar (cria uma cópia)",
+  "save.action.undo": "Desfazer (remove a cópia)"
 }

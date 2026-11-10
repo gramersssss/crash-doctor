@@ -84,6 +84,44 @@ static class Program
             Environment.Exit(0);
         }
 
+        // The Mox Gorilla Arms save repair (MoxSave.cs), for the fixtures and for checking saves by hand:
+        //   CrashDoctor.exe --check-saves [save folder ...]            every save in the game's save folder when none is named
+        //   CrashDoctor.exe --repair-save <save folder> --out <new folder>   a repaired copy in a NEW folder; the input is never written
+        //   CrashDoctor.exe --repair-save-here <save name>             what the Repair button does: next free ManualSave-N beside it
+        //   CrashDoctor.exe --undo-save-repair <ManualSave-N>          what Undo does: removes that copy if it is unchanged
+        if (args.Contains("--check-saves"))
+        {
+            var named = args.SkipWhile(a => a != "--check-saves").Skip(1).TakeWhile(a => !a.StartsWith("--")).ToList();
+            var folders = named.Count > 0 ? named : MoxSave.SaveFolders(GamePaths.SavedGames);
+            foreach (var f in folders)
+            {
+                var c = MoxSave.CheckFolder(f, full: args.Contains("--full"));
+                Console.WriteLine($"{c.Name,-22} {c.State,-8} {L.R(c.Message)}");
+            }
+            Console.Out.Flush(); Environment.Exit(0);
+        }
+        if (args.Contains("--repair-save") || args.Contains("--repair-save-here") || args.Contains("--undo-save-repair"))
+        {
+            string? Arg(string flag) { for (int i = 0; i < args.Length - 1; i++) if (args[i] == flag) return args[i + 1]; return null; }
+            MoxSave.Result res;
+            if (Arg("--undo-save-repair") is { } u) res = MoxSave.Undo(u);
+            else if (Arg("--repair-save-here") is { } h) res = MoxSave.RepairInSaveFolder(h);
+            else
+            {
+                var src = Arg("--repair-save"); var outDir = Arg("--out");
+                if (src == null || outDir == null) { Console.Error.WriteLine("Use --repair-save <save folder> --out <new folder>."); return 2; }
+                try { res = MoxSave.Repair(src, outDir); }
+                catch (MoxSave.Refuse r) { res = new MoxSave.Result { Message = L.T("save.notRepaired", r.Token) }; }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or KeyNotFoundException or InvalidOperationException)
+                { res = new MoxSave.Result { Message = L.T("save.notRepaired", L.T("save.refuse.unreadable", e.Message)) }; }
+            }
+            (res.Ok ? Console.Out : Console.Error).WriteLine(L.R(res.Message));
+            if (res.Ok && res.OutDir != null)
+                Console.WriteLine($"   out: {res.OutDir}\n   src_md5: {res.SrcMd5}\n   out_md5: {res.OutMd5}\n   size: {res.OldSize} -> {res.NewSize}\n   insert_at: {res.InsertAt}\n   chunks: {res.Chunks}");
+            Console.Out.Flush(); Console.Error.Flush();
+            Environment.Exit(res.Ok ? 0 : 1);
+        }
+
         // Clear Crash Doctor's history / undo that, the same two actions as the Settings page (History.cs):
         //   CrashDoctor.exe --clear-history      CrashDoctor.exe --undo-clear-history
         if (args.Contains("--clear-history") || args.Contains("--undo-clear-history"))
@@ -117,6 +155,23 @@ static class Program
                 if (g == null) { Console.Error.WriteLine("Cyberpunk 2077 not found. Use --game <folder>."); return 2; }
                 var dbg = Environment.GetEnvironmentVariable("CRASHDOCTOR_TIMING") == "1";
                 void Say(string m) { if (dbg) Console.Error.WriteLine("  [cli] " + m); }
+                // Find it from the command line, for the fixtures (0.8.2): each acts first, then the scan below reports.
+                //   --findit-pin "Mod" | --findit-unpin "Mod" | --findit-link "Mod" "Needs" | --findit-unlink "Mod" "Needs"
+                //   --bisect-start "<signature>" | --bisect-continue | --bisect-stop
+                for (int i = 0; i < args.Length - 1; i++)
+                {
+                    if (args[i] == "--findit-pin") FindIt.Pin(args[i + 1], true);
+                    if (args[i] == "--findit-unpin") FindIt.Pin(args[i + 1], false);
+                    if (args[i] is "--findit-link" or "--findit-unlink" && i + 2 < args.Length) FindIt.Link(args[i + 1], args[i + 2], args[i] == "--findit-link");
+                }
+                if (Value("--bisect-start") is { } bsig) { ModOrganizer.Attach(g); var r0 = Scanner.Scan(g); Bisect.Start(null!, r0, bsig); }
+                if (args.Contains("--bisect-stop")) Bisect.Save(null);
+                if (args.Contains("--bisect-continue"))
+                {
+                    var r0 = Scanner.Scan(g); var bp = Bisect.Load();
+                    var why = bp == null ? "no Find it run" : Bisect.ContinueAsIs(bp, r0);
+                    Console.WriteLine(why == null ? "continued with the current setup" : "not continued: " + L.R(why));
+                }
                 Say("scan starting");
                 var r = Scanner.Scan(g);
                 Say("scan returned");

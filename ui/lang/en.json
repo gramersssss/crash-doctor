@@ -703,6 +703,14 @@
     "one": "Nothing decisive yet. A crash with {signature} clears this {n} mod; a clean run of {min}+ minutes points at it. Anything shorter is not conclusive either way, so keep playing.",
     "other": "Nothing decisive yet. A crash with {signature} clears these {n} mods; a clean run of {min}+ minutes points at them. Anything shorter is not conclusive either way, so keep playing."
   },
+  "bisect.offNeeds": "needs {mod}, which is going off too",
+  "bisect.offNeedsCleared": "already cleared; off only because it needs {mod}",
+  "bisect.brokenLink": "{mod} is on, but it needs {needs}, which is off.",
+  "bisect.continueNone": "There is no Find it round waiting to be set up.",
+  "bisect.continueNothing": {
+    "one": "This round cannot be taken from your current setup: of the {n} mod still in the test, at least one has to be off and one on, or nothing can be learned.",
+    "other": "This round cannot be taken from your current setup: of the {n} mods still in the test, at least one has to be off and one on, or nothing can be learned."
+  },
   "chg.withState": "{text} ({state})",
   "chg.stateGone": "no longer installed",
   "chg.stateDisabled": "now disabled",
@@ -789,6 +797,12 @@
     "other": "Hunt {fault} by bisection?\n\nCrash Doctor will ask you to switch groups of mods off in {manager}, play, and scan again. It never changes anything itself: it only checks what is actually enabled and reads the result from your logs.\n\n{mods} mods are in the running, so expect about {n} rounds of play."
   },
   "host.bisectStop": "Stop the bisect and forget its progress?\n\nYour mods are left exactly as they are now. Turn the ones you switched off back on in {manager} when you are ready.",
+  "host.bisectContinue": {
+    "one": "Use what is switched on now for this round?\n\n{n} mod still in the test is off right now and {on} are on. Crash Doctor takes exactly that as this round instead of the list it asked for, and starts counting from now. Nothing is changed in your mod manager.",
+    "other": "Use what is switched on now for this round?\n\n{n} mods still in the test are off right now and {on} are on. Crash Doctor takes exactly that as this round instead of the list it asked for, and starts counting from now. Nothing is changed in your mod manager."
+  },
+  "host.saveRepair": "Make a repaired copy of {save}?\n\nCrash Doctor writes a NEW save, {new}, into your save folder. {save} itself is not changed.\n\nLoad {new} in the game to check it, and keep {save} until you are happy. Undo removes the copy again.",
+  "host.saveUndo": "Remove {new}, the repaired copy Crash Doctor made?\n\nOnly that folder is removed, and only if the game has not saved over it. Your original save is not touched.",
   "host.copiedNames": {
     "one": "{n} mod name copied. Paste it into your mod manager's search to find it.",
     "other": "{n} mod names copied. Paste them into your mod manager's search to find them."
@@ -990,6 +1004,38 @@
     "other": "Copy {n} names"
   },
   "ui.bisect.turnOn": "Turn these back on: they are still in the test",
+  "ui.bisect.brokenHead": "The game may not load like this:",
+  "ui.bisect.continue": "Continue with my current setup",
+  "ui.bisect.continueHelp": "Can't or won't switch these off? Use what is switched on now for this round instead.",
+  "ui.bisect.continued": "This round uses your own setup: what was switched on when you chose to continue.",
+  "ui.bisect.kept": "Kept on for the whole hunt (pinned, or needed by a pinned mod)",
+  "ui.findit.title": "Kept together, kept on",
+  "ui.findit.lead": "Find it switches a mod off together with every mod that needs it, so the game can still start.",
+  "ui.findit.read": "Read on this PC: {sources}. Add what it misses below.",
+  "ui.findit.readNone": "Nothing on this PC says which mod needs which. Add what you know below.",
+  "ui.findit.src.vortex": "Vortex rule",
+  "ui.findit.src.redscript": "script import",
+  "ui.findit.src.cet": "CET GetMod",
+  "ui.findit.src.folder": "files in its folder",
+  "ui.findit.src.manual": "added by you",
+  "ui.findit.pinned": "Always on",
+  "ui.findit.noPins": "Nothing pinned.",
+  "ui.findit.neededByPin": "needed by a pinned mod",
+  "ui.findit.pin": "Pin",
+  "ui.findit.unpin": "Unpin",
+  "ui.findit.frameworks": "Pinned mods are never switched off by Find it, and neither is anything they need. Frameworks (RED4ext, Cyber Engine Tweaks, ArchiveXL, TweakXL, Codeware, redscript...) are never switched off anyway.",
+  "ui.findit.linksHead": {
+    "one": "{n} \"needs\" link",
+    "other": "{n} \"needs\" links"
+  },
+  "ui.findit.needs": "{mod} needs {needs}",
+  "ui.findit.noLinks": "None found.",
+  "ui.findit.remove": "Remove",
+  "ui.findit.modPlaceholder": "Mod name...",
+  "ui.findit.needsWord": "needs",
+  "ui.findit.add": "Add",
+  "ui.findit.pickMod": "Pick an enabled mod from the list.",
+  "ui.findit.pickTwo": "Pick two different enabled mods from the list.",
   "ui.health.eyebrow": "Health · standing problems found before you crash",
   "ui.health.h1": "Checks",
   "ui.health.count": {
@@ -1437,5 +1483,41 @@
   "ui.mods.plusModio": "+ in-game mod menu (mod.io): {n}",
   "ui.mods.modioTip": "Installed through the game's own mod menu (mod.io). Crash Doctor reads it from mod.io's folder; no mod manager handles it.",
   "ui.sum.lastSettled": "Last crash (looks settled):",
-  "health.week.settled": "Of these, crashes that look settled since: {n}."
+  "health.week.settled": "Of these, crashes that look settled since: {n}.",
+  "findit.linkBad": "That link could not be added: pick two different mods.",
+  "save.refuse.layout": "unknown save layout, so Crash Doctor will not touch it ({detail})",
+  "save.refuse.notSave": "not a Cyberpunk 2077 save",
+  "save.refuse.female": "female V: this repair is only checked for male saves so far",
+  "save.refuse.metaSize": "the save's metadata does not match its sav.dat (the save changed or is incomplete)",
+  "save.refuse.unreadable": "the save could not be read ({error})",
+  "save.refuse.sameFolder": "the repaired copy must go into a new folder, not the original",
+  "save.refuse.exists": "a folder called {name} already exists, so nothing was written",
+  "save.refuse.gameRunning": "Cyberpunk 2077 is running. Close the game first, so it does not write saves at the same time.",
+  "save.refuse.gone": "{name} is not in your save folder any more. Scan again.",
+  "save.state.healthy": "already healthy: the first-person Mox part is there, nothing to repair",
+  "save.state.other": "not this problem: the stored Gorilla Arms look is not Mox",
+  "save.state.broken": "broken: the Mox look is stored without its first-person holstered part (repairable)",
+  "save.repaired": "{save} was not changed; the repaired copy is {new}. Load {new} in the game to check it, and keep {save} until you are happy.",
+  "save.notRepaired": "Not repaired: {why}",
+  "save.undo.unknown": "Crash Doctor has no record of making {name}, so it will not remove it.",
+  "save.undo.changed": "{name} has changed since Crash Doctor made it (the game saved over it, or files were added), so it is left alone. Delete it in the game if you no longer want it.",
+  "save.undo.done": "{created} removed. {source} is still there, as it was.",
+  "save.undo.failed": "Could not remove {name}: {error}",
+  "save.health.title": "{save} ({when}): this save lost a piece of the Mox Gorilla Arms look",
+  "save.health.detail": "A game bug with male V + Phantom Liberty + Legendary Gorilla Arms + Mox: the save keeps the Mox look without its first-person holstered part. From then on the arms keep the Mox shape whatever style the ripperdoc chair sets, and Mox and Barghest are invisible in first person.",
+  "save.health.repair": "Repair writes a repaired copy as a new save, {new}, beside it. {save} itself is never changed. Load the copy to check it, and keep the original.",
+  "save.health.doneTitle": "{save} was repaired into {new}",
+  "save.health.doneDetail": "Crash Doctor made {new} on {when}. Load it in the game; {save} is still as it was. Undo removes {new} again, as long as the game has not saved over it.",
+  "save.health.more": {
+    "one": "{n} more save lost the same piece of the Mox Gorilla Arms look",
+    "other": "{n} more saves lost the same piece of the Mox Gorilla Arms look"
+  },
+  "save.health.moreDetail": "Also affected: {saves}. Repairing the newest one is usually enough: load the copy and play on from there.",
+  "save.health.unsureTitle": {
+    "one": "{n} save looks like the Mox Gorilla Arms problem, but Crash Doctor cannot repair it yet",
+    "other": "{n} saves look like the Mox Gorilla Arms problem, but Crash Doctor cannot repair them yet"
+  },
+  "save.health.unsureDetail": "The Mox look is stored without its first-person part, but these saves are not the case the repair was proved on, so Crash Doctor leaves them alone:",
+  "save.action.repair": "Repair (makes a copy)",
+  "save.action.undo": "Undo (remove the copy)"
 }

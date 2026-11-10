@@ -64,11 +64,22 @@ public static class Scanner
         r.Settings = PrettySettings(d.Settings);
         RefreshProfiles(r);
         r.Warnings = d.Warnings;
+        // the Mox Gorilla Arms save problem (MoxSave.cs): reads the saves, never writes them
+        try { r.Health.AddRange(MoxSave.Health()); } catch { /* a save problem must never cost the diagnosis */ }
+        Mark("saves");
+        // what Find it keeps together and keeps on (FindIt.cs)
+        try { r.FindIt = FindIt.Build(g, d.Mods); } catch { }
+        Mark("find it links");
 
         // A bisect in progress reads its own result out of the logs, so playing and rescanning is the whole loop.
         var plan = Bisect.Load();
         if (plan != null)
         {
+            Bisect.Refresh(plan, r);
+            // the page lists the links the run uses: a mod switched off for a round is not read, but its links still count
+            if (r.FindIt != null && plan.Status == "running")
+                foreach (var l in plan.Links.Where(l => !r.FindIt.Links.Any(x => x.Mod.Equals(l.Mod, StringComparison.OrdinalIgnoreCase) && x.Needs.Equals(l.Needs, StringComparison.OrdinalIgnoreCase))))
+                    r.FindIt.Links.Add(l);
             var step = plan.Current;
             // The moment the deployed mods match what the step asked for, the clock starts. No button to forget.
             if (step != null && step.StartedAt == null && Bisect.Verify(plan, r) is (var off, var on) && off.Count == 0 && on.Count == 0)

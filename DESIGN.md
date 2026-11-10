@@ -196,3 +196,21 @@ English whatever the window shows, because the people answering them mostly read
   mod.io sign-in (user.json). Their keys are looked up by landmarks under several spellings: no install with menu mods
   was available to check on 8 Nov 2026, so a missing key means less detail, never a failed scan. They are counted
   apart from the mod manager's mods, because no manager knows about them.
+
+## Mox save repair, Find it understands dependencies (0.8.2)
+- The first write to a save. Male V + Phantom Liberty + Legendary Gorilla Arms + Mox can lose the first-person holstered
+  Mox part from the save (`MoxSave.cs`, a byte-exact port of the prototype in glamdocs-unlock\tools\savefix, which Gary
+  proved in the game on 10 Nov 2026). Same contract as every other write, made stricter because a save is the player's
+  progress: the original is never written; Repair makes a NEW save (the next free ManualSave-N) after a native
+  confirmation, verifies before writing that nothing but the one node changed, and Undo removes only that copy and only
+  while it is byte-identical to what was written. Everything the prototype refuses is refused: female V (not checked
+  yet), a style other than Mox, any layout it does not know, a save already healthy. A scan only reads (about 150 KB
+  per save: the chunk table, the node table and the chunks holding the arm node; 101 saves in 0.7 s on Gary's PC).
+- Find it keeps groups whole (`FindIt.cs`). WangChangZhang (10 Nov 2026) was asked to switch off AMM with its add-ons
+  still on: the game could not load and the hunt was stuck. A round now switches a mod off together with every mod
+  that needs it. "Needs" is only what can be read - Vortex "requires" rules (its state backup), redscript module
+  imports, CET GetMod calls, files inside another mod's CET or plugin folder - plus what the player adds. MO2 keeps no
+  dependency information and neither manager stores Nexus requirement lists, so those are not guessed. Links seen
+  during a run are never dropped (a mod switched off stops being read). Pinned "always on" mods, and what they need, are
+  never asked off. When a round cannot be set up as asked, "Continue with my current setup" takes what is actually
+  enabled as the round; it still needs one tested mod off and one on, or nothing can be learned.

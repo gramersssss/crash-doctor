@@ -391,7 +391,7 @@ public sealed class MainForm : Form
             if (id.StartsWith("bisect:start:"))
             {
                 var sig = id["bisect:start:".Length..];
-                var n = _report.ModsList.Count(m => m.Status == "enabled" && !Bisect.IsFramework(m.Name));
+                var n = Bisect.CandidateCount(_report);
                 var steps = n > 1 ? (int)Math.Ceiling(Math.Log2(n)) : 1;
                 // before 0.8.0 the count and the rounds were shown as a literal "{n}" and "{steps}": the text was not interpolated
                 if (MessageBox.Show(this, L.R(L.P("host.bisectStart", steps, sig, Bisect.Manager(_report), n)), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
@@ -408,12 +408,60 @@ public sealed class MainForm : Form
                 await ScanAsync();
                 return;
             }
+            // "Continue with my current setup" (0.8.2): this round becomes what is actually enabled now
+            if (id == "bisect:continue")
+            {
+                var plan = Bisect.Load(); if (plan == null) return;
+                var still = plan.Candidates.Count(c => _report.ModsList.Any(m => m.Status == "enabled" && m.Name.Equals(c, StringComparison.OrdinalIgnoreCase)));
+                if (MessageBox.Show(this, L.R(L.P("host.bisectContinue", plan.Candidates.Count - still, still)), "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+                var why = Bisect.ContinueAsIs(plan, _report);
+                if (why != null) { Post(new { cmd = "error", text = why }); return; }
+                await ScanAsync();
+                return;
+            }
             if (id == "bisect:copy")
             {
                 var v = _report.Bisect;
                 if (v != null && v.Off.Count > 0) { try { Clipboard.SetText(string.Join(Environment.NewLine, v.Off)); Post(new { cmd = "toast", text = L.P("host.copiedNames", v.Off.Count) }); } catch { } }
                 return;
             }
+        }
+        // Find it's pins and "this needs that" links: Crash Doctor's own file (find-it.json), then a rescan so the
+        // groups and a round not under way yet follow at once (Bisect.Refresh)
+        if (id.StartsWith("findit:"))
+        {
+            var rest = id["findit:".Length..]; var colon = rest.IndexOf(':');
+            if (colon < 0) return;
+            var op = rest[..colon]; var arg = rest[(colon + 1)..];
+            try
+            {
+                switch (op)
+                {
+                    case "pin": FindIt.Pin(arg, true); break;
+                    case "unpin": FindIt.Pin(arg, false); break;
+                    case "link": case "unlink":
+                        var parts = arg.Split('\t');
+                        if (parts.Length != 2 || !FindIt.Link(parts[0].Trim(), parts[1].Trim(), op == "link")) { Post(new { cmd = "error", text = L.T("findit.linkBad") }); return; }
+                        break;
+                    default: return;
+                }
+            }
+            catch (Exception ex) { Post(new { cmd = "error", text = L.T("host.failed", ex.Message) }); return; }
+            await ScanAsync();
+            return;
+        }
+        // The Mox Gorilla Arms save repair (MoxSave.cs): a NEW save beside the broken one, after a native confirmation;
+        // Undo removes that copy, only while it is still exactly what was written.
+        if (id.StartsWith("savefix:repair:") || id.StartsWith("savefix:undo:"))
+        {
+            var repair = id.StartsWith("savefix:repair:");
+            var name = repair ? id["savefix:repair:".Length..] : id["savefix:undo:".Length..];
+            var q = repair ? Q("host.saveRepair", name, MoxSave.NextName(GamePaths.SavedGames)) : Q("host.saveUndo", name);
+            if (MessageBox.Show(this, q, "Crash Doctor", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            var res = await Task.Run(() => repair ? MoxSave.RepairInSaveFolder(name) : MoxSave.Undo(name));
+            Post(new { cmd = res.Ok ? "toast" : "error", text = res.Message });
+            await ScanAsync();
+            return;
         }
         if (id.StartsWith("req:") && _report != null)
         {

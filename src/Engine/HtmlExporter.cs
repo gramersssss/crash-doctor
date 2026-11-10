@@ -52,6 +52,7 @@ public static class HtmlExporter
             clone.ModsList = new List<ModRow>();
             foreach (var q in clone.Requirements) q.NeededBy = new List<string>();
             foreach (var s2 in clone.Sessions) s2.AreaMods = new List<AreaMod>();
+            clone.FindIt = null;   // Find it's groups and pins name mods too (0.8.2)
             if (n > 0) removed.Add(L.P("privacy.mods", n));
         }
 

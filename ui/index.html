@@ -176,6 +176,19 @@ button.mark:hover{filter:brightness(.94)}
 .checklist li.todo .tick{color:var(--signal)}
 .checklist li.todo{background:var(--todo-bg)}
 .bstat{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px}
+/* Find it: groups, pins, continue with my current setup (0.8.2) */
+.checklist li .why{color:var(--steel);font-size:12px;margin-left:auto;text-align:right}
+.bwarn{border-left:3px solid var(--signal);background:var(--todo-bg);border-radius:0 5px 5px 0;padding:9px 12px;margin:12px 0 0;font-size:13px;line-height:1.5}
+.bcont{border:1px dashed var(--line);border-radius:8px;padding:12px 14px;margin-top:12px;font-size:13px;line-height:1.5;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.fi{border:1px solid var(--line);border-radius:8px;background:var(--card);padding:14px 16px;margin-top:22px}
+.fi h3{font-family:var(--display);font-size:16px;margin:0 0 6px}
+.fi p{font-size:13px;line-height:1.55;color:var(--steel);margin:0 0 10px}
+.fi .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:980px){.fi .grid2{grid-template-columns:1fr}}
+.fi input{padding:7px 9px;border:1px solid var(--line);border-radius:var(--radius-sm);font:inherit;font-size:13px;background:var(--card);color:var(--ink);min-width:0;flex:1}
+.fi .row{flex-wrap:nowrap;margin-top:8px}
+.fi .src{color:var(--steel);font-size:11.5px;margin-left:auto;white-space:nowrap}
+.fi li button{padding:2px 8px;font-size:12px}
 /* label column sized to the labels, value column takes the rest and may break: the fault signature has no spaces, and
    with "1fr auto" it was widening the value column until every label was crushed into a sliver */
 .bstat dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 12px;margin:0;font-size:13px;align-items:baseline}
@@ -1044,12 +1057,12 @@ function renderBisect(r){
     var groups=(r.crashGroups||[]).filter(function(g){return g.count>=2;});
     var intro='<h2>'+esc(t('ui.bisect.title'))+'</h2>'+
       '<p class="lead">'+esc(t('ui.bisect.lead',{manager:mgrName(r)}))+'</p>';
-    if(!groups.length){ host.innerHTML=intro+'<div class="empty">'+esc(t('ui.bisect.none'))+'</div>'; return; }
+    if(!groups.length){ host.innerHTML=intro+'<div class="empty">'+esc(t('ui.bisect.none'))+'</div>'+findItPanel(r); return; }
     host.innerHTML=intro+'<p class="eyebrow">'+esc(t('ui.bisect.pick'))+'</p>'+groups.map(function(g){
       return '<div class="pick"><div><div class="sig">'+esc(g.signature)+'</div>'+(g.symbol?'<div class="meta mono">'+esc(g.symbol)+'</div>':'')+'<div class="meta">'+esc(tp('ui.bisect.crashes',g.count))+' · '+esc(g.exception)+' · '+esc(t('ui.bisect.range',{from:fmtDate(g.firstSeen),to:fmtDate(g.lastSeen)}))+' · '+esc(g.current?t('ui.bisect.still'):t('ui.bisect.notSince'))+'</div>'+
         (g.minutesToBeat?'<div class="meta">'+t('ui.bisect.mustLast',{min:'<b>'+g.minutesToBeat+'</b>'})+' '+esc(g.thresholdNote||'')+'</div>':'')+'</div>'+
         '<button class="btn primary" onclick="act('+esc(JSON.stringify("bisect:start:"+g.signature))+')">'+esc(t('ui.bisect.hunt'))+'</button></div>';
-    }).join("");
+    }).join("")+findItPanel(r);
     return;
   }
 
@@ -1073,14 +1086,47 @@ function renderBisect(r){
     var offSet={}; (b.turnOff||[]).forEach(function(n){offSet[n]=1;});
     main+='<div class="checklist"><div class="h"><span>'+esc(t('ui.bisect.turnOff',{manager:mgrName(r)}))+'</span>'+
       '<button class="btn" onclick="act(\'bisect:copy\')">'+esc(tp('ui.bisect.copyNames',b.off.length))+'</button></div><ul>'+
-      b.off.map(function(n){ var todo=offSet[n];
-        return '<li class="'+(todo?"todo":"")+'"><span class="tick">'+(todo?"✕":"✓")+'</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
+      b.off.map(function(n){ var todo=offSet[n], why=(b.offWhy||{})[n];
+        return '<li class="'+(todo?"todo":"")+'"><span class="tick">'+(todo?"✕":"✓")+'</span><b>'+esc(n)+"</b>"+(why?'<span class="why">'+esc(why)+'</span>':'')+"</li>";}).join("")+"</ul></div>";
     if(b.turnOn&&b.turnOn.length)
       main+='<div class="checklist"><div class="h"><span>'+esc(t('ui.bisect.turnOn'))+'</span></div><ul>'+
         b.turnOn.map(function(n){return '<li class="todo"><span class="tick">✕</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
+    if(b.broken&&b.broken.length)
+      main+='<div class="bwarn"><b>'+esc(t('ui.bisect.brokenHead'))+'</b><br>'+b.broken.map(esc).join('<br>')+'</div>';
+    if(b.continued) main+='<div class="bcont"><span>'+esc(t('ui.bisect.continued'))+'</span></div>';
+    else if(!b.ready) main+='<div class="bcont"><span>'+esc(t('ui.bisect.continueHelp'))+'</span><button class="btn" onclick="act(\'bisect:continue\')">'+esc(t('ui.bisect.continue'))+'</button></div>';
+    if(b.kept&&b.kept.length)
+      main+='<div class="checklist"><div class="h"><span>'+esc(t('ui.bisect.kept'))+'</span></div><ul>'+
+        b.kept.map(function(n){return '<li><span class="tick">●</span><b>'+esc(n)+"</b></li>";}).join("")+"</ul></div>";
   }
-  host.innerHTML='<div class="bx"><div>'+main+"</div>"+right+"</div>";
+  host.innerHTML='<div class="bx"><div>'+main+"</div>"+right+"</div>"+findItPanel(r);
 }
+
+// Groups and "always on" (0.8.2): what Find it keeps together and keeps on, and the player's own additions.
+function findItPanel(r){
+  var f=r.findIt; if(!f||window.EXPORTED) return '';
+  var src=(f.sources||[]).map(function(s){return t('ui.findit.src.'+s);});
+  var opts='<datalist id="fi-mods">'+(f.mods||[]).map(function(m){return '<option value="'+esc(m)+'">';}).join('')+'</datalist>';
+  var pins=(f.pinned||[]).map(function(n){ return '<li><span class="tick">●</span><b>'+esc(n)+'</b><span class="src"><button class="btn" onclick="act('+esc(JSON.stringify('findit:unpin:'+n))+')">'+esc(t('ui.findit.unpin'))+'</button></span></li>'; }).join('')
+    +(f.pinnedNeeds||[]).map(function(n){ return '<li><span class="tick">○</span><b>'+esc(n)+'</b><span class="src">'+esc(t('ui.findit.neededByPin'))+'</span></li>'; }).join('');
+  var links=(f.links||[]).map(function(l){
+    return '<li><b>'+esc(t('ui.findit.needs',{mod:l.mod,needs:l.needs}))+'</b><span class="src" title="'+esc(l.detail||'')+'">'+esc(t('ui.findit.src.'+l.source))
+      +(l.source==='manual'?' <button class="btn" onclick="act('+esc(JSON.stringify('findit:unlink:'+l.mod+'\t'+l.needs))+')">'+esc(t('ui.findit.remove'))+'</button>':'')+'</span></li>'; }).join('');
+  return '<div class="fi">'+opts+'<h3>'+esc(t('ui.findit.title'))+'</h3>'
+    +'<p>'+esc(t('ui.findit.lead'))+' '+esc(src.length?t('ui.findit.read',{sources:src.join(', ')}):t('ui.findit.readNone'))+'</p>'
+    +'<div class="grid2"><div>'
+    +'<div class="checklist"><div class="h"><span>'+esc(t('ui.findit.pinned'))+'</span></div><ul>'+(pins||'<li class="muted">'+esc(t('ui.findit.noPins'))+'</li>')+'</ul></div>'
+    +'<div class="row"><input id="fi-pin" list="fi-mods" placeholder="'+esc(t('ui.findit.modPlaceholder'))+'" onkeydown="if(event.key===&quot;Enter&quot;)fiPin()"><button class="btn primary" onclick="fiPin()">'+esc(t('ui.findit.pin'))+'</button></div>'
+    +'<p style="margin-top:10px">'+esc(t('ui.findit.frameworks'))+'</p>'
+    +'</div><div>'
+    +'<div class="checklist"><div class="h"><span>'+esc(tp('ui.findit.linksHead',(f.links||[]).length))+'</span></div><ul>'+(links||'<li class="muted">'+esc(t('ui.findit.noLinks'))+'</li>')+'</ul></div>'
+    +'<div class="row"><input id="fi-a" list="fi-mods" placeholder="'+esc(t('ui.findit.modPlaceholder'))+'"><span class="muted">'+esc(t('ui.findit.needsWord'))+'</span><input id="fi-b" list="fi-mods" placeholder="'+esc(t('ui.findit.modPlaceholder'))+'" onkeydown="if(event.key===&quot;Enter&quot;)fiLink()"><button class="btn primary" onclick="fiLink()">'+esc(t('ui.findit.add'))+'</button></div>'
+    +'</div></div></div>';
+}
+function fiKnown(n){ var f=REPORT&&REPORT.findIt; return f&&(f.mods||[]).some(function(m){return m.toLowerCase()===n.toLowerCase();}); }
+function fiPin(){ var i=document.getElementById('fi-pin'), n=(i&&i.value||'').trim(); if(!n||!fiKnown(n)){ toast(t('ui.findit.pickMod'),true); if(i) i.focus(); return; } act('findit:pin:'+n); }
+function fiLink(){ var a=(document.getElementById('fi-a').value||'').trim(), b=(document.getElementById('fi-b').value||'').trim();
+  if(!a||!b||!fiKnown(a)||!fiKnown(b)||a.toLowerCase()===b.toLowerCase()){ toast(t('ui.findit.pickTwo'),true); return; } act('findit:link:'+a+'\t'+b); }
 
 function renderHealth(r){
   var el=document.getElementById('health-list'); el.innerHTML='';

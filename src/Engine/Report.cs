@@ -22,6 +22,7 @@ public sealed class Report
     public List<CrashGroup> CrashGroups { get; set; } = new();   // the distinct bugs behind all the crashes
     public List<KnowledgeHit> Knowledge { get; set; } = new();   // what the messages in the evidence are known to mean
     public BisectView? Bisect { get; set; }                      // the guided hunt, when one is running
+    public FindItInfo? FindIt { get; set; }                      // what Find it keeps together and keeps on (FindIt.cs)
     public List<ModRow> ModsList { get; set; } = new();
     public List<Requirement> Requirements { get; set; } = new();
     public Dictionary<string, string> Settings { get; set; } = new();
@@ -90,6 +91,11 @@ public sealed class BisectView
     public List<string> TurnOff { get; set; } = new();   // of those, still enabled
     public List<string> TurnOn { get; set; } = new();    // wrongly disabled, would spoil the test
     public List<string> History { get; set; } = new();
+    // 0.8.2: groups, pins, "continue with my current setup" (FindIt.cs)
+    public Dictionary<string, string> OffWhy { get; set; } = new();   // mod -> "needs X": on the list because it needs a mod being switched off
+    public List<string> Kept { get; set; } = new();       // pinned, or needed by a pinned mod: never switched off in this run
+    public List<string> Broken { get; set; } = new();     // "A needs B, which is off": the game may not load like this
+    public bool Continued { get; set; }                   // this round is the player's own setup
 }
 
 public sealed class GameInfo

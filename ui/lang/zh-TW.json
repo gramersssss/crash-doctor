@@ -624,6 +624,13 @@
   "bisect.runningDetail": {
     "other": "目前還沒有決定性的結果。出現 {signature} 的當機會排除這 {n} 個模組；正常遊玩 {min} 分鐘以上則會指向它們。更短的時間無論如何都無法下定論，所以請繼續玩。"
   },
+  "bisect.offNeeds": "需要 {mod}，而它也會被關閉",
+  "bisect.offNeedsCleared": "已排除；關閉只是因為它需要 {mod}",
+  "bisect.brokenLink": "{mod} 已開啟，但它需要的 {needs} 是關閉的。",
+  "bisect.continueNone": "沒有等待設定的「找出它」輪次。",
+  "bisect.continueNothing": {
+    "other": "無法用你目前的設定進行這一輪：在仍受測的 {n} 個模組中，至少要有一個關閉、一個開啟，否則什麼也無法得知。"
+  },
   "chg.withState": "{text}（{state}）",
   "chg.stateGone": "已不再安裝",
   "chg.stateDisabled": "現已停用",
@@ -703,6 +710,11 @@
     "other": "要用二分法追查 {fault} 嗎？\n\nCrash Doctor 會請你在 {manager} 中關閉一組組模組、遊玩，然後重新掃描。它自己永遠不會變更任何東西：它只會檢查實際啟用了什麼，並從你的日誌中讀取結果。\n\n目前有 {mods} 個模組在候選範圍內，預計大約需要遊玩 {n} 輪。"
   },
   "host.bisectStop": "要停止排查並捨棄目前的進度嗎？\n\n你的模組會完全維持現在的狀態。準備好之後，請在 {manager} 中重新開啟你關閉的模組。",
+  "host.bisectContinue": {
+    "other": "這一輪要使用現在開啟的設定嗎？\n\n仍受測的模組中，有 {n} 個現在是關閉的，{on} 個是開啟的。Crash Doctor 會完全以這個狀態作為這一輪，而不是使用它要求的清單，並從現在開始計時。你的模組管理器中不會有任何變更。"
+  },
+  "host.saveRepair": "要為 {save} 製作一份修復後的副本嗎？\n\nCrash Doctor 會把一個新存檔 {new} 寫入你的存檔資料夾。{save} 本身不會被變更。\n\n請在遊戲中讀取 {new} 來確認，在你滿意之前請保留 {save}。復原會再次移除這份副本。",
+  "host.saveUndo": "要移除 Crash Doctor 製作的修復副本 {new} 嗎？\n\n只會移除那個資料夾，而且只在遊戲沒有覆蓋儲存它的情況下才會移除。你的原始存檔不會被動到。",
   "host.copiedNames": {
     "other": "已複製 {n} 個模組名稱。請貼到模組管理器的搜尋欄中尋找。"
   },
@@ -887,6 +899,37 @@
     "other": "複製 {n} 個名稱"
   },
   "ui.bisect.turnOn": "請重新開啟這些：它們仍在測試中",
+  "ui.bisect.brokenHead": "這樣遊戲可能無法載入：",
+  "ui.bisect.continue": "以我目前的設定繼續",
+  "ui.bisect.continueHelp": "無法或不想關閉這些嗎？那這一輪就改用現在開啟的設定。",
+  "ui.bisect.continued": "這一輪使用你自己的設定：也就是你選擇繼續時開啟的內容。",
+  "ui.bisect.kept": "整個排查期間保持開啟（已釘選，或是已釘選的模組需要它）",
+  "ui.findit.title": "一起處理，保持開啟",
+  "ui.findit.lead": "「找出它」關閉一個模組時，會同時關閉所有需要它的模組，讓遊戲仍然能啟動。",
+  "ui.findit.read": "已從這台電腦讀取：{sources}。缺少的請在下方新增。",
+  "ui.findit.readNone": "這台電腦上沒有任何資訊說明哪個模組需要哪個模組。請在下方新增你知道的。",
+  "ui.findit.src.vortex": "Vortex 規則",
+  "ui.findit.src.redscript": "腳本 import",
+  "ui.findit.src.cet": "CET GetMod",
+  "ui.findit.src.folder": "其資料夾中的檔案",
+  "ui.findit.src.manual": "由你新增",
+  "ui.findit.pinned": "永遠開啟",
+  "ui.findit.noPins": "沒有釘選任何模組。",
+  "ui.findit.neededByPin": "已釘選的模組需要它",
+  "ui.findit.pin": "釘選",
+  "ui.findit.unpin": "取消釘選",
+  "ui.findit.frameworks": "已釘選的模組永遠不會被「找出它」關閉，它們需要的任何東西也不會。框架（RED4ext、Cyber Engine Tweaks、ArchiveXL、TweakXL、Codeware、redscript……）本來就永遠不會被關閉。",
+  "ui.findit.linksHead": {
+    "other": "{n} 條「需要」關係"
+  },
+  "ui.findit.needs": "{mod} 需要 {needs}",
+  "ui.findit.noLinks": "找不到任何關係。",
+  "ui.findit.remove": "移除",
+  "ui.findit.modPlaceholder": "模組名稱……",
+  "ui.findit.needsWord": "需要",
+  "ui.findit.add": "新增",
+  "ui.findit.pickMod": "請從清單中選擇一個已啟用的模組。",
+  "ui.findit.pickTwo": "請從清單中選擇兩個不同的已啟用模組。",
   "ui.health.eyebrow": "健康狀態 · 在當機前就發現的長期問題",
   "ui.health.h1": "檢查項目",
   "ui.health.count": {
@@ -1317,5 +1360,39 @@
   "ui.mods.plusModio": "+ 遊戲內模組選單（mod.io）：{n}",
   "ui.mods.modioTip": "透過遊戲自帶的模組選單（mod.io）安裝。Crash Doctor 從 mod.io 的資料夾讀取它；沒有模組管理器管理它。",
   "ui.sum.lastSettled": "上次當機（看起來已解決）：",
-  "health.week.settled": "其中之後看起來已解決的當機：{n}。"
+  "health.week.settled": "其中之後看起來已解決的當機：{n}。",
+  "findit.linkBad": "無法新增這條關係：請選擇兩個不同的模組。",
+  "save.refuse.layout": "未知的存檔結構，所以 Crash Doctor 不會動它（{detail}）",
+  "save.refuse.notSave": "不是 Cyberpunk 2077 存檔",
+  "save.refuse.female": "女性 V：這項修復目前只在男性存檔上驗證過",
+  "save.refuse.metaSize": "存檔的中繼資料與其 sav.dat 不符（存檔已變更或不完整）",
+  "save.refuse.unreadable": "無法讀取存檔（{error}）",
+  "save.refuse.sameFolder": "修復副本必須放入新的資料夾，而不是原本的資料夾",
+  "save.refuse.exists": "已經有名為 {name} 的資料夾，所以沒有寫入任何內容",
+  "save.refuse.gameRunning": "Cyberpunk 2077 正在執行。請先關閉遊戲，以免它同時寫入存檔。",
+  "save.refuse.gone": "{name} 已經不在你的存檔資料夾中。請重新掃描。",
+  "save.state.healthy": "已經正常：第一人稱 Mox 部件存在，沒有需要修復的地方",
+  "save.state.other": "不是這個問題：儲存的 Gorilla Arms 外觀不是 Mox",
+  "save.state.broken": "已損毀：Mox 外觀被儲存時缺少第一人稱收起狀態的部件（可修復）",
+  "save.repaired": "{save} 沒有被變更；修復副本是 {new}。請在遊戲中讀取 {new} 來確認，在你滿意之前請保留 {save}。",
+  "save.notRepaired": "未修復：{why}",
+  "save.undo.unknown": "Crash Doctor 沒有製作過 {name} 的紀錄，所以不會移除它。",
+  "save.undo.changed": "{name} 在 Crash Doctor 製作之後已被變更（遊戲覆蓋儲存了它，或有檔案被加入），所以不會動它。如果不再需要，請在遊戲中刪除它。",
+  "save.undo.done": "已移除 {created}。{source} 仍在原處，維持原樣。",
+  "save.undo.failed": "無法移除 {name}：{error}",
+  "save.health.title": "{save}（{when}）：這個存檔遺失了 Mox Gorilla Arms 外觀的一個部件",
+  "save.health.detail": "這是男性 V + Phantom Liberty + 傳說級 Gorilla Arms + Mox 時出現的遊戲錯誤：存檔保留了 Mox 外觀，卻缺少第一人稱收起狀態的部件。從那之後，無論義體醫生的椅子設定什麼樣式，手臂都會維持 Mox 的形狀，而且在第一人稱下 Mox 和 Barghest 都看不見。",
+  "save.health.repair": "修復會把修復副本當作一個新存檔 {new} 寫在它旁邊。{save} 本身永遠不會被變更。請讀取副本來確認，並保留原始存檔。",
+  "save.health.doneTitle": "{save} 已修復為 {new}",
+  "save.health.doneDetail": "Crash Doctor 在 {when} 製作了 {new}。請在遊戲中讀取它；{save} 仍維持原樣。只要遊戲沒有覆蓋儲存它，復原就能再次移除 {new}。",
+  "save.health.more": {
+    "other": "另有 {n} 個存檔遺失了 Mox Gorilla Arms 外觀的同一個部件"
+  },
+  "save.health.moreDetail": "同樣受影響的：{saves}。通常修復最新的那個就夠了：讀取副本，從那裡繼續玩。",
+  "save.health.unsureTitle": {
+    "other": "有 {n} 個存檔看起來是 Mox Gorilla Arms 問題，但 Crash Doctor 目前還無法修復它們"
+  },
+  "save.health.unsureDetail": "Mox 外觀被儲存時缺少第一人稱部件，但這些存檔不是修復已被驗證過的那種情況，所以 Crash Doctor 不會動它們：",
+  "save.action.repair": "修復（製作副本）",
+  "save.action.undo": "復原（移除副本）"
 }

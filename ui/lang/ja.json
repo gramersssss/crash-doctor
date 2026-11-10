@@ -624,6 +624,13 @@
   "bisect.runningDetail": {
     "other": "まだ決定的な結果はありません。{signature}でクラッシュすれば、この{n}個のMODは潔白となり、{min}分以上正常にプレイできれば、これらが疑わしいことになります。それより短い場合はどちらとも言えないため、プレイを続けてください。"
   },
+  "bisect.offNeeds": "{mod}が必要ですが、{mod}もオフになります",
+  "bisect.offNeedsCleared": "潔白と判定済み。{mod}が必要なためだけにオフになります",
+  "bisect.brokenLink": "{mod}はオンですが、必要な{needs}がオフです。",
+  "bisect.continueNone": "準備を待っている「原因を探す」のラウンドはありません。",
+  "bisect.continueNothing": {
+    "other": "現在の構成ではこのラウンドを実行できません。まだテスト対象の{n}個のMODのうち、少なくとも1つがオフで1つがオンでなければ、何もわかりません。"
+  },
   "chg.withState": "{text}（{state}）",
   "chg.stateGone": "現在はインストールされていません",
   "chg.stateDisabled": "現在は無効",
@@ -703,6 +710,11 @@
     "other": "{fault}を二分探索で追跡しますか？\n\nCrash Doctorは、{manager}でMODのグループをオフにし、プレイして、もう一度スキャンするよう求めます。Crash Doctor自身は何も変更しません。実際に有効になっているものを確認し、結果をログから読み取るだけです。\n\n候補のMODは{mods}個あるため、プレイはおよそ{n}ラウンドかかる見込みです。"
   },
   "host.bisectStop": "二分探索を中止し、進捗を破棄しますか？\n\nMODは現在の状態のまま残ります。準備ができたら、オフにしたMODを{manager}でオンに戻してください。",
+  "host.bisectContinue": {
+    "other": "今オンになっている構成をこのラウンドに使いますか？\n\nまだテスト対象のMODのうち、{n}個が現在オフで、{on}個がオンです。Crash Doctorは、指示したリストの代わりにこの状態をそのままこのラウンドとして扱い、今からカウントを始めます。MODマネージャーでは何も変更されません。"
+  },
+  "host.saveRepair": "{save}の修復済みコピーを作成しますか？\n\nCrash Doctorは新しいセーブ{new}をセーブフォルダーに書き込みます。{save}自体は変更されません。\n\nゲームで{new}をロードして確認し、納得できるまで{save}は残しておいてください。「元に戻す」でコピーを再び削除できます。",
+  "host.saveUndo": "Crash Doctorが作成した修復済みコピー{new}を削除しますか？\n\n削除されるのはそのフォルダーだけで、ゲームがそれに上書き保存していない場合に限ります。元のセーブには手を付けません。",
   "host.copiedNames": {
     "other": "{n}個のMOD名をコピーしました。MODマネージャーの検索欄に貼り付けて探してください。"
   },
@@ -887,6 +899,37 @@
     "other": "{n}個の名前をコピー"
   },
   "ui.bisect.turnOn": "これらをオンに戻してください：まだテスト対象です",
+  "ui.bisect.brokenHead": "この状態ではゲームが読み込まれない可能性があります：",
+  "ui.bisect.continue": "現在の構成で続ける",
+  "ui.bisect.continueHelp": "これらをオフにできない、またはしたくない場合は、このラウンドでは代わりに今オンになっている構成を使ってください。",
+  "ui.bisect.continued": "このラウンドはあなた自身の構成を使っています。続けることを選んだ時点でオンになっていたものです。",
+  "ui.bisect.kept": "探索中ずっとオンのまま（固定済み、または固定したMODが必要とするもの）",
+  "ui.findit.title": "まとめて扱い、オンのまま保つ",
+  "ui.findit.lead": "「原因を探す」は、MODをオフにするとき、それを必要とするすべてのMODも一緒にオフにします。そのため、ゲームは起動できます。",
+  "ui.findit.read": "このPCから読み取ったもの：{sources}。足りないものは下で追加してください。",
+  "ui.findit.readNone": "どのMODがどのMODを必要とするかを示すものは、このPCにはありません。わかっていることを下で追加してください。",
+  "ui.findit.src.vortex": "Vortexのルール",
+  "ui.findit.src.redscript": "スクリプトのimport",
+  "ui.findit.src.cet": "CETのGetMod",
+  "ui.findit.src.folder": "フォルダー内のファイル",
+  "ui.findit.src.manual": "手動で追加",
+  "ui.findit.pinned": "常にオン",
+  "ui.findit.noPins": "固定されているものはありません。",
+  "ui.findit.neededByPin": "固定したMODが必要としている",
+  "ui.findit.pin": "固定",
+  "ui.findit.unpin": "固定解除",
+  "ui.findit.frameworks": "固定したMODは「原因を探す」で決してオフにされず、それらが必要とするものもオフにされません。フレームワーク（RED4ext、Cyber Engine Tweaks、ArchiveXL、TweakXL、Codeware、redscript…）は、いずれにせよ決してオフにされません。",
+  "ui.findit.linksHead": {
+    "other": "「必要」リンク{n}件"
+  },
+  "ui.findit.needs": "{mod}には{needs}が必要",
+  "ui.findit.noLinks": "見つかりませんでした。",
+  "ui.findit.remove": "削除",
+  "ui.findit.modPlaceholder": "MOD名…",
+  "ui.findit.needsWord": "に必要なもの：",
+  "ui.findit.add": "追加",
+  "ui.findit.pickMod": "リストから有効なMODを選んでください。",
+  "ui.findit.pickTwo": "リストから異なる2つの有効なMODを選んでください。",
   "ui.health.eyebrow": "ヘルス · クラッシュ前に見つかった継続的な問題",
   "ui.health.h1": "チェック",
   "ui.health.count": {
@@ -1317,5 +1360,39 @@
   "ui.mods.plusModio": "+ ゲーム内Modメニュー（mod.io）：{n}",
   "ui.mods.modioTip": "ゲーム自身のModメニュー（mod.io）からインストールされたものです。Crash Doctorはmod.ioのフォルダーから読み取ります。どのModマネージャーも管理していません。",
   "ui.sum.lastSettled": "最後のクラッシュ（解決済みのよう）：",
-  "health.week.settled": "そのうち、その後解決済みのように見えるクラッシュ：{n}。"
+  "health.week.settled": "そのうち、その後解決済みのように見えるクラッシュ：{n}。",
+  "findit.linkBad": "そのリンクは追加できませんでした。異なる2つのMODを選んでください。",
+  "save.refuse.layout": "不明なセーブ形式のため、Crash Doctorは手を付けません（{detail}）",
+  "save.refuse.notSave": "Cyberpunk 2077のセーブではありません",
+  "save.refuse.female": "女性のV：この修復は、今のところ男性のセーブでしか確認されていません",
+  "save.refuse.metaSize": "セーブのメタデータがsav.datと一致しません（セーブが変更されたか、不完全です）",
+  "save.refuse.unreadable": "セーブを読み込めませんでした（{error}）",
+  "save.refuse.sameFolder": "修復済みコピーは元のフォルダーではなく、新しいフォルダーに入れる必要があります",
+  "save.refuse.exists": "{name}という名前のフォルダーがすでに存在するため、何も書き込みませんでした",
+  "save.refuse.gameRunning": "Cyberpunk 2077が実行中です。同時にセーブを書き込まないよう、先にゲームを終了してください。",
+  "save.refuse.gone": "{name}はもうセーブフォルダーにありません。もう一度スキャンしてください。",
+  "save.state.healthy": "すでに正常：一人称のMoxパーツがあり、修復するものはありません",
+  "save.state.other": "この問題ではありません：保存されているGorilla Armsの外見はMoxではありません",
+  "save.state.broken": "破損：Moxの外見が、一人称の収納時パーツなしで保存されています（修復可能）",
+  "save.repaired": "{save}は変更されていません。修復済みコピーは{new}です。ゲームで{new}をロードして確認し、納得できるまで{save}は残しておいてください。",
+  "save.notRepaired": "修復されませんでした：{why}",
+  "save.undo.unknown": "Crash Doctorには{name}を作成した記録がないため、削除しません。",
+  "save.undo.changed": "{name}はCrash Doctorが作成した後に変更されています（ゲームが上書き保存したか、ファイルが追加されました）。そのため手を付けません。不要であれば、ゲーム内で削除してください。",
+  "save.undo.done": "{created}を削除しました。{source}は元のまま残っています。",
+  "save.undo.failed": "{name}を削除できませんでした：{error}",
+  "save.health.title": "{save}（{when}）：このセーブはMox Gorilla Armsの外見の一部を失っています",
+  "save.health.detail": "男性のV＋Phantom Liberty＋レジェンダリーのGorilla Arms＋Moxで起きるゲームのバグです。セーブにMoxの外見が、一人称の収納時パーツなしで残ります。それ以降、リパードクのチェアでどのスタイルを設定しても腕はMoxの形のままになり、一人称ではMoxとBarghestが見えなくなります。",
+  "save.health.repair": "修復では、修復済みコピーを新しいセーブ{new}としてその隣に書き込みます。{save}自体は決して変更されません。コピーをロードして確認し、元のセーブは残しておいてください。",
+  "save.health.doneTitle": "{save}を修復して{new}を作成しました",
+  "save.health.doneDetail": "Crash Doctorは{when}に{new}を作成しました。ゲームでロードしてください。{save}は元のままです。ゲームが上書き保存していない限り、「元に戻す」で{new}を再び削除できます。",
+  "save.health.more": {
+    "other": "ほかに{n}個のセーブが、Mox Gorilla Armsの外見の同じ部分を失っています"
+  },
+  "save.health.moreDetail": "ほかに影響を受けているもの：{saves}。通常は最新のものを修復すれば十分です。コピーをロードして、そこからプレイを続けてください。",
+  "save.health.unsureTitle": {
+    "other": "{n}個のセーブがMox Gorilla Armsの問題に見えますが、Crash Doctorはまだ修復できません"
+  },
+  "save.health.unsureDetail": "Moxの外見が一人称パーツなしで保存されていますが、これらのセーブは修復が実証されたケースとは異なるため、Crash Doctorは手を付けません：",
+  "save.action.repair": "修復（コピーを作成）",
+  "save.action.undo": "元に戻す（コピーを削除）"
 }

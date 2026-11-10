@@ -703,6 +703,14 @@
     "one": "Még nincs döntő eredmény. Ha összeomlik ezzel a hibával ({signature}), az tisztázza ezt az egy modot; egy legalább {min} perces tiszta futás rá utal. Bármi rövidebb egyik irányban sem döntő, úgyhogy játssz tovább.",
     "other": "Még nincs döntő eredmény. Ha összeomlik ezzel a hibával ({signature}), az tisztázza ezt a(z) {n} modot; egy legalább {min} perces tiszta futás rájuk utal. Bármi rövidebb egyik irányban sem döntő, úgyhogy játssz tovább."
   },
+  "bisect.offNeeds": "függ ettől: {mod}, és az is kikapcsol",
+  "bisect.offNeedsCleared": "már tisztázva; csak azért van kikapcsolva, mert függ ettől: {mod}",
+  "bisect.brokenLink": "{mod} be van kapcsolva, de függ ettől: {needs}, ami ki van kapcsolva.",
+  "bisect.continueNone": "Nincs beállításra váró Keresd meg-kör.",
+  "bisect.continueNothing": {
+    "one": "Ez a kör nem vehető át a jelenlegi beállításodból: a tesztben még szereplő {n} mod közül legalább egynek kikapcsolva, egynek pedig bekapcsolva kell lennie, különben semmi sem derül ki.",
+    "other": "Ez a kör nem vehető át a jelenlegi beállításodból: a tesztben még szereplő {n} mod közül legalább egynek kikapcsolva, egynek pedig bekapcsolva kell lennie, különben semmi sem derül ki."
+  },
   "chg.withState": "{text} ({state})",
   "chg.stateGone": "már nincs telepítve",
   "chg.stateDisabled": "most kikapcsolva",
@@ -789,6 +797,12 @@
     "other": "Felezéssel keresed ezt: {fault}?\n\nA Crash Doctor arra fog kérni, hogy kapcsolj ki modcsoportokat {manager} segítségével, játssz, és futtasd újra a vizsgálatot. Saját maga soha nem változtat meg semmit: csak azt ellenőrzi, mi van ténylegesen bekapcsolva, és a naplóidból olvassa ki az eredményt.\n\n{mods} mod jöhet szóba, így nagyjából {n} környi játékra számíts."
   },
   "host.bisectStop": "Leállítod a felezést, és elveted az eddigi haladását?\n\nA modjaid pontosan úgy maradnak, ahogy most vannak. Amikor készen állsz, kapcsold vissza a kikapcsoltakat {manager} segítségével.",
+  "host.bisectContinue": {
+    "one": "Ehhez a körhöz a most bekapcsolt állapotot használod?\n\nA tesztben még szereplő modok közül {n} most ki van kapcsolva, {on} pedig be. A Crash Doctor pontosan ezt veszi ennek a körnek a kért lista helyett, és mostantól kezdi a számolást. A modkezelődben semmi sem változik.",
+    "other": "Ehhez a körhöz a most bekapcsolt állapotot használod?\n\nA tesztben még szereplő modok közül {n} most ki van kapcsolva, {on} pedig be. A Crash Doctor pontosan ezt veszi ennek a körnek a kért lista helyett, és mostantól kezdi a számolást. A modkezelődben semmi sem változik."
+  },
+  "host.saveRepair": "Készüljön javított másolat erről a mentésről: {save}?\n\nA Crash Doctor egy ÚJ mentést ír a mentésmappádba ({new}). Az eredeti ({save}) nem változik.\n\nTöltsd be a játékban az új mentést ({new}), hogy ellenőrizd, és tartsd meg az eredetit ({save}), amíg elégedett nem vagy. A Visszavonás újra eltávolítja a másolatot.",
+  "host.saveUndo": "Eltávolítod a Crash Doctor által készített javított másolatot ({new})?\n\nCsak ez a mappa törlődik, és csak akkor, ha a játék nem mentett rá. Az eredeti mentésedhez nem nyúl.",
   "host.copiedNames": {
     "one": "{n} modnév kimásolva. Illeszd be a modkezelőd keresőjébe, hogy megtaláld.",
     "other": "{n} modnév kimásolva. Illeszd be őket a modkezelőd keresőjébe, hogy megtaláld őket."
@@ -990,6 +1004,38 @@
     "other": "{n} név másolása"
   },
   "ui.bisect.turnOn": "Kapcsold vissza ezeket: még a teszt részei",
+  "ui.bisect.brokenHead": "Így lehet, hogy a játék nem töltődik be:",
+  "ui.bisect.continue": "Folytatás a jelenlegi beállításommal",
+  "ui.bisect.continueHelp": "Nem tudod vagy nem akarod kikapcsolni ezeket? Használd ehhez a körhöz azt, ami most be van kapcsolva.",
+  "ui.bisect.continued": "Ez a kör a saját beállításodat használja: azt, ami be volt kapcsolva, amikor a folytatást választottad.",
+  "ui.bisect.kept": "Az egész keresés alatt bekapcsolva marad (rögzítve, vagy egy rögzített mod függ tőle)",
+  "ui.findit.title": "Együtt tartva, bekapcsolva tartva",
+  "ui.findit.lead": "A Keresd meg egy modot az összes tőle függő moddal együtt kapcsol ki, hogy a játék továbbra is el tudjon indulni.",
+  "ui.findit.read": "Ezen a PC-n beolvasva: {sources}. Amit kihagy, azt add hozzá lent.",
+  "ui.findit.readNone": "Ezen a PC-n semmi sem mondja meg, melyik mod melyiktől függ. Add hozzá lent, amit tudsz.",
+  "ui.findit.src.vortex": "Vortex-szabály",
+  "ui.findit.src.redscript": "szkriptimport",
+  "ui.findit.src.cet": "CET GetMod",
+  "ui.findit.src.folder": "fájlok a mappájában",
+  "ui.findit.src.manual": "te adtad hozzá",
+  "ui.findit.pinned": "Mindig bekapcsolva",
+  "ui.findit.noPins": "Nincs semmi rögzítve.",
+  "ui.findit.neededByPin": "egy rögzített mod függ tőle",
+  "ui.findit.pin": "Rögzítés",
+  "ui.findit.unpin": "Rögzítés feloldása",
+  "ui.findit.frameworks": "A Keresd meg soha nem kapcsolja ki a rögzített modokat, és semmit sem, amitől azok függnek. A keretrendszereket (RED4ext, Cyber Engine Tweaks, ArchiveXL, TweakXL, Codeware, redscript...) amúgy sem kapcsolja ki soha.",
+  "ui.findit.linksHead": {
+    "one": "{n} „függ ettől” kapcsolat",
+    "other": "{n} „függ ettől” kapcsolat"
+  },
+  "ui.findit.needs": "{mod} függ ettől: {needs}",
+  "ui.findit.noLinks": "Egy sem található.",
+  "ui.findit.remove": "Eltávolítás",
+  "ui.findit.modPlaceholder": "Mod neve...",
+  "ui.findit.needsWord": "függ ettől:",
+  "ui.findit.add": "Hozzáadás",
+  "ui.findit.pickMod": "Válassz egy bekapcsolt modot a listából.",
+  "ui.findit.pickTwo": "Válassz két különböző bekapcsolt modot a listából.",
   "ui.health.eyebrow": "Állapot · állandó problémák, még az összeomlás előtt",
   "ui.health.h1": "Ellenőrzések",
   "ui.health.count": {
@@ -1437,5 +1483,41 @@
   "ui.mods.plusModio": "+ a játék modmenüje (mod.io): {n}",
   "ui.mods.modioTip": "A játék saját modmenüjéből (mod.io) telepítve. A Crash Doctor a mod.io mappájából olvassa; egyik modkezelő sem kezeli.",
   "ui.sum.lastSettled": "Legutóbbi összeomlás (rendeződni látszik):",
-  "health.week.settled": "Ebből azóta rendeződni látszó összeomlások: {n}."
+  "health.week.settled": "Ebből azóta rendeződni látszó összeomlások: {n}.",
+  "findit.linkBad": "Ezt a kapcsolatot nem sikerült hozzáadni: válassz két különböző modot.",
+  "save.refuse.layout": "ismeretlen mentésszerkezet, ezért a Crash Doctor nem nyúl hozzá ({detail})",
+  "save.refuse.notSave": "nem Cyberpunk 2077-mentés",
+  "save.refuse.female": "női V: ezt a javítást eddig csak férfi V-s mentéseken ellenőriztük",
+  "save.refuse.metaSize": "a mentés metaadatai nem egyeznek a sav.dat fájljával (a mentés megváltozott vagy hiányos)",
+  "save.refuse.unreadable": "a mentést nem sikerült beolvasni ({error})",
+  "save.refuse.sameFolder": "a javított másolatnak új mappába kell kerülnie, nem az eredetibe",
+  "save.refuse.exists": "már létezik ilyen nevű mappa: {name}, ezért semmi sem lett kiírva",
+  "save.refuse.gameRunning": "A Cyberpunk 2077 fut. Előbb zárd be a játékot, hogy ne írjon közben mentéseket.",
+  "save.refuse.gone": "Ez már nincs a mentésmappádban: {name}. Futtasd újra a vizsgálatot.",
+  "save.state.healthy": "már rendben van: a Mox első személyű nézethez tartozó része megvan, nincs mit javítani",
+  "save.state.other": "nem ez a probléma: a tárolt Gorilla Arms kinézet nem Mox",
+  "save.state.broken": "sérült: a Mox kinézet az első személyű nézethez tartozó, behúzott karos része nélkül van tárolva (javítható)",
+  "save.repaired": "Az eredeti ({save}) nem változott; a javított másolat: {new}. Töltsd be a játékban ({new}), hogy ellenőrizd, és tartsd meg az eredetit ({save}), amíg elégedett nem vagy.",
+  "save.notRepaired": "Nincs javítva: {why}",
+  "save.undo.unknown": "A Crash Doctor nem tud arról, hogy ezt ő készítette: {name}, ezért nem távolítja el.",
+  "save.undo.changed": "Ez megváltozott, mióta a Crash Doctor elkészítette: {name} (a játék rámentett, vagy fájlok kerültek bele), ezért érintetlenül marad. Ha már nem kell, töröld a játékban.",
+  "save.undo.done": "Eltávolítva: {created}. Az eredeti ({source}) továbbra is megvan, változatlanul.",
+  "save.undo.failed": "Nem sikerült eltávolítani ezt: {name} ({error})",
+  "save.health.title": "{save} ({when}): ebből a mentésből elveszett a Mox Gorilla Arms kinézet egy része",
+  "save.health.detail": "Játékhiba férfi V + Phantom Liberty + legendás Gorilla Arms + Mox esetén: a mentés megtartja a Mox kinézetet, de az első személyű nézethez tartozó, behúzott karos része nélkül. Ettől kezdve a karok Mox formájúak maradnak, bármilyen stílust állít be a ripperdoc széke, a Mox és a Barghest pedig láthatatlan első személyű nézetben.",
+  "save.health.repair": "A Javítás új mentésként írja ki a javított másolatot mellé ({new}). Az eredeti ({save}) soha nem változik. Töltsd be a másolatot, hogy ellenőrizd, és tartsd meg az eredetit.",
+  "save.health.doneTitle": "Javítva: {save} → {new}",
+  "save.health.doneDetail": "A Crash Doctor elkészítette ezt: {new} ({when}). Töltsd be a játékban; az eredeti ({save}) változatlan. A Visszavonás újra eltávolítja az új mentést ({new}), amíg a játék nem mentett rá.",
+  "save.health.more": {
+    "one": "További {n} mentésből elveszett a Mox Gorilla Arms kinézet ugyanezen része",
+    "other": "További {n} mentésből elveszett a Mox Gorilla Arms kinézet ugyanezen része"
+  },
+  "save.health.moreDetail": "Szintén érintett: {saves}. Általában elég a legújabbat javítani: töltsd be a másolatot, és onnan játssz tovább.",
+  "save.health.unsureTitle": {
+    "one": "{n} mentés a Mox Gorilla Arms problémának tűnik, de a Crash Doctor még nem tudja javítani",
+    "other": "{n} mentés a Mox Gorilla Arms problémának tűnik, de a Crash Doctor még nem tudja javítani őket"
+  },
+  "save.health.unsureDetail": "A Mox kinézet az első személyű nézethez tartozó része nélkül van tárolva, de ezek a mentések nem az az eset, amelyen a javítást igazoltuk, ezért a Crash Doctor nem nyúl hozzájuk:",
+  "save.action.repair": "Javítás (másolatot készít)",
+  "save.action.undo": "Visszavonás (a másolat eltávolítása)"
 }

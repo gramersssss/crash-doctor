@@ -624,6 +624,13 @@
   "bisect.runningDetail": {
     "other": "还没有决定性的结果。一次带有 {signature} 的崩溃会排除这 {n} 个模组；一次 {min} 分钟以上的正常运行会指向它们。更短的运行无论哪种都不能下结论，所以请继续玩。"
   },
+  "bisect.offNeeds": "需要 {mod}，而它也要关闭",
+  "bisect.offNeedsCleared": "已排除；关闭只是因为它需要 {mod}",
+  "bisect.brokenLink": "{mod} 已开启，但它需要的 {needs} 是关闭的。",
+  "bisect.continueNone": "没有等待设置的排查轮次。",
+  "bisect.continueNothing": {
+    "other": "无法用你当前的设置进行这一轮：仍在测试中的 {n} 个模组里，至少要有一个关闭、一个开启，否则什么也得不出。"
+  },
   "chg.withState": "{text}（{state}）",
   "chg.stateGone": "已不再安装",
   "chg.stateDisabled": "现已禁用",
@@ -703,6 +710,11 @@
     "other": "用二分法排查 {fault}？\n\nCrash Doctor 会请你在 {manager} 中分批关闭模组、去玩，然后再扫描。它自己从不更改任何东西：只检查实际启用了什么，并从你的日志中读取结果。\n\n有 {mods} 个模组待排查，预计大约需要玩 {n} 轮。"
   },
   "host.bisectStop": "停止排查并丢弃进度？\n\n你的模组会完全保持现在的状态。准备好后，在 {manager} 中把你关闭的那些重新开启。",
+  "host.bisectContinue": {
+    "other": "这一轮使用现在开启的设置？\n\n仍在测试中的模组有 {n} 个现在是关闭的，{on} 个是开启的。Crash Doctor 会完全按这个状态作为这一轮，而不是用它要求的列表，并从现在开始计时。你的模组管理器中不会有任何更改。"
+  },
+  "host.saveRepair": "为 {save} 制作一个修复后的副本？\n\nCrash Doctor 会把一个新存档 {new} 写入你的存档文件夹。{save} 本身不会被更改。\n\n请在游戏中读取 {new} 来检查，在你满意之前保留 {save}。撤销会再次删除这个副本。",
+  "host.saveUndo": "删除 Crash Doctor 制作的修复副本 {new}？\n\n只会删除那个文件夹，而且只在游戏没有覆盖保存它的情况下才删除。你的原始存档不会被动到。",
   "host.copiedNames": {
     "other": "已复制 {n} 个模组名称。粘贴到模组管理器的搜索框中即可找到它们。"
   },
@@ -887,6 +899,37 @@
     "other": "复制 {n} 个名称"
   },
   "ui.bisect.turnOn": "重新开启这些：它们仍在测试中",
+  "ui.bisect.brokenHead": "这样游戏可能无法加载：",
+  "ui.bisect.continue": "用我当前的设置继续",
+  "ui.bisect.continueHelp": "无法或不想关闭这些？那这一轮就改用现在开启的设置。",
+  "ui.bisect.continued": "这一轮使用你自己的设置：即你选择继续时开启的内容。",
+  "ui.bisect.kept": "整个排查期间保持开启（已固定，或被已固定的模组需要）",
+  "ui.findit.title": "一起处理，保持开启",
+  "ui.findit.lead": "排查在关闭一个模组时，会同时关闭所有需要它的模组，这样游戏仍能启动。",
+  "ui.findit.read": "已在这台电脑上读取：{sources}。缺少的请在下面添加。",
+  "ui.findit.readNone": "这台电脑上没有任何信息说明哪个模组需要哪个模组。请在下面添加你知道的。",
+  "ui.findit.src.vortex": "Vortex 规则",
+  "ui.findit.src.redscript": "脚本 import",
+  "ui.findit.src.cet": "CET GetMod",
+  "ui.findit.src.folder": "其文件夹中的文件",
+  "ui.findit.src.manual": "由你添加",
+  "ui.findit.pinned": "始终开启",
+  "ui.findit.noPins": "没有固定任何模组。",
+  "ui.findit.neededByPin": "被已固定的模组需要",
+  "ui.findit.pin": "固定",
+  "ui.findit.unpin": "取消固定",
+  "ui.findit.frameworks": "已固定的模组永远不会被排查关闭，它们需要的任何东西也不会。框架（RED4ext、Cyber Engine Tweaks、ArchiveXL、TweakXL、Codeware、redscript……）本来就永远不会被关闭。",
+  "ui.findit.linksHead": {
+    "other": "{n} 条“需要”关系"
+  },
+  "ui.findit.needs": "{mod} 需要 {needs}",
+  "ui.findit.noLinks": "未找到。",
+  "ui.findit.remove": "删除",
+  "ui.findit.modPlaceholder": "模组名称……",
+  "ui.findit.needsWord": "需要",
+  "ui.findit.add": "添加",
+  "ui.findit.pickMod": "请从列表中选择一个已启用的模组。",
+  "ui.findit.pickTwo": "请从列表中选择两个不同的已启用模组。",
   "ui.health.eyebrow": "健康 · 崩溃之前就发现的长期问题",
   "ui.health.h1": "检查",
   "ui.health.count": {
@@ -1317,5 +1360,39 @@
   "ui.mods.plusModio": "+ 游戏内模组菜单（mod.io）：{n}",
   "ui.mods.modioTip": "通过游戏自带的模组菜单（mod.io）安装。Crash Doctor 从 mod.io 的文件夹读取它；没有模组管理器管理它。",
   "ui.sum.lastSettled": "上次崩溃（看起来已解决）：",
-  "health.week.settled": "其中此后看起来已解决的崩溃：{n}。"
+  "health.week.settled": "其中此后看起来已解决的崩溃：{n}。",
+  "findit.linkBad": "无法添加该关系：请选择两个不同的模组。",
+  "save.refuse.layout": "未知的存档结构，所以 Crash Doctor 不会动它（{detail}）",
+  "save.refuse.notSave": "不是 Cyberpunk 2077 存档",
+  "save.refuse.female": "女性 V：这项修复目前只在男性存档上验证过",
+  "save.refuse.metaSize": "存档的元数据与其 sav.dat 不符（存档已更改或不完整）",
+  "save.refuse.unreadable": "无法读取存档（{error}）",
+  "save.refuse.sameFolder": "修复副本必须放入新文件夹，而不是原文件夹",
+  "save.refuse.exists": "已存在名为 {name} 的文件夹，所以没有写入任何内容",
+  "save.refuse.gameRunning": "Cyberpunk 2077 正在运行。请先关闭游戏，以免它同时写入存档。",
+  "save.refuse.gone": "{name} 已不在你的存档文件夹中。请重新扫描。",
+  "save.state.healthy": "已经正常：第一人称 Mox 部件存在，无需修复",
+  "save.state.other": "不是这个问题：存储的 Gorilla Arms 外观不是 Mox",
+  "save.state.broken": "已损坏：Mox 外观被存储时缺少第一人称收起状态的部件（可修复）",
+  "save.repaired": "{save} 没有被更改；修复副本是 {new}。请在游戏中读取 {new} 来检查，在你满意之前保留 {save}。",
+  "save.notRepaired": "未修复：{why}",
+  "save.undo.unknown": "Crash Doctor 没有制作过 {name} 的记录，所以不会删除它。",
+  "save.undo.changed": "{name} 在 Crash Doctor 制作之后已被更改（游戏覆盖保存了它，或添加了文件），所以不会动它。如果不再需要，请在游戏中删除它。",
+  "save.undo.done": "已删除 {created}。{source} 仍在原处，保持原样。",
+  "save.undo.failed": "无法删除 {name}：{error}",
+  "save.health.title": "{save}（{when}）：这个存档丢失了 Mox Gorilla Arms 外观的一个部件",
+  "save.health.detail": "这是男性 V + Phantom Liberty + 传说级 Gorilla Arms + Mox 时出现的游戏 bug：存档保留了 Mox 外观，却缺少第一人称收起状态的部件。从那以后，无论义体医生的椅子设置什么样式，手臂都保持 Mox 的形状，而且在第一人称下 Mox 和 Barghest 都不可见。",
+  "save.health.repair": "修复会把修复副本作为一个新存档 {new} 写在它旁边。{save} 本身永远不会被更改。请读取副本来检查，并保留原存档。",
+  "save.health.doneTitle": "{save} 已修复为 {new}",
+  "save.health.doneDetail": "Crash Doctor 在 {when} 制作了 {new}。请在游戏中读取它；{save} 仍保持原样。只要游戏没有覆盖保存它，撤销就能再次删除 {new}。",
+  "save.health.more": {
+    "other": "另有 {n} 个存档丢失了 Mox Gorilla Arms 外观的同一个部件"
+  },
+  "save.health.moreDetail": "同样受影响的：{saves}。通常修复最新的那个就够了：读取副本，从那里继续玩。",
+  "save.health.unsureTitle": {
+    "other": "有 {n} 个存档看起来是 Mox Gorilla Arms 问题，但 Crash Doctor 目前还无法修复它们"
+  },
+  "save.health.unsureDetail": "Mox 外观被存储时缺少第一人称部件，但这些存档不是修复已被验证的那种情况，所以 Crash Doctor 不会动它们：",
+  "save.action.repair": "修复（制作副本）",
+  "save.action.undo": "撤销（删除副本）"
 }
