@@ -1537,5 +1537,13 @@
   },
   "save.health.unsureDetail": "L'apparence Mox est enregistrée sans sa pièce en vue à la première personne, mais ces sauvegardes ne correspondent pas au cas sur lequel la réparation a été prouvée, donc Crash Doctor n'y touche pas :",
   "save.action.repair": "Réparer (crée une copie)",
-  "save.action.undo": "Annuler (supprime la copie)"
+  "save.action.undo": "Annuler (supprime la copie)",
+  "ui.set.findit": "Trouver la cause",
+  "ui.fcard.title": "Demander avant de supprimer un lien de « Trouver la cause »",
+  "ui.fcard.help": "Activé par défaut. Quand vous appuyez sur Supprimer sur un de vos propres liens dans « Trouver la cause », Crash Doctor demande d'abord. Cocher « Ne plus afficher » dans cette question désactive ceci ; réactivez-le ici.",
+  "ui.toast.askOn": "« Trouver la cause » demandera avant de supprimer un lien.",
+  "ui.toast.askOff": "« Trouver la cause » supprimera les liens sans demander.",
+  "ui.fcard.offHint": "« Trouver la cause » ne demandera plus. Paramètres → Trouver la cause réactive la question.",
+  "host.unlinkAsk": "Voulez-vous vraiment supprimer ceci ?\n\n{mod} a besoin de {needs}\n\n« Trouver la cause » ne gardera plus ces deux mods ensemble. Seule la liste de Crash Doctor change ; vous pouvez rajouter le lien à tout moment.",
+  "host.unlinkDontAsk": "Ne plus afficher"
 }

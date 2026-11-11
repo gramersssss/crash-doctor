@@ -1410,5 +1410,13 @@
   },
   "save.health.unsureDetail": "Mox 外觀被儲存時缺少第一人稱部件，但這些存檔不是修復已被驗證過的那種情況，所以 Crash Doctor 不會動它們：",
   "save.action.repair": "修復（製作副本）",
-  "save.action.undo": "復原（移除副本）"
+  "save.action.undo": "復原（移除副本）",
+  "ui.set.findit": "找出它",
+  "ui.fcard.title": "移除「找出它」中的關係前先詢問",
+  "ui.fcard.help": "預設開啟。在「找出它」中對你自己新增的關係按「移除」時，Crash Doctor 會先詢問。在那個詢問中勾選「不再顯示」會關閉此項；可以在這裡重新開啟。",
+  "ui.toast.askOn": "「找出它」會在移除關係前詢問。",
+  "ui.toast.askOff": "「找出它」會直接移除關係，不再詢問。",
+  "ui.fcard.offHint": "「找出它」不會再詢問。「設定 → 找出它」可以重新開啟詢問。",
+  "host.unlinkAsk": "確定要移除嗎？\n\n{mod} 需要 {needs}\n\n「找出它」將不再把這兩個模組放在一起。只有 Crash Doctor 自己的清單會改變；你可以隨時重新新增這條關係。",
+  "host.unlinkDontAsk": "不再顯示"
 }

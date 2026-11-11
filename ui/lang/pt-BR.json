@@ -1537,5 +1537,13 @@
   },
   "save.health.unsureDetail": "O visual Mox está guardado sem a sua parte em primeira pessoa, mas estes saves não são o caso em que o reparo foi comprovado, então o Crash Doctor não mexe neles:",
   "save.action.repair": "Reparar (cria uma cópia)",
-  "save.action.undo": "Desfazer (remove a cópia)"
+  "save.action.undo": "Desfazer (remove a cópia)",
+  "ui.set.findit": "Encontrar",
+  "ui.fcard.title": "Perguntar antes de remover um vínculo do Encontrar",
+  "ui.fcard.help": "Ligado por padrão. Quando você clica em Remover em um dos seus próprios vínculos no Encontrar, o Crash Doctor pergunta antes. Marcar \"Não mostrar novamente\" nessa pergunta desliga isto; ligue de novo aqui.",
+  "ui.toast.askOn": "O Encontrar vai perguntar antes de remover um vínculo.",
+  "ui.toast.askOff": "O Encontrar vai remover vínculos sem perguntar.",
+  "ui.fcard.offHint": "O Encontrar não vai perguntar de novo. Configurações → Encontrar liga a pergunta de volta.",
+  "host.unlinkAsk": "Tem certeza de que quer remover isto?\n\n{mod} precisa de {needs}\n\nO Encontrar deixará de manter esses dois mods juntos. Só a lista do próprio Crash Doctor muda; você pode adicionar o vínculo de novo a qualquer momento.",
+  "host.unlinkDontAsk": "Não mostrar novamente"
 }

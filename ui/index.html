@@ -651,6 +651,8 @@ button.mark:hover{filter:brightness(.94)}
       <div class="card" id="vramlog-card"></div>
       <h2 data-i18n="ui.set.updates">Updates</h2>
       <div class="card" id="update-card"></div>
+      <h2 data-i18n="ui.set.findit">Find it</h2>
+      <div class="card" id="askunlink-card"></div>
       <h2 data-i18n="ui.set.appearance">Appearance</h2>
       <div class="themes" id="themes"></div>
       <h2 data-i18n="ui.set.profiles">Graphics profiles</h2>
@@ -784,6 +786,9 @@ if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ va
   else if(m.cmd==='vram'){ renderVramLive(m.live); }
   else if(m.cmd==='update'){ if(REPORT){ REPORT.update=m.update; renderUpdate(REPORT); renderUpdateCard(REPORT); } }
   else if(m.cmd==='play'){ renderPlay(m.play); }
+  else if(m.cmd==='askunlink'){ if(REPORT){ REPORT.askBeforeUnlink=!!m.enabled; renderAskUnlinkCard(REPORT); } if(m.quiet) FI_OFFNOTE=true; else toast(t(m.enabled?'ui.toast.askOn':'ui.toast.askOff'),false); }
+  else if(m.cmd==='fisaving'){ fiSay(t('ui.findit.saving'),'good'); }
+  else if(m.cmd==='ficancel'){ FI_WAIT=null; fiSay('',''); if(REPORT) renderBisect(REPORT); }
   else if(m.cmd==='vramlog'){ if(REPORT){ REPORT.vramLogs=m.vramLogs; renderVramLogCard(REPORT); } toast(m.vramLogs&&m.vramLogs.enabled?t('ui.toast.vramOn'):t('ui.toast.vramOff'),false); }
   else if(m.cmd==='profiles'){ if(REPORT){ REPORT.graphics=m.graphics||REPORT.graphics; REPORT.profiles=m.profiles||[]; REPORT.settingsBackup=m.settingsBackup; if(m.ok&&EDITING) EDITING=null; renderSettings(REPORT); } toast(m.message,!m.ok); }
   else if(m.cmd==='noscan'){ done(); } }); }
@@ -1149,7 +1154,7 @@ function findItPanel(r){
 }
 // What the last ADD / Remove did, shown under the boxes once the rescan has re-drawn the panel. FI_WAIT holds the
 // request until the new report arrives: only a report that really carries the link (or no longer does) says "done".
-var FI_JUST=null, FI_MSG=null, FI_WAIT=null;
+var FI_JUST=null, FI_MSG=null, FI_WAIT=null, FI_OFFNOTE=false;
 function fiKnown(n){ var f=REPORT&&REPORT.findIt; return !!(f&&(f.mods||[]).some(function(m){return m.toLowerCase()===n.toLowerCase();})); }
 function fiCanon(n){ var f=REPORT&&REPORT.findIt, hit=f&&(f.mods||[]).filter(function(m){return m.toLowerCase()===n.toLowerCase();})[0]; return hit||n; }
 function fiHas(a,b,manualOnly){ var f=REPORT&&REPORT.findIt; return !!(f&&(f.links||[]).some(function(l){ return l.mod.toLowerCase()===a.toLowerCase()&&l.needs.toLowerCase()===b.toLowerCase()&&(!manualOnly||l.source==='manual'); })); }
@@ -1170,7 +1175,8 @@ function fiLink(){
 }
 function fiUnlink(btn){
   var a=btn.getAttribute('data-mod'), b=btn.getAttribute('data-needs'); if(!hasHost()){ alert(t('ui.appOnly')); return; }
-  FI_JUST=null; FI_WAIT={op:'unlink',mod:a,needs:b}; btn.disabled=true; fiSay(t('ui.findit.saving'),'good'); act('findit:unlink:'+a+'\t'+b);
+  // no "Saving..." yet: the app may ask first (Settings -> Find it), and says "fisaving" once the answer is yes
+  FI_JUST=null; FI_WAIT={op:'unlink',mod:a,needs:b}; btn.disabled=true; fiSay('',''); act('findit:unlink:'+a+'\t'+b);
 }
 function fiShow(){ var row=document.getElementById('fi-just')||document.getElementById('fi-msg'); if(row&&row.scrollIntoView) row.scrollIntoView({block:'center'}); }
 // called after a new report is drawn: confirm what was asked from what the report now says, never from the request
@@ -1180,7 +1186,8 @@ function fiSettle(r){
   if(w.op==='link'){ if(has){ FI_JUST={mod:w.mod,needs:w.needs}; FI_MSG={text:t('ui.findit.added',{mod:w.mod,needs:w.needs}),cls:'good'}; } else FI_MSG={text:t('ui.findit.err.notSaved'),cls:'err'}; }
   else FI_MSG=has?{text:t('ui.findit.err.notSaved'),cls:'err'}:{text:t('ui.findit.removed',{mod:w.mod,needs:w.needs}),cls:'good'};
   renderBisect(r); fiShow();
-  toast(FI_MSG.text,FI_MSG.cls==='err');
+  // just ticked "Don't show this again": say once where the question comes back from
+  toast(FI_MSG.text+(FI_OFFNOTE&&w.op==='unlink'?' '+t('ui.fcard.offHint'):''),FI_MSG.cls==='err'); FI_OFFNOTE=false;
 }
 // the host said no (an error toast is already up): say it under the boxes too, and keep what was typed
 function fiFailed(text){ if(!FI_WAIT) return; FI_WAIT=null; fiSay(text||'','err'); document.querySelectorAll('.fi button[disabled]').forEach(function(x){ x.disabled=false; }); }
@@ -1523,6 +1530,15 @@ function renderUpdateCard(r){
     +'<div class="saved"><span>'+esc(line)+'</span>'+(u.enabled&&u.configured?'<button class="btn" onclick="checkUpdate()">'+esc(t('ui.upd.check'))+'</button>':'')
     +(u.newer&&u.url?'<a class="btn primary" href="'+esc(u.url)+'" target="_blank" rel="noopener">'+esc(t('ui.upd.open'))+'</a>':'')+'</div>';
 }
+// Settings -> Find it: whether Remove on a link the user added asks first (MainForm.ConfirmUnlink). The question's
+// "Don't show this again" box switches it off; this switch is the way back. Saved in config.json.
+function renderAskUnlinkCard(r){
+  var host=document.getElementById('askunlink-card'); if(!host) return;
+  if(window.EXPORTED||r.askBeforeUnlink==null){ host.innerHTML='<span class="muted">'+esc(t('ui.notInSaved'))+'</span>'; return; }
+  host.innerHTML='<label class="switch"><input type="checkbox"'+(r.askBeforeUnlink?' checked':'')+' onchange="setAskUnlink(this.checked)">'
+    +'<span><b>'+esc(t('ui.fcard.title'))+'</b><br><span class="muted" style="font-size:13px">'+esc(t('ui.fcard.help'))+'</span></span></label>';
+}
+function setAskUnlink(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'askunlink',enabled:!!on}); else toast(t('ui.appOnly'),true); }
 function setUpdateCheck(on){ if(hasHost()) window.chrome.webview.postMessage({cmd:'update',enabled:!!on}); else toast(t('ui.appOnly'),true); }
 // A game started by "play with this profile" (Launcher.cs): a line at the top while it is on, so it is obvious the
 // settings in the game are not the usual ones and will go back when it closes.
@@ -1557,7 +1573,7 @@ function markSeen(){ if(REPORT) REPORT.newCrashes=[]; if(hasHost()) window.chrom
 function openNewCrash(id){ markSeen(); showSession(id); }
 
 function renderSettings(r){
-  renderLangCard(); renderArchive(r); renderGameLogs(r); renderHistory(r); renderVramLogCard(r); renderUpdateCard(r);
+  renderLangCard(); renderArchive(r); renderGameLogs(r); renderHistory(r); renderVramLogCard(r); renderUpdateCard(r); renderAskUnlinkCard(r);
   renderProfiles(r); renderGraphics(r);
   var notes=document.getElementById('settings-notes'); notes.innerHTML='';
   (r.settingsNotes||[]).forEach(function(n){ notes.innerHTML+='<div class="card" style="margin-bottom:10px;border-left:4px solid var(--'+(n.level==='high'?'signal':n.level==='medium'?'amber':'mint')+')"><b>'+esc(n.title)+'</b><div class="muted" style="margin-top:4px">'+esc(n.detail)+'</div></div>'; });

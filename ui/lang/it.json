@@ -1537,5 +1537,13 @@
   },
   "save.health.unsureDetail": "L'aspetto Mox è salvato senza il suo pezzo in prima persona, ma questi salvataggi non sono il caso su cui la riparazione è stata dimostrata, quindi Crash Doctor non li tocca:",
   "save.action.repair": "Ripara (crea una copia)",
-  "save.action.undo": "Annulla (rimuove la copia)"
+  "save.action.undo": "Annulla (rimuove la copia)",
+  "ui.set.findit": "Trova la causa",
+  "ui.fcard.title": "Chiedi prima di rimuovere un collegamento di Trova la causa",
+  "ui.fcard.help": "Attivo per impostazione predefinita. Quando premi Rimuovi su uno dei tuoi collegamenti in Trova la causa, Crash Doctor chiede prima. Spuntare «Non mostrare più» in quella domanda lo disattiva; riattivalo qui.",
+  "ui.toast.askOn": "Trova la causa chiederà prima di rimuovere un collegamento.",
+  "ui.toast.askOff": "Trova la causa rimuoverà i collegamenti senza chiedere.",
+  "ui.fcard.offHint": "Trova la causa non chiederà più. Impostazioni → Trova la causa riattiva la domanda.",
+  "host.unlinkAsk": "Vuoi davvero rimuoverlo?\n\n{mod} richiede {needs}\n\nTrova la causa smetterà di tenere insieme queste due mod. Cambia solo l'elenco di Crash Doctor; puoi aggiungere di nuovo il collegamento in qualsiasi momento.",
+  "host.unlinkDontAsk": "Non mostrare più"
 }

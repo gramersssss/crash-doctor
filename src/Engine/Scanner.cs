@@ -51,6 +51,7 @@ public static class Scanner
         try { r.VramLogs = VramLogs.Summary(); } catch { }
         try { r.GameLogs = LogCleaner.Summary(g); } catch { }
         try { r.History = History.Summary(); } catch { }
+        r.AskBeforeUnlink = GameLocator.LoadConfig().AskBeforeUnlink != false;
         var seenUntil = GameLocator.LoadConfig().CrashesSeenUntil;
         if (seenUntil != null)
             r.NewCrashes = r.Sessions.Where(s => s.EndKind is not (EndKind.Clean or EndKind.Running) && s.Start > seenUntil.Value)

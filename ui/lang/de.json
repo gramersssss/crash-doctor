@@ -1537,5 +1537,13 @@
   },
   "save.health.unsureDetail": "Der Mox-Look ist ohne sein Teil für die Ego-Perspektive gespeichert, aber diese Spielstände sind nicht der Fall, an dem die Reparatur nachgewiesen wurde, deshalb lässt Crash Doctor sie in Ruhe:",
   "save.action.repair": "Reparieren (erstellt eine Kopie)",
-  "save.action.undo": "Rückgängig (entfernt die Kopie)"
+  "save.action.undo": "Rückgängig (entfernt die Kopie)",
+  "ui.set.findit": "Ursache finden",
+  "ui.fcard.title": "Vor dem Entfernen einer Verknüpfung in „Ursache finden“ fragen",
+  "ui.fcard.help": "Standardmäßig an. Wenn du in „Ursache finden“ bei einer deiner eigenen Verknüpfungen auf Entfernen drückst, fragt Crash Doctor zuerst nach. Ein Häkchen bei „Nicht mehr anzeigen“ in dieser Frage schaltet das aus; hier schaltest du es wieder ein.",
+  "ui.toast.askOn": "„Ursache finden“ fragt vor dem Entfernen einer Verknüpfung nach.",
+  "ui.toast.askOff": "„Ursache finden“ entfernt Verknüpfungen ohne Nachfrage.",
+  "ui.fcard.offHint": "„Ursache finden“ fragt nicht mehr nach. Einstellungen → Ursache finden schaltet die Frage wieder ein.",
+  "host.unlinkAsk": "Möchtest du das wirklich entfernen?\n\n{mod} braucht {needs}\n\n„Ursache finden“ hält diese beiden Mods dann nicht mehr zusammen. Nur Crash Doctors eigene Liste ändert sich; du kannst die Verknüpfung jederzeit wieder hinzufügen.",
+  "host.unlinkDontAsk": "Nicht mehr anzeigen"
 }

@@ -1784,5 +1784,13 @@
   },
   "save.health.unsureDetail": "Vzhled Mox je uložený bez svého dílu pro pohled z první osoby, ale tyto pozice nejsou ten případ, na kterém byla oprava ověřena, takže je Crash Doctor nechává být:",
   "save.action.repair": "Opravit (vytvoří kopii)",
-  "save.action.undo": "Zpět (odstraní kopii)"
+  "save.action.undo": "Zpět (odstraní kopii)",
+  "ui.set.findit": "Najít příčinu",
+  "ui.fcard.title": "Ptát se před odebráním vazby v Najít příčinu",
+  "ui.fcard.help": "Ve výchozím stavu zapnuto. Když v Najít příčinu stiskneš Odebrat u jedné ze svých vlastních vazeb, Crash Doctor se nejdřív zeptá. Zaškrtnutí „Znovu nezobrazovat“ v tom dotazu tohle vypne; tady to zase zapneš.",
+  "ui.toast.askOn": "Najít příčinu se před odebráním vazby zeptá.",
+  "ui.toast.askOff": "Najít příčinu bude odebírat vazby bez ptaní.",
+  "ui.fcard.offHint": "Najít příčinu se už nebude ptát. Nastavení → Najít příčinu dotaz zase zapne.",
+  "host.unlinkAsk": "Opravdu to chceš odebrat?\n\n{mod} potřebuje {needs}\n\nNajít příčinu přestane tyto dva mody držet pohromadě. Mění se jen vlastní seznam Crash Doctoru; vazbu můžeš kdykoli přidat znovu.",
+  "host.unlinkDontAsk": "Znovu nezobrazovat"
 }

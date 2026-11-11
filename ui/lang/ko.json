@@ -1410,5 +1410,13 @@
   },
   "save.health.unsureDetail": "Mox 외형이 1인칭 부품 없이 저장되어 있지만, 이 저장 파일들은 복구가 검증된 경우와 다르므로 Crash Doctor는 그대로 둡니다:",
   "save.action.repair": "복구(사본 만들기)",
-  "save.action.undo": "실행 취소(사본 제거)"
+  "save.action.undo": "실행 취소(사본 제거)",
+  "ui.set.findit": "원인 찾기",
+  "ui.fcard.title": "원인 찾기에서 연결을 제거하기 전에 묻기",
+  "ui.fcard.help": "기본으로 켜져 있습니다. 원인 찾기에서 직접 추가한 연결의 제거를 누르면 Crash Doctor가 먼저 묻습니다. 그 질문에서 \"다시 표시하지 않음\"을 선택하면 이 설정이 꺼지며, 여기서 다시 켤 수 있습니다.",
+  "ui.toast.askOn": "원인 찾기가 연결을 제거하기 전에 묻습니다.",
+  "ui.toast.askOff": "원인 찾기가 묻지 않고 연결을 제거합니다.",
+  "ui.fcard.offHint": "원인 찾기가 더 이상 묻지 않습니다. 설정 → 원인 찾기에서 질문을 다시 켤 수 있습니다.",
+  "host.unlinkAsk": "정말 제거하시겠습니까?\n\n{mod}에 {needs} 필요\n\n원인 찾기가 이 두 모드를 더 이상 함께 묶지 않습니다. Crash Doctor 자체 목록만 바뀌며, 연결은 언제든 다시 추가할 수 있습니다.",
+  "host.unlinkDontAsk": "다시 표시하지 않음"
 }

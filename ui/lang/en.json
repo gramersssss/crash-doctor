@@ -1537,5 +1537,13 @@
   },
   "save.health.unsureDetail": "The Mox look is stored without its first-person part, but these saves are not the case the repair was proved on, so Crash Doctor leaves them alone:",
   "save.action.repair": "Repair (makes a copy)",
-  "save.action.undo": "Undo (remove the copy)"
+  "save.action.undo": "Undo (remove the copy)",
+  "ui.set.findit": "Find it",
+  "ui.fcard.title": "Ask before removing a Find it link",
+  "ui.fcard.help": "On by default. When you press Remove on one of your own links in Find it, Crash Doctor asks first. Ticking \"Don't show this again\" in that question switches this off; switch it back on here.",
+  "ui.toast.askOn": "Find it will ask before removing a link.",
+  "ui.toast.askOff": "Find it will remove links without asking.",
+  "ui.fcard.offHint": "Find it will not ask again. Settings → Find it turns the question back on.",
+  "host.unlinkAsk": "Are you sure you want to remove this?\n\n{mod} needs {needs}\n\nFind it will stop keeping these two mods together. Only Crash Doctor's own list changes; you can add the link again at any time.",
+  "host.unlinkDontAsk": "Don't show this again"
 }

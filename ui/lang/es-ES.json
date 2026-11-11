@@ -1537,5 +1537,13 @@
   },
   "save.health.unsureDetail": "El aspecto Mox está guardado sin su pieza en primera persona, pero estas partidas guardadas no son el caso en el que se demostró la reparación, así que Crash Doctor no las toca:",
   "save.action.repair": "Reparar (crea una copia)",
-  "save.action.undo": "Deshacer (elimina la copia)"
+  "save.action.undo": "Deshacer (elimina la copia)",
+  "ui.set.findit": "Encuéntralo",
+  "ui.fcard.title": "Preguntar antes de quitar un vínculo de Encuéntralo",
+  "ui.fcard.help": "Activado por defecto. Cuando pulsas Quitar en uno de tus propios vínculos en Encuéntralo, Crash Doctor pregunta primero. Marcar «No volver a mostrar» en esa pregunta lo desactiva; vuelve a activarlo aquí.",
+  "ui.toast.askOn": "Encuéntralo preguntará antes de quitar un vínculo.",
+  "ui.toast.askOff": "Encuéntralo quitará los vínculos sin preguntar.",
+  "ui.fcard.offHint": "Encuéntralo no volverá a preguntar. Ajustes → Encuéntralo vuelve a activar la pregunta.",
+  "host.unlinkAsk": "¿Seguro que quieres quitar esto?\n\n{mod} necesita {needs}\n\nEncuéntralo dejará de mantener juntos estos dos mods. Solo cambia la lista propia de Crash Doctor; puedes volver a añadir el vínculo cuando quieras.",
+  "host.unlinkDontAsk": "No volver a mostrar"
 }

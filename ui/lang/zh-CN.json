@@ -1410,5 +1410,13 @@
   },
   "save.health.unsureDetail": "Mox 外观被存储时缺少第一人称部件，但这些存档不是修复已被验证的那种情况，所以 Crash Doctor 不会动它们：",
   "save.action.repair": "修复（制作副本）",
-  "save.action.undo": "撤销（删除副本）"
+  "save.action.undo": "撤销（删除副本）",
+  "ui.set.findit": "排查",
+  "ui.fcard.title": "删除排查中的关系前先询问",
+  "ui.fcard.help": "默认开启。在排查中对你自己添加的关系按“删除”时，Crash Doctor 会先询问。在那个询问中勾选“不再显示”会关闭此项；可以在这里重新打开。",
+  "ui.toast.askOn": "排查会在删除关系前询问。",
+  "ui.toast.askOff": "排查会直接删除关系，不再询问。",
+  "ui.fcard.offHint": "排查不会再询问。“设置 → 排查”可以重新打开询问。",
+  "host.unlinkAsk": "确定要删除吗？\n\n{mod} 需要 {needs}\n\n排查将不再把这两个模组放在一起。只有 Crash Doctor 自己的列表会改变；你可以随时重新添加这条关系。",
+  "host.unlinkDontAsk": "不再显示"
 }

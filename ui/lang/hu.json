@@ -1537,5 +1537,13 @@
   },
   "save.health.unsureDetail": "A Mox kinézet az első személyű nézethez tartozó része nélkül van tárolva, de ezek a mentések nem az az eset, amelyen a javítást igazoltuk, ezért a Crash Doctor nem nyúl hozzájuk:",
   "save.action.repair": "Javítás (másolatot készít)",
-  "save.action.undo": "Visszavonás (a másolat eltávolítása)"
+  "save.action.undo": "Visszavonás (a másolat eltávolítása)",
+  "ui.set.findit": "Keresd meg",
+  "ui.fcard.title": "Kérdezzen, mielőtt eltávolít egy kapcsolatot a Keresd meg részben",
+  "ui.fcard.help": "Alapból be van kapcsolva. Ha a Keresd meg részben az egyik saját kapcsolatodnál az Eltávolítás gombra kattintasz, a Crash Doctor előbb rákérdez. Ha a kérdésben bejelölöd a „Ne mutassa többé” lehetőséget, ez kikapcsol; itt kapcsolhatod vissza.",
+  "ui.toast.askOn": "A Keresd meg rákérdez, mielőtt eltávolít egy kapcsolatot.",
+  "ui.toast.askOff": "A Keresd meg kérdés nélkül távolítja el a kapcsolatokat.",
+  "ui.fcard.offHint": "A Keresd meg többé nem kérdez rá. Beállítások → Keresd meg visszakapcsolja a kérdést.",
+  "host.unlinkAsk": "Biztosan eltávolítod?\n\n{mod} igényli ezt: {needs}\n\nA Keresd meg nem tartja többé együtt ezt a két modot. Csak a Crash Doctor saját listája változik; a kapcsolatot bármikor újra hozzáadhatod.",
+  "host.unlinkDontAsk": "Ne mutassa többé"
 }

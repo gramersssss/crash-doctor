@@ -35,6 +35,7 @@ public sealed class Report
     public HistorySummary? History { get; set; }                      // what Crash Doctor remembers, and the last "Clear history" (History.cs)
     public Session? LatestSettled { get; set; }                       // the newest crash, when it looks settled and so is not Latest
     public UpdateInfo? Update { get; set; }                           // the opt-in update check's last result (Updates.cs)
+    public bool? AskBeforeUnlink { get; set; }                        // Find it's Remove asks first (config.json); null in a saved report
     public List<Change> RecentChanges { get; set; } = new();          // what changed since the last clean session, up to now
     public DateTime? RecentChangesSince { get; set; }
     public string? RecentChangesNote { get; set; }

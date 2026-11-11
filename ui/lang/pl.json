@@ -1791,5 +1791,13 @@
   },
   "save.health.unsureDetail": "Wygląd Mox jest zapisany bez swojej pierwszoosobowej części, ale te zapisy to nie ten przypadek, na którym naprawa została sprawdzona, więc Crash Doctor ich nie rusza:",
   "save.action.repair": "Napraw (tworzy kopię)",
-  "save.action.undo": "Cofnij (usuwa kopię)"
+  "save.action.undo": "Cofnij (usuwa kopię)",
+  "ui.set.findit": "Znajdź przyczynę",
+  "ui.fcard.title": "Pytaj przed usunięciem powiązania w Znajdź przyczynę",
+  "ui.fcard.help": "Domyślnie włączone. Gdy naciśniesz Usuń przy jednym ze swoich powiązań w Znajdź przyczynę, Crash Doctor najpierw zapyta. Zaznaczenie „Nie pokazuj ponownie” w tym pytaniu wyłącza to; tutaj możesz to włączyć z powrotem.",
+  "ui.toast.askOn": "Znajdź przyczynę zapyta przed usunięciem powiązania.",
+  "ui.toast.askOff": "Znajdź przyczynę będzie usuwać powiązania bez pytania.",
+  "ui.fcard.offHint": "Znajdź przyczynę nie zapyta ponownie. Ustawienia → Znajdź przyczynę włącza pytanie z powrotem.",
+  "host.unlinkAsk": "Na pewno chcesz to usunąć?\n\n{mod} potrzebuje {needs}\n\nZnajdź przyczynę przestanie trzymać te dwa mody razem. Zmienia się tylko lista Crash Doctora; powiązanie możesz dodać ponownie w każdej chwili.",
+  "host.unlinkDontAsk": "Nie pokazuj ponownie"
 }

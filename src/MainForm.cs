@@ -129,6 +129,14 @@ public sealed class MainForm : Form
                 var checkNow = doc.RootElement.TryGetProperty("check", out var ck) && ck.ValueKind == JsonValueKind.True;
                 await UpdateCheckAsync(force: checkNow || (Updates.On(uc) && !_updateChecked && Updates.Due()));
                 break;
+            case "askunlink":
+                // Settings -> Find it: whether Remove on a link the user added asks first (on unless switched off)
+                var ac = GameLocator.LoadConfig();
+                ac.AskBeforeUnlink = doc.RootElement.TryGetProperty("enabled", out var aen) && aen.ValueKind == JsonValueKind.True;
+                GameLocator.SaveConfig(ac);
+                if (_report != null) _report.AskBeforeUnlink = ac.AskBeforeUnlink;
+                Post(new { cmd = "askunlink", enabled = ac.AskBeforeUnlink });
+                break;
             case "vramlog":
                 // switching video memory recording on or off; the recorder checks the setting on its next tick
                 var vc = GameLocator.LoadConfig();
@@ -443,6 +451,8 @@ public sealed class MainForm : Form
                     case "unpin": FindIt.Pin(arg, false); break;
                     case "link": case "unlink":
                         var parts = arg.Split('\t');
+                        if (op == "unlink" && parts.Length == 2 && !ConfirmUnlink(parts[0].Trim(), parts[1].Trim())) { Post(new { cmd = "ficancel" }); return; }
+                        Post(new { cmd = "fisaving" });
                         if (parts.Length != 2 || !FindIt.Link(parts[0].Trim(), parts[1].Trim(), op == "link")) { Post(new { cmd = "error", text = L.T("findit.linkBad") }); return; }
                         break;
                     default: return;
@@ -473,6 +483,31 @@ public sealed class MainForm : Form
             if (id.StartsWith("req:open:")) { var r = reqs.FirstOrDefault(x => x.Id == id[9..]); if (r?.Url != null) OpenUrl(r.Url); return; }
             if (id.StartsWith("req:install:")) { var r = reqs.FirstOrDefault(x => x.Id == id[12..]); if (r != null) { await InstallAsync(r); await ScanAsync(); } return; }
         }
+    }
+
+    // "Remove" on a link the user added in Find it (0.8.2): a native question like Clear history's, with a
+    // "Don't show this again" box. Ticking it and answering Yes switches the question off in config.json;
+    // Settings -> Find it switches it back on. No, or closing the question, removes nothing.
+    bool ConfirmUnlink(string mod, string needs)
+    {
+        if (GameLocator.LoadConfig().AskBeforeUnlink == false) return true;
+        var dontAsk = new TaskDialogVerificationCheckBox(Q("host.unlinkDontAsk"));
+        var page = new TaskDialogPage
+        {
+            Caption = "Crash Doctor",
+            Text = Q("host.unlinkAsk", mod, needs),
+            Buttons = { TaskDialogButton.Yes, TaskDialogButton.No },
+            Verification = dontAsk,
+            AllowCancel = true,
+        };
+        if (TaskDialog.ShowDialog(this, page) != TaskDialogButton.Yes) return false;
+        if (dontAsk.Checked)
+        {
+            var cfg = GameLocator.LoadConfig(); cfg.AskBeforeUnlink = false; GameLocator.SaveConfig(cfg);
+            if (_report != null) _report.AskBeforeUnlink = false;
+            Post(new { cmd = "askunlink", enabled = false, quiet = true });
+        }
+        return true;
     }
 
     async Task InstallAsync(Requirement r)

@@ -1410,5 +1410,13 @@
   },
   "save.health.unsureDetail": "Moxの外見が一人称パーツなしで保存されていますが、これらのセーブは修復が実証されたケースとは異なるため、Crash Doctorは手を付けません：",
   "save.action.repair": "修復（コピーを作成）",
-  "save.action.undo": "元に戻す（コピーを削除）"
+  "save.action.undo": "元に戻す（コピーを削除）",
+  "ui.set.findit": "原因を探す",
+  "ui.fcard.title": "「原因を探す」のリンクを削除する前に確認する",
+  "ui.fcard.help": "初期設定ではオンです。「原因を探す」で自分で追加したリンクの「削除」を押すと、Crash Doctor が先に確認します。その確認で「今後表示しない」にチェックを入れるとオフになります。ここで再びオンにできます。",
+  "ui.toast.askOn": "「原因を探す」はリンクを削除する前に確認します。",
+  "ui.toast.askOff": "「原因を探す」は確認せずにリンクを削除します。",
+  "ui.fcard.offHint": "「原因を探す」は今後確認しません。「設定 → 原因を探す」で確認を元に戻せます。",
+  "host.unlinkAsk": "本当に削除しますか？\n\n{mod} は {needs} が必要\n\n「原因を探す」はこの2つのMODを一緒に扱わなくなります。変わるのは Crash Doctor 自身のリストだけで、リンクはいつでも追加し直せます。",
+  "host.unlinkDontAsk": "今後表示しない"
 }

@@ -187,6 +187,9 @@ public static class GameLocator
         // history.json taken at that moment, so Undo can bring them back
         public DateTime? HistoryClearedAt { get; set; }
         public string? HistoryBackup { get; set; }
+        // Find it's "Remove" on a link the user added asks first (0.8.2); null = on. The question's "Don't show this
+        // again" box switches it off, and Settings switches it back on.
+        public bool? AskBeforeUnlink { get; set; }
     }
 
     public static Config LoadConfig()

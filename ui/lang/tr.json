@@ -1537,5 +1537,13 @@
   },
   "save.health.unsureDetail": "Mox görünümü birinci şahıs parçası olmadan kaydedilmiş, ama bu kayıtlar onarımın kanıtlandığı durum değil, bu yüzden Crash Doctor onlara dokunmuyor:",
   "save.action.repair": "Onar (kopya oluşturur)",
-  "save.action.undo": "Geri al (kopyayı kaldırır)"
+  "save.action.undo": "Geri al (kopyayı kaldırır)",
+  "ui.set.findit": "Bul",
+  "ui.fcard.title": "Bul bölümünde bir bağlantıyı kaldırmadan önce sor",
+  "ui.fcard.help": "Varsayılan olarak açık. Bul bölümünde kendi eklediğiniz bağlantılardan birinde Kaldır'a bastığınızda Crash Doctor önce sorar. O sorudaki \"Bir daha gösterme\" kutusunu işaretlemek bunu kapatır; buradan yeniden açabilirsiniz.",
+  "ui.toast.askOn": "Bul, bir bağlantıyı kaldırmadan önce soracak.",
+  "ui.toast.askOff": "Bul, bağlantıları sormadan kaldıracak.",
+  "ui.fcard.offHint": "Bul bir daha sormayacak. Ayarlar → Bul soruyu yeniden açar.",
+  "host.unlinkAsk": "Bunu kaldırmak istediğinizden emin misiniz?\n\n{mod}, {needs} gerektirir\n\nBul bu iki modu artık birlikte tutmayacak. Yalnızca Crash Doctor'ın kendi listesi değişir; bağlantıyı istediğiniz zaman yeniden ekleyebilirsiniz.",
+  "host.unlinkDontAsk": "Bir daha gösterme"
 }
