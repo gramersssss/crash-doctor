@@ -930,6 +930,18 @@
   "ui.findit.add": "追加",
   "ui.findit.pickMod": "リストから有効なMODを選んでください。",
   "ui.findit.pickTwo": "リストから異なる2つの有効なMODを選んでください。",
+  "ui.findit.yoursHead": {
+    "other": "あなたが追加したリンク{n}件"
+  },
+  "ui.findit.noYours": "まだありません。下に2つのMODを入力してください。1つ目には2つ目が必要です。",
+  "ui.findit.added": "保存しました：{mod}には{needs}が必要。今後は{needs}をオフにすると{mod}も一緒にオフになります。",
+  "ui.findit.removed": "削除しました：{mod}には{needs}が必要。",
+  "ui.findit.saving": "保存中...",
+  "ui.findit.err.empty": "両方の欄にMOD名を入力してください。入力すると有効なMODの一覧が開きます。",
+  "ui.findit.err.unknown": "「{name}」は有効なMODではありません。入力中に開く一覧から選んでください。",
+  "ui.findit.err.yours": "そのリンクはすでに追加済みです。あなたのリストで強調表示されています。",
+  "ui.findit.err.found": "そのリンクはこのPCですでに見つかっています。下のリストで強調表示されています。",
+  "ui.findit.err.notSaved": "保存されなかったため、何も変わっていません。もう一度お試しください。",
   "ui.health.eyebrow": "ヘルス · クラッシュ前に見つかった継続的な問題",
   "ui.health.h1": "チェック",
   "ui.health.count": {

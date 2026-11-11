@@ -1036,6 +1036,19 @@
   "ui.findit.add": "Ekle",
   "ui.findit.pickMod": "Listeden etkin bir mod seçin.",
   "ui.findit.pickTwo": "Listeden iki farklı etkin mod seçin.",
+  "ui.findit.yoursHead": {
+    "one": "Sizin eklediğiniz {n} bağlantı",
+    "other": "Sizin eklediğiniz {n} bağlantı"
+  },
+  "ui.findit.noYours": "Henüz yok. Aşağıya iki mod yazın: ilki ikincisine ihtiyaç duyar.",
+  "ui.findit.added": "Kaydedildi: {mod} ihtiyaç duyar: {needs}. Artık {needs} kapatılınca {mod} da onunla birlikte kapanır.",
+  "ui.findit.removed": "Kaldırıldı: {mod} ihtiyaç duyar: {needs}.",
+  "ui.findit.saving": "Kaydediliyor...",
+  "ui.findit.err.empty": "İki kutuya da bir mod adı yazın. Yazarken etkin modlarınızın listesi açılır.",
+  "ui.findit.err.unknown": "\"{name}\" etkin modlarınızdan biri değil. Yazarken açılan listeden seçin.",
+  "ui.findit.err.yours": "Bu bağlantıyı zaten eklediniz. Listenizde işaretli.",
+  "ui.findit.err.found": "Bu bağlantı bu bilgisayarda zaten bulundu. Aşağıdaki listede işaretli.",
+  "ui.findit.err.notSaved": "Kaydedilmedi, bu yüzden hiçbir şey değişmedi. Lütfen tekrar deneyin.",
   "ui.health.eyebrow": "Sağlık · çökmeden önce bulunan kalıcı sorunlar",
   "ui.health.h1": "Kontroller",
   "ui.health.count": {

@@ -930,6 +930,18 @@
   "ui.findit.add": "추가",
   "ui.findit.pickMod": "목록에서 활성화된 모드를 고르세요.",
   "ui.findit.pickTwo": "목록에서 서로 다른 활성화된 모드 두 개를 고르세요.",
+  "ui.findit.yoursHead": {
+    "other": "직접 추가한 연결 {n}개"
+  },
+  "ui.findit.noYours": "아직 없습니다. 아래에 모드 두 개를 입력하세요. 첫 번째 모드가 두 번째 모드를 필요로 합니다.",
+  "ui.findit.added": "저장됨: {mod}에 {needs}이(가) 필요함. 이제 {needs}을(를) 끄면 {mod}도 함께 꺼집니다.",
+  "ui.findit.removed": "제거됨: {mod}에 {needs}이(가) 필요함.",
+  "ui.findit.saving": "저장 중...",
+  "ui.findit.err.empty": "두 칸 모두에 모드 이름을 입력하세요. 입력하면 활성화된 모드 목록이 열립니다.",
+  "ui.findit.err.unknown": "'{name}'은(는) 활성화된 모드가 아닙니다. 입력할 때 열리는 목록에서 고르세요.",
+  "ui.findit.err.yours": "이미 추가한 연결입니다. 내 목록에 표시되어 있습니다.",
+  "ui.findit.err.found": "이 PC에서 이미 찾은 연결입니다. 아래 목록에 표시되어 있습니다.",
+  "ui.findit.err.notSaved": "저장되지 않아 아무것도 바뀌지 않았습니다. 다시 시도하세요.",
   "ui.health.eyebrow": "상태 · 크래시 전에 발견된 상시 문제",
   "ui.health.h1": "점검",
   "ui.health.count": {

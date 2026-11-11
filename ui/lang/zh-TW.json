@@ -930,6 +930,18 @@
   "ui.findit.add": "新增",
   "ui.findit.pickMod": "請從清單中選擇一個已啟用的模組。",
   "ui.findit.pickTwo": "請從清單中選擇兩個不同的已啟用模組。",
+  "ui.findit.yoursHead": {
+    "other": "你新增的 {n} 條關係"
+  },
+  "ui.findit.noYours": "還沒有。在下方輸入兩個模組：第一個需要第二個。",
+  "ui.findit.added": "已儲存：{mod} 需要 {needs}。現在關閉 {needs} 時，{mod} 也會一起關閉。",
+  "ui.findit.removed": "已移除：{mod} 需要 {needs}。",
+  "ui.findit.saving": "正在儲存...",
+  "ui.findit.err.empty": "請在兩個欄位都輸入模組名稱。輸入時會開啟已啟用模組的清單。",
+  "ui.findit.err.unknown": "「{name}」不是你已啟用的模組。請從輸入時開啟的清單中選擇。",
+  "ui.findit.err.yours": "你已經新增過這條關係，它已在你的清單中標出。",
+  "ui.findit.err.found": "這條關係已在這台電腦上找到，它已在下方清單中標出。",
+  "ui.findit.err.notSaved": "沒有儲存成功，所以什麼都沒有改變。請再試一次。",
   "ui.health.eyebrow": "健康狀態 · 在當機前就發現的長期問題",
   "ui.health.h1": "檢查項目",
   "ui.health.count": {

@@ -1036,6 +1036,19 @@
   "ui.findit.add": "Aggiungi",
   "ui.findit.pickMod": "Scegli una mod attiva dall'elenco.",
   "ui.findit.pickTwo": "Scegli due mod attive diverse dall'elenco.",
+  "ui.findit.yoursHead": {
+    "one": "{n} collegamento aggiunto da te",
+    "other": "{n} collegamenti aggiunti da te"
+  },
+  "ui.findit.noYours": "Ancora nessuno. Scrivi due mod qui sotto: la prima richiede la seconda.",
+  "ui.findit.added": "Salvato: {mod} richiede {needs}. Ora, disattivando {needs}, si disattiva anche {mod}.",
+  "ui.findit.removed": "Rimosso: {mod} richiede {needs}.",
+  "ui.findit.saving": "Salvataggio...",
+  "ui.findit.err.empty": "Scrivi il nome di una mod in entrambe le caselle. Mentre scrivi si apre un elenco delle tue mod attive.",
+  "ui.findit.err.unknown": "«{name}» non è una delle tue mod attive. Sceglila dall'elenco che si apre mentre scrivi.",
+  "ui.findit.err.yours": "Hai già aggiunto questo collegamento. È evidenziato nel tuo elenco.",
+  "ui.findit.err.found": "Questo collegamento era già stato trovato su questo PC. È evidenziato nell'elenco qui sotto.",
+  "ui.findit.err.notSaved": "Non è stato salvato, quindi non è cambiato nulla. Riprova.",
   "ui.health.eyebrow": "Stato · problemi permanenti trovati prima del crash",
   "ui.health.h1": "Controlli",
   "ui.health.count": {

@@ -1036,6 +1036,19 @@
   "ui.findit.add": "Adicionar",
   "ui.findit.pickMod": "Escolha um mod ativado da lista.",
   "ui.findit.pickTwo": "Escolha dois mods ativados diferentes da lista.",
+  "ui.findit.yoursHead": {
+    "one": "{n} vínculo adicionado por você",
+    "other": "{n} vínculos adicionados por você"
+  },
+  "ui.findit.noYours": "Nenhum ainda. Digite dois mods abaixo: o primeiro precisa do segundo.",
+  "ui.findit.added": "Salvo: {mod} precisa de {needs}. Agora, desligar {needs} desliga {mod} junto.",
+  "ui.findit.removed": "Removido: {mod} precisa de {needs}.",
+  "ui.findit.saving": "Salvando...",
+  "ui.findit.err.empty": "Digite o nome de um mod nas duas caixas. Uma lista dos seus mods ativados abre enquanto você digita.",
+  "ui.findit.err.unknown": "\"{name}\" não é um dos seus mods ativados. Escolha-o na lista que abre enquanto você digita.",
+  "ui.findit.err.yours": "Você já adicionou esse vínculo. Ele está destacado na sua lista.",
+  "ui.findit.err.found": "Esse vínculo já foi encontrado neste PC. Ele está destacado na lista abaixo.",
+  "ui.findit.err.notSaved": "Não foi salvo, então nada mudou. Tente de novo.",
   "ui.health.eyebrow": "Saúde · problemas permanentes encontrados antes de você ter um crash",
   "ui.health.h1": "Verificações",
   "ui.health.count": {

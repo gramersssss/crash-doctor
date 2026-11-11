@@ -193,6 +193,14 @@ button.mark:hover{filter:brightness(.94)}
 .fi .row{flex-wrap:nowrap;margin-top:8px}
 .fi .src{color:var(--steel);font-size:11.5px;margin-left:auto;white-space:nowrap}
 .fi li button{padding:2px 8px;font-size:12px}
+/* the player's own links get their own list above the found ones, and the one just added is marked, so ADD visibly
+   does something (0.8.2 test3: it saved, but the new row landed at the bottom of a 43-row scroll box) */
+.fi .checklist.yours{border-color:var(--trace)}
+.fi li.just{background:var(--todo-bg);box-shadow:inset 3px 0 0 var(--mint)}
+.fi .fimsg{font-size:12.5px;line-height:1.5;margin:6px 0 0;min-height:0}
+.fi .fimsg.err{color:var(--signal)}.fi .fimsg.good{color:var(--mint)}
+.fi input.bad{border-color:var(--signal)}
+[dir="rtl"] .fi li.just{box-shadow:inset -3px 0 0 var(--mint)}
 /* label column sized to the labels, value column takes the rest and may break: the fault signature has no spaces, and
    with "1fr auto" it was widening the value column until every label was crushed into a sliver */
 .bstat dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 12px;margin:0;font-size:13px;align-items:baseline}
@@ -428,6 +436,9 @@ button.mark:hover{filter:brightness(.94)}
 .vram.full .spark .area{fill:var(--signal)}.vram.full .spark .line{stroke:var(--signal)}
 .vramlive.savefix{border-left-color:var(--amber,var(--signal))}
 .vramlive.savefix b{color:var(--ink)}
+/* a notice's button sits at the far end of the bar, the words at the start (0.8.2 test3: "SHOW ME" sat right after
+   the text with the rest of the bar empty). margin-inline-start follows the reading direction, so RTL mirrors it. */
+.vramlive>.btn{margin-inline-start:auto}
 .newcrash{border:1px solid var(--signal);border-left:5px solid var(--signal);background:var(--signal-bg);border-radius:var(--radius);padding:12px 16px;margin:0 0 18px}
 .newcrash .hd{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
 .newcrash .hd b{font-family:var(--display);font-size:16px;color:var(--ink)}
@@ -766,7 +777,7 @@ if(hasHost()){ window.chrome.webview.addEventListener('message', function(e){ va
   if(m.cmd==='lang'){ useLang({code:m.code,dict:m.dict,en:m.en||m.dict,rtl:m.rtl,languages:m.languages}); if(REPORT) load(REPORT,true); }
   else if(m.cmd==='report'){ load(m.report,m.keep); }
   else if(m.cmd==='english'){ if(ENGLISH_WAIT){ var f=ENGLISH_WAIT; ENGLISH_WAIT=null; f(m.report,m.dict); } }
-  else if(m.cmd==='error'){ toast(m.text,true); done(); }
+  else if(m.cmd==='error'){ toast(m.text,true); done(); fiFailed(m.text); }
   else if(m.cmd==='toast'){ toast(m.text,false); }
   else if(m.cmd==='go'){ go(m.view); }
   else if(m.cmd==='archive'){ if(REPORT){ REPORT.archive=m.archive; renderArchive(REPORT); renderSaved(REPORT,REPORT.latest); } toast(m.archive&&m.archive.enabled?t('ui.toast.archiveOn'):t('ui.toast.archiveOff'),false); }
@@ -817,7 +828,7 @@ function load(r,keepView){
   var shown=keepView&&CURRENT_SESSION?r.sessions.filter(function(x){return x.id===CURRENT_SESSION;})[0]:null;
   renderNewCrashes(r); renderUpdate(r); renderSaveFix(r);
   if(shown){ var save=r.latest; r.latest=shown; renderDx(r); r.latest=save; } else { CURRENT_SESSION=null; renderDx(r); }
-  renderKnowledge(r); renderTrace(r); watchTrace(); renderBisect(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
+  renderKnowledge(r); renderTrace(r); watchTrace(); if(!FI_WAIT){ FI_MSG=null; FI_JUST=null; } renderBisect(r); fiSettle(r); renderSessions(r); renderHealth(r); renderMods(); renderReq(r); renderSettings(r); renderReport(r);
 }
 var CURRENT_SESSION=null;
 
@@ -1116,9 +1127,12 @@ function findItPanel(r){
   var opts='<datalist id="fi-mods">'+(f.mods||[]).map(function(m){return '<option value="'+esc(m)+'">';}).join('')+'</datalist>';
   var pins=(f.pinned||[]).map(function(n){ return '<li><span class="tick">●</span><b>'+esc(n)+'</b><span class="src"><button class="btn" onclick="act('+esc(JSON.stringify('findit:unpin:'+n))+')">'+esc(t('ui.findit.unpin'))+'</button></span></li>'; }).join('')
     +(f.pinnedNeeds||[]).map(function(n){ return '<li><span class="tick">○</span><b>'+esc(n)+'</b><span class="src">'+esc(t('ui.findit.neededByPin'))+'</span></li>'; }).join('');
-  var links=(f.links||[]).map(function(l){
-    return '<li><b>'+esc(t('ui.findit.needs',{mod:l.mod,needs:l.needs}))+'</b><span class="src" title="'+esc(l.detail||'')+'">'+esc(t('ui.findit.src.'+l.source))
-      +(l.source==='manual'?' <button class="btn" onclick="act('+esc(JSON.stringify('findit:unlink:'+l.mod+'\t'+l.needs))+')">'+esc(t('ui.findit.remove'))+'</button>':'')+'</span></li>'; }).join('');
+  var link=function(l){
+    var just=FI_JUST&&FI_JUST.mod.toLowerCase()===l.mod.toLowerCase()&&FI_JUST.needs.toLowerCase()===l.needs.toLowerCase();
+    return '<li'+(just?' class="just" id="fi-just"':'')+'><b>'+esc(t('ui.findit.needs',{mod:l.mod,needs:l.needs}))+'</b><span class="src" title="'+esc(l.detail||'')+'">'+esc(t('ui.findit.src.'+l.source))
+      +(l.source==='manual'?' <button class="btn" onclick="fiUnlink(this)" data-mod="'+esc(l.mod)+'" data-needs="'+esc(l.needs)+'">'+esc(t('ui.findit.remove'))+'</button>':'')+'</span></li>'; };
+  var mine=(f.links||[]).filter(function(l){return l.source==='manual';}), found=(f.links||[]).filter(function(l){return l.source!=='manual';});
+  var msg='<p class="fimsg'+(FI_MSG?' '+FI_MSG.cls:'')+'" id="fi-msg" role="status">'+(FI_MSG?esc(FI_MSG.text):'')+'</p>';
   return '<div class="fi">'+opts+'<h3>'+esc(t('ui.findit.title'))+'</h3>'
     +'<p>'+esc(t('ui.findit.lead'))+' '+esc(src.length?t('ui.findit.read',{sources:src.join(', ')}):t('ui.findit.readNone'))+'</p>'
     +'<div class="grid2"><div>'
@@ -1126,14 +1140,50 @@ function findItPanel(r){
     +'<div class="row"><input id="fi-pin" list="fi-mods" placeholder="'+esc(t('ui.findit.modPlaceholder'))+'" onkeydown="if(event.key===&quot;Enter&quot;)fiPin()"><button class="btn primary" onclick="fiPin()">'+esc(t('ui.findit.pin'))+'</button></div>'
     +'<p style="margin-top:10px">'+esc(t('ui.findit.frameworks'))+'</p>'
     +'</div><div>'
-    +'<div class="checklist"><div class="h"><span>'+esc(tp('ui.findit.linksHead',(f.links||[]).length))+'</span></div><ul>'+(links||'<li class="muted">'+esc(t('ui.findit.noLinks'))+'</li>')+'</ul></div>'
-    +'<div class="row"><input id="fi-a" list="fi-mods" placeholder="'+esc(t('ui.findit.modPlaceholder'))+'"><span class="muted">'+esc(t('ui.findit.needsWord'))+'</span><input id="fi-b" list="fi-mods" placeholder="'+esc(t('ui.findit.modPlaceholder'))+'" onkeydown="if(event.key===&quot;Enter&quot;)fiLink()"><button class="btn primary" onclick="fiLink()">'+esc(t('ui.findit.add'))+'</button></div>'
+    // the player's own links first, with the boxes to add one right under them; what was read on this PC below
+    +'<div class="checklist yours"><div class="h"><span>'+esc(tp('ui.findit.yoursHead',mine.length))+'</span></div><ul>'+(mine.map(link).join('')||'<li class="muted">'+esc(t('ui.findit.noYours'))+'</li>')+'</ul></div>'
+    +'<div class="row"><input id="fi-a" list="fi-mods" placeholder="'+esc(t('ui.findit.modPlaceholder'))+'" oninput="this.classList.remove(&quot;bad&quot;)"><span class="muted">'+esc(t('ui.findit.needsWord'))+'</span><input id="fi-b" list="fi-mods" placeholder="'+esc(t('ui.findit.modPlaceholder'))+'" oninput="this.classList.remove(&quot;bad&quot;)" onkeydown="if(event.key===&quot;Enter&quot;)fiLink()"><button class="btn primary" onclick="fiLink()">'+esc(t('ui.findit.add'))+'</button></div>'
+    +msg
+    +'<div class="checklist"><div class="h"><span>'+esc(tp('ui.findit.linksHead',found.length))+'</span></div><ul>'+(found.map(link).join('')||'<li class="muted">'+esc(t('ui.findit.noLinks'))+'</li>')+'</ul></div>'
     +'</div></div></div>';
 }
-function fiKnown(n){ var f=REPORT&&REPORT.findIt; return f&&(f.mods||[]).some(function(m){return m.toLowerCase()===n.toLowerCase();}); }
+// What the last ADD / Remove did, shown under the boxes once the rescan has re-drawn the panel. FI_WAIT holds the
+// request until the new report arrives: only a report that really carries the link (or no longer does) says "done".
+var FI_JUST=null, FI_MSG=null, FI_WAIT=null;
+function fiKnown(n){ var f=REPORT&&REPORT.findIt; return !!(f&&(f.mods||[]).some(function(m){return m.toLowerCase()===n.toLowerCase();})); }
+function fiCanon(n){ var f=REPORT&&REPORT.findIt, hit=f&&(f.mods||[]).filter(function(m){return m.toLowerCase()===n.toLowerCase();})[0]; return hit||n; }
+function fiHas(a,b,manualOnly){ var f=REPORT&&REPORT.findIt; return !!(f&&(f.links||[]).some(function(l){ return l.mod.toLowerCase()===a.toLowerCase()&&l.needs.toLowerCase()===b.toLowerCase()&&(!manualOnly||l.source==='manual'); })); }
+function fiSay(text,cls){ FI_MSG=text?{text:text,cls:cls}:null; var p=document.getElementById('fi-msg'); if(p){ p.textContent=text||''; p.className='fimsg'+(text?' '+cls:''); } }
 function fiPin(){ var i=document.getElementById('fi-pin'), n=(i&&i.value||'').trim(); if(!n||!fiKnown(n)){ toast(t('ui.findit.pickMod'),true); if(i) i.focus(); return; } act('findit:pin:'+n); }
-function fiLink(){ var a=(document.getElementById('fi-a').value||'').trim(), b=(document.getElementById('fi-b').value||'').trim();
-  if(!a||!b||!fiKnown(a)||!fiKnown(b)||a.toLowerCase()===b.toLowerCase()){ toast(t('ui.findit.pickTwo'),true); return; } act('findit:link:'+a+'\t'+b); }
+function fiLink(){
+  var ia=document.getElementById('fi-a'), ib=document.getElementById('fi-b'), a=(ia.value||'').trim(), b=(ib.value||'').trim();
+  function bad(el,text){ el.classList.add('bad'); el.focus(); fiSay(text,'err'); }
+  if(!a) return bad(ia,t('ui.findit.err.empty'));
+  if(!b) return bad(ib,t('ui.findit.err.empty'));
+  if(!fiKnown(a)) return bad(ia,t('ui.findit.err.unknown',{name:a}));
+  if(!fiKnown(b)) return bad(ib,t('ui.findit.err.unknown',{name:b}));
+  a=fiCanon(a); b=fiCanon(b);
+  if(a.toLowerCase()===b.toLowerCase()) return bad(ib,t('ui.findit.pickTwo'));
+  if(fiHas(a,b)){ FI_JUST={mod:a,needs:b}; FI_MSG={text:t(fiHas(a,b,true)?'ui.findit.err.yours':'ui.findit.err.found'),cls:'err'}; if(REPORT) renderBisect(REPORT); fiShow(); return; }
+  if(!hasHost()){ alert(t('ui.appOnly')); return; }
+  FI_WAIT={op:'link',mod:a,needs:b}; fiSay(t('ui.findit.saving'),'good'); act('findit:link:'+a+'\t'+b);
+}
+function fiUnlink(btn){
+  var a=btn.getAttribute('data-mod'), b=btn.getAttribute('data-needs'); if(!hasHost()){ alert(t('ui.appOnly')); return; }
+  FI_JUST=null; FI_WAIT={op:'unlink',mod:a,needs:b}; btn.disabled=true; fiSay(t('ui.findit.saving'),'good'); act('findit:unlink:'+a+'\t'+b);
+}
+function fiShow(){ var row=document.getElementById('fi-just')||document.getElementById('fi-msg'); if(row&&row.scrollIntoView) row.scrollIntoView({block:'center'}); }
+// called after a new report is drawn: confirm what was asked from what the report now says, never from the request
+function fiSettle(r){
+  if(!FI_WAIT||!r||!r.findIt) return;
+  var w=FI_WAIT; FI_WAIT=null; var has=fiHas(w.mod,w.needs,true);
+  if(w.op==='link'){ if(has){ FI_JUST={mod:w.mod,needs:w.needs}; FI_MSG={text:t('ui.findit.added',{mod:w.mod,needs:w.needs}),cls:'good'}; } else FI_MSG={text:t('ui.findit.err.notSaved'),cls:'err'}; }
+  else FI_MSG=has?{text:t('ui.findit.err.notSaved'),cls:'err'}:{text:t('ui.findit.removed',{mod:w.mod,needs:w.needs}),cls:'good'};
+  renderBisect(r); fiShow();
+  toast(FI_MSG.text,FI_MSG.cls==='err');
+}
+// the host said no (an error toast is already up): say it under the boxes too, and keep what was typed
+function fiFailed(text){ if(!FI_WAIT) return; FI_WAIT=null; fiSay(text||'','err'); document.querySelectorAll('.fi button[disabled]').forEach(function(x){ x.disabled=false; }); }
 
 function renderHealth(r){
   var el=document.getElementById('health-list'); el.innerHTML='';

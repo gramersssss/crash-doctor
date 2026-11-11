@@ -1036,6 +1036,19 @@
   "ui.findit.add": "Hozzáadás",
   "ui.findit.pickMod": "Válassz egy bekapcsolt modot a listából.",
   "ui.findit.pickTwo": "Válassz két különböző bekapcsolt modot a listából.",
+  "ui.findit.yoursHead": {
+    "one": "{n} általad hozzáadott kapcsolat",
+    "other": "{n} általad hozzáadott kapcsolat"
+  },
+  "ui.findit.noYours": "Még nincs. Írj be lent két modot: az első függ a másodiktól.",
+  "ui.findit.added": "Mentve: {mod} függ ettől: {needs}. Ha {needs} kikapcsol, mostantól {mod} is vele együtt kikapcsol.",
+  "ui.findit.removed": "Eltávolítva: {mod} függ ettől: {needs}.",
+  "ui.findit.saving": "Mentés...",
+  "ui.findit.err.empty": "Írj be egy mod nevet mindkét mezőbe. Gépelés közben megnyílik a bekapcsolt modjaid listája.",
+  "ui.findit.err.unknown": "„{name}” nem a bekapcsolt modjaid egyike. Válaszd ki a gépelés közben megnyíló listából.",
+  "ui.findit.err.yours": "Ezt a kapcsolatot már hozzáadtad. A listádban ki van emelve.",
+  "ui.findit.err.found": "Ezt a kapcsolatot már megtalálta ezen a gépen. Lent a listában ki van emelve.",
+  "ui.findit.err.notSaved": "Nem sikerült menteni, így semmi sem változott. Próbáld újra.",
   "ui.health.eyebrow": "Állapot · állandó problémák, még az összeomlás előtt",
   "ui.health.h1": "Ellenőrzések",
   "ui.health.count": {

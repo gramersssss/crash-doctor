@@ -1248,6 +1248,21 @@
   "ui.findit.add": "Dodaj",
   "ui.findit.pickMod": "Wybierz z listy włączony mod.",
   "ui.findit.pickTwo": "Wybierz z listy dwa różne włączone mody.",
+  "ui.findit.yoursHead": {
+    "one": "{n} powiązanie dodane przez ciebie",
+    "few": "{n} powiązania dodane przez ciebie",
+    "many": "{n} powiązań dodanych przez ciebie",
+    "other": "{n} powiązania dodanego przez ciebie"
+  },
+  "ui.findit.noYours": "Jeszcze żadnych. Wpisz poniżej dwa mody: pierwszy wymaga drugiego.",
+  "ui.findit.added": "Zapisano: {mod} wymaga: {needs}. Teraz wyłączenie {needs} wyłącza też {mod}.",
+  "ui.findit.removed": "Usunięto: {mod} wymaga: {needs}.",
+  "ui.findit.saving": "Zapisywanie...",
+  "ui.findit.err.empty": "Wpisz nazwę moda w obu polach. Podczas pisania otwiera się lista twoich włączonych modów.",
+  "ui.findit.err.unknown": "„{name}” nie jest jednym z twoich włączonych modów. Wybierz go z listy, która otwiera się podczas pisania.",
+  "ui.findit.err.yours": "To powiązanie już dodałeś. Jest zaznaczone na twojej liście.",
+  "ui.findit.err.found": "To powiązanie zostało już znalezione na tym PC. Jest zaznaczone na liście poniżej.",
+  "ui.findit.err.notSaved": "Nie zapisano, więc nic się nie zmieniło. Spróbuj ponownie.",
   "ui.health.eyebrow": "Kondycja · stałe problemy wykryte, zanim dojdzie do awarii",
   "ui.health.h1": "Kontrole",
   "ui.health.count": {

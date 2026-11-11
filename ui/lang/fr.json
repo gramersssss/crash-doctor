@@ -1036,6 +1036,19 @@
   "ui.findit.add": "Ajouter",
   "ui.findit.pickMod": "Choisissez un mod activé dans la liste.",
   "ui.findit.pickTwo": "Choisissez deux mods activés différents dans la liste.",
+  "ui.findit.yoursHead": {
+    "one": "{n} lien ajouté par vous",
+    "other": "{n} liens ajoutés par vous"
+  },
+  "ui.findit.noYours": "Aucun pour l'instant. Saisissez deux mods ci-dessous : le premier a besoin du second.",
+  "ui.findit.added": "Enregistré : {mod} a besoin de {needs}. Désactiver {needs} désactive maintenant {mod} aussi.",
+  "ui.findit.removed": "Supprimé : {mod} a besoin de {needs}.",
+  "ui.findit.saving": "Enregistrement...",
+  "ui.findit.err.empty": "Saisissez un nom de mod dans les deux champs. Une liste de vos mods activés s'ouvre pendant la saisie.",
+  "ui.findit.err.unknown": "« {name} » ne fait pas partie de vos mods activés. Choisissez-le dans la liste qui s'ouvre pendant la saisie.",
+  "ui.findit.err.yours": "Vous avez déjà ajouté ce lien. Il est mis en évidence dans votre liste.",
+  "ui.findit.err.found": "Ce lien a déjà été trouvé sur ce PC. Il est mis en évidence dans la liste ci-dessous.",
+  "ui.findit.err.notSaved": "Rien n'a été enregistré, rien n'a changé. Veuillez réessayer.",
   "ui.health.eyebrow": "Santé · problèmes permanents trouvés avant tout plantage",
   "ui.health.h1": "Vérifications",
   "ui.health.count": {

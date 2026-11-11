@@ -1036,6 +1036,19 @@
   "ui.findit.add": "Add",
   "ui.findit.pickMod": "Pick an enabled mod from the list.",
   "ui.findit.pickTwo": "Pick two different enabled mods from the list.",
+  "ui.findit.yoursHead": {
+    "one": "{n} link added by you",
+    "other": "{n} links added by you"
+  },
+  "ui.findit.noYours": "None yet. Type two mods below: the first one needs the second.",
+  "ui.findit.added": "Saved: {mod} needs {needs}. Switching {needs} off now switches {mod} off with it.",
+  "ui.findit.removed": "Removed: {mod} needs {needs}.",
+  "ui.findit.saving": "Saving...",
+  "ui.findit.err.empty": "Type a mod name in both boxes. A list of your enabled mods opens as you type.",
+  "ui.findit.err.unknown": "\"{name}\" is not one of your enabled mods. Pick it from the list that opens as you type.",
+  "ui.findit.err.yours": "You already added that link. It is marked in your list.",
+  "ui.findit.err.found": "That link was already found on this PC. It is marked in the list below.",
+  "ui.findit.err.notSaved": "That did not save, so nothing changed. Please try again.",
   "ui.health.eyebrow": "Health · standing problems found before you crash",
   "ui.health.h1": "Checks",
   "ui.health.count": {

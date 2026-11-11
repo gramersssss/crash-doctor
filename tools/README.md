@@ -45,7 +45,7 @@ settings are back." The fixture's settings file should end byte-identical to the
 
 ## Testing the update check
 
-The check (`Updates.cs`) is opt-in and only the window runs it. To watch it work without a release: put a
+The check (`Updates.cs`) is on by default (once per start) and only the window runs it. To watch it work without a release: put a
 `version.json` such as `{"version":"0.7.0","url":"https://...","notes":"..."}` in a folder, serve it with
 `python -m http.server 8765 --bind 127.0.0.1` from there, set `CRASHDOCTOR_UPDATE_URL=http://127.0.0.1:8765/version.json`
 and `CRASHDOCTOR_TEST_ROOT` to a fixture whose `AppData\CrashDoctor\config.json` has `"CheckForUpdates": true`, and

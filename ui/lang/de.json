@@ -1036,6 +1036,19 @@
   "ui.findit.add": "Hinzufügen",
   "ui.findit.pickMod": "Wähle einen aktivierten Mod aus der Liste.",
   "ui.findit.pickTwo": "Wähle zwei verschiedene aktivierte Mods aus der Liste.",
+  "ui.findit.yoursHead": {
+    "one": "{n} Verknüpfung von dir",
+    "other": "{n} Verknüpfungen von dir"
+  },
+  "ui.findit.noYours": "Noch keine. Trag unten zwei Mods ein: Der erste braucht den zweiten.",
+  "ui.findit.added": "Gespeichert: {mod} braucht {needs}. Wird {needs} ausgeschaltet, geht {mod} jetzt mit aus.",
+  "ui.findit.removed": "Entfernt: {mod} braucht {needs}.",
+  "ui.findit.saving": "Wird gespeichert...",
+  "ui.findit.err.empty": "Trag in beide Felder einen Mod-Namen ein. Beim Tippen öffnet sich eine Liste deiner aktivierten Mods.",
+  "ui.findit.err.unknown": "„{name}“ ist keiner deiner aktivierten Mods. Wähle ihn aus der Liste, die sich beim Tippen öffnet.",
+  "ui.findit.err.yours": "Diese Verknüpfung hast du schon hinzugefügt. Sie ist in deiner Liste markiert.",
+  "ui.findit.err.found": "Diese Verknüpfung wurde auf diesem PC schon gefunden. Sie ist in der Liste unten markiert.",
+  "ui.findit.err.notSaved": "Das wurde nicht gespeichert, es hat sich nichts geändert. Bitte versuch es noch einmal.",
   "ui.health.eyebrow": "Zustand · dauerhafte Probleme, die vor einem Absturz gefunden wurden",
   "ui.health.h1": "Prüfungen",
   "ui.health.count": {

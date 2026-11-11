@@ -930,6 +930,18 @@
   "ui.findit.add": "添加",
   "ui.findit.pickMod": "请从列表中选择一个已启用的模组。",
   "ui.findit.pickTwo": "请从列表中选择两个不同的已启用模组。",
+  "ui.findit.yoursHead": {
+    "other": "你添加的 {n} 条关系"
+  },
+  "ui.findit.noYours": "还没有。在下方输入两个模组：第一个需要第二个。",
+  "ui.findit.added": "已保存：{mod} 需要 {needs}。现在关闭 {needs} 时，{mod} 也会一起关闭。",
+  "ui.findit.removed": "已删除：{mod} 需要 {needs}。",
+  "ui.findit.saving": "正在保存...",
+  "ui.findit.err.empty": "请在两个框中都输入模组名称。输入时会打开已启用模组的列表。",
+  "ui.findit.err.unknown": "“{name}”不是你已启用的模组。请从输入时打开的列表中选择。",
+  "ui.findit.err.yours": "你已经添加过这条关系，它已在你的列表中标出。",
+  "ui.findit.err.found": "这条关系已在这台电脑上找到，它已在下方列表中标出。",
+  "ui.findit.err.notSaved": "没有保存成功，所以什么都没有改变。请再试一次。",
   "ui.health.eyebrow": "健康 · 崩溃之前就发现的长期问题",
   "ui.health.h1": "检查",
   "ui.health.count": {

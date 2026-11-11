@@ -53,7 +53,7 @@ reliably replaces is a week of switching mods off at random.
 because you clicked and confirmed: applying a reviewed fix to a specific mod file (0.6.0 ships none yet; a fix is
 added only with that mod author's permission), and applying a graphics profile. Either way the original is backed up first and one click puts it back. Profiles touch
 graphics and display settings only, never controls, audio or key bindings. Crash Doctor never enables, disables or
-deletes a mod. Nothing leaves your PC, with one opt-in exception: an update check under Settings, off by default, that fetches one small version file at most once a day and sends nothing about you or your install.
+deletes a mod. Nothing leaves your PC, with one exception: the update check. Each time Crash Doctor starts it fetches one small version file, and it sends nothing about you or your install. It is on by default; switch it off under Settings > Updates and nothing is sent anywhere.
 
 **What it has never seen:** an AMD or Intel card, a GOG or Epic install, Mod Organizer 2 or a hand-installed setup,
 REDmod deployment, or a card bigger than 8 GB. The evidence it reads is the same everywhere, so most of it should
@@ -155,9 +155,9 @@ the three most recent clean sessions to compare against. It only copies, and you
 **New crashes flagged.** If the game crashed since you last looked, a notice sits at the top of every page until you
 open it or dismiss it.
 
-**Update check, if you want one.** Off by default. Switched on under Settings, it fetches one small version file at
-most once a day and tells you when a newer build is out, with a button to the download page. It never downloads or
-installs anything itself.
+**Update check.** On by default. Each time Crash Doctor starts it fetches one small version file and tells you when a
+newer build is out, with a button to the download page. It never downloads or installs anything itself, and it
+sends nothing about you or your install. Switch it off under Settings > Updates.
 
 **Night City by default, or light and dark.** It opens in Neon, a skin in the game's own style. Pick Terminal, like
 the computers you jack into, or a plain light or dark look that matches your Windows theme.
@@ -202,7 +202,7 @@ saved report.
 
 [b]What it will not do.[/b] It will not fix every crash, and it does not pretend to. The evidence work is reliable and takes ten seconds; naming the culprit is a bonus, not the promise. Its confidence is allowed to reach zero, and "I don't know yet, here is what is ruled out and here is the next test" is an answer it will give you. What it reliably replaces is a week of switching mods off at random.
 
-[b]It changes nothing unless you ask.[/b] Scanning only reads. Crash Doctor changes something in exactly two cases, both because you clicked and confirmed: applying a reviewed fix to a specific mod file (0.6.0 ships none yet; a fix is added only with that mod author's permission), and applying a graphics profile. Either way the original is backed up first and one click puts it back. Profiles touch graphics and display settings only, never controls, audio or key bindings. Crash Doctor never enables, disables or deletes a mod. Nothing leaves your PC, with one opt-in exception: an update check under Settings, off by default, that fetches one small version file at most once a day and sends nothing about you or your install.
+[b]It changes nothing unless you ask.[/b] Scanning only reads. Crash Doctor changes something in exactly two cases, both because you clicked and confirmed: applying a reviewed fix to a specific mod file (0.6.0 ships none yet; a fix is added only with that mod author's permission), and applying a graphics profile. Either way the original is backed up first and one click puts it back. Profiles touch graphics and display settings only, never controls, audio or key bindings. Crash Doctor never enables, disables or deletes a mod. Nothing leaves your PC, with one exception: the update check. Each time Crash Doctor starts it fetches one small version file, and it sends nothing about you or your install. It is on by default; switch it off under Settings > Updates and nothing is sent anywhere.
 
 [b]What it has never seen:[/b] an AMD or Intel card, a GOG or Epic install, Mod Organizer 2 or a hand-installed setup, REDmod deployment, or a card bigger than 8 GB. The evidence it reads is the same everywhere, so most of it should simply work, but "should" is doing real work in that sentence. If you have one of those, your report is the one I most want to see.
 
@@ -235,7 +235,7 @@ Then press [b]Scan now[/b]. If you want video memory recorded while you play, le
 [*][b]Graphics profiles.[/b] Save the game's graphics settings under a name and switch between them in one click: a quality profile for exploring, a lighter one for dense districts or streaming. Edit a profile without launching the game; only values the game's own settings file allows are offered, and resolution and upscaler modes, which depend on your monitor and card, are kept exactly as the game wrote them. Applying backs up your current settings first, refuses while the game is running, and Undo puts them back. [b]Play with this[/b] backs up your settings, puts the profile in, starts the game, and puts your settings back when it closes, so a lighter profile for one session leaves your usual setup untouched.
 [*][b]Crash logs, kept.[/b] The game deletes its logs after a few launches, which is how most crashes end up with nothing left to examine. The first time Crash Doctor sees a crash it zips the crash report and that session's logs, and keeps the three most recent clean sessions to compare against. It only copies, and you can switch it off.
 [*][b]New crashes flagged.[/b] If the game crashed since you last looked, a notice sits at the top of every page until you open it or dismiss it.
-[*][b]Update check, if you want one.[/b] Off by default. Switched on under Settings, it fetches one small version file at most once a day and tells you when a newer build is out, with a button to the download page. It never downloads or installs anything itself.
+[*][b]Update check.[/b] On by default. Each time Crash Doctor starts it fetches one small version file and tells you when a newer build is out, with a button to the download page. It never downloads or installs anything itself, and it sends nothing about you or your install. Switch it off under Settings > Updates.
 [*][b]Night City by default, or light and dark.[/b] It opens in Neon, a skin in the game's own style. Pick Terminal, like the computers you jack into, or a plain light or dark look that matches your Windows theme.
 [*][b]Command line[/b], for scripts and for pasting into a thread: [font=Courier New]CrashDoctor.exe --json report.json [--html report.html] [--game "D:\Games\Cyberpunk 2077"] [--no-mods][/font] and [font=Courier New]CrashDoctor.exe --vram-probe[/font]. The second prints one reading of your graphics card's memory and which adapter it picked. If you have an AMD or Intel card, that one line pasted into Posts tells me whether the recording works on it.
 [/list]

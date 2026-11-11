@@ -1245,6 +1245,20 @@
   "ui.findit.add": "Přidat",
   "ui.findit.pickMod": "Vyber ze seznamu zapnutý mod.",
   "ui.findit.pickTwo": "Vyber ze seznamu dva různé zapnuté mody.",
+  "ui.findit.yoursHead": {
+    "one": "{n} vazba přidaná tebou",
+    "few": "{n} vazby přidané tebou",
+    "other": "{n} vazeb přidaných tebou"
+  },
+  "ui.findit.noYours": "Zatím žádné. Napiš níže dva mody: první potřebuje druhý.",
+  "ui.findit.added": "Uloženo: {mod} potřebuje {needs}. Vypnutí {needs} teď vypne i {mod}.",
+  "ui.findit.removed": "Odebráno: {mod} potřebuje {needs}.",
+  "ui.findit.saving": "Ukládám...",
+  "ui.findit.err.empty": "Napiš název modu do obou polí. Při psaní se otevře seznam tvých zapnutých modů.",
+  "ui.findit.err.unknown": "„{name}“ není jeden z tvých zapnutých modů. Vyber ho ze seznamu, který se otevře při psaní.",
+  "ui.findit.err.yours": "Tuto vazbu už jsi přidal. Je označená v tvém seznamu.",
+  "ui.findit.err.found": "Tato vazba už byla na tomto PC nalezena. Je označená v seznamu níže.",
+  "ui.findit.err.notSaved": "Neuložilo se to, takže se nic nezměnilo. Zkus to znovu.",
   "ui.health.eyebrow": "Zdraví · trvalé problémy nalezené dřív, než hra spadne",
   "ui.health.h1": "Kontroly",
   "ui.health.count": {
