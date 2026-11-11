@@ -1,5 +1,5 @@
 {
-  "version": "0.8.1",
+  "version": "0.8.2",
   "url": "https://www.nexusmods.com/cyberpunk2077/mods/33934",
-  "notes": "0.8.1: a \"Clear history\" button (asks first, Undo brings it back), old crashes marked \"looks settled\" once their cause has changed, and mods from the game's own mod menu (mod.io) in the mod list (work in progress). Also on GitHub: https://github.com/gramersssss/crash-doctor/releases/tag/v0.8.1"
+  "notes": "0.8.2: repairs saves hit by the Mox Gorilla Arms bug (as a new save, the original stays as it was, Undo removes it), Find it keeps mods that need each other together (Always on, your own links), and the update check is on by default. Also on GitHub: https://github.com/gramersssss/crash-doctor/releases/tag/v0.8.2"
 }
